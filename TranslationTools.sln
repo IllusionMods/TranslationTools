@@ -51,6 +51,7 @@ Global
 		src\Shared\Shared.projitems*{4d019b66-3042-4abb-81a1-fc72d61844e5}*SharedItemsImports = 4
 		src\KK_TextResourceHelper\KK_TextResourceHelper.projitems*{50ba3baf-50d9-4e53-bf4a-2b804ce0e19b}*SharedItemsImports = 13
 		src\AI_TextResourceHelper\AI_TextResourceHelper.projitems*{6f1b1ae0-204d-4cb4-a290-a06a3dd56377}*SharedItemsImports = 13
+		src\Shared\Shared.projitems*{841ffff7-1940-4b7b-b21f-83e2f16333d4}*SharedItemsImports = 13
 		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{94670af2-2a1f-49af-a66f-03fa381a9f02}*SharedItemsImports = 13
 		src\Core_TextDump\Core_TextDump.projitems*{98b3ad67-6608-420f-a3a4-d1abd9402905}*SharedItemsImports = 4
 		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{98b3ad67-6608-420f-a3a4-d1abd9402905}*SharedItemsImports = 4
