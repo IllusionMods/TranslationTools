@@ -1,0 +1,125 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29509.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KK_TextDump", "src\KK_TextDump\KK_TextDump.csproj", "{98B3AD67-6608-420F-A3A4-D1ABD9402905}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KK_TranslationSync", "src\KK_TranslationSync\KK_TranslationSync.csproj", "{0C56DBC3-848C-42FD-B4F2-AB31863261F8}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Shared", "src\Shared\Shared.shproj", "{841FFFF7-1940-4B7B-B21F-83E2F16333D4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TextDump", "TextDump", "{C09C475A-6755-4E09-8D60-36B8FA2ADE63}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HS_TextDump", "src\HS_TextDump\HS_TextDump.csproj", "{4D019B66-3042-4ABB-81A1-FC72D61844E5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KK_TextResourceRedirector", "src\KK_TextResourceRedirector\KK_TextResourceRedirector.csproj", "{49ADD937-3C6A-427C-910F-98A3AD1FCCF9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TextResourceRedirector", "TextResourceRedirector", "{57C76B28-11D8-4B59-AED0-AA3935FD7F93}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HS_TextResourceRedirector", "src\HS_TextResourceRedirector\HS_TextResourceRedirector.csproj", "{E0B39DBA-571C-4B01-8479-63B59AA86B88}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Core_TextResourceRedirector", "src\Core_TextResourceRedirector\Core_TextResourceRedirector.shproj", "{DCFDE35B-C56B-48AA-8244-248EF1C805C3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AI_TextResourceRedirector", "src\AI_TextResourceRedirector\AI_TextResourceRedirector.csproj", "{B697727B-9F9C-44B0-BAA4-DE9CBF184EA5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AI_TextDump", "src\AI_TextDump\AI_TextDump.csproj", "{4026BB4C-6A7D-41B7-AEBD-6044C9326523}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Core_TextDump", "src\Core_TextDump\Core_TextDump.shproj", "{DDA0A733-3E5D-4F70-A91C-DC4FBF88E410}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TextResourceHelper", "TextResourceHelper", "{BBFC4A4F-16DE-4182-8BE1-D364D0F165A2}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Core_TextResourceHelper", "src\Core_TextResourceHelper\Core_TextResourceHelper.shproj", "{94670AF2-2A1F-49AF-A66F-03FA381A9F02}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "AI_TextResourceHelper", "src\AI_TextResourceHelper\AI_TextResourceHelper.shproj", "{6F1B1AE0-204D-4CB4-A290-A06A3DD56377}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "KK_TextResourceHelper", "src\KK_TextResourceHelper\KK_TextResourceHelper.shproj", "{50BA3BAF-50D9-4E53-BF4A-2B804CE0E19B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TranslationSync", "TranslationSync", "{CFCEA10E-502B-41CA-AD5A-7D3E16132868}"
+EndProject
+Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		src\Shared\CommonCode.projitems*{0c56dbc3-848c-42fd-b4f2-ab31863261f8}*SharedItemsImports = 4
+		src\AI_TextResourceHelper\AI_TextResourceHelper.projitems*{4026bb4c-6a7d-41b7-aebd-6044c9326523}*SharedItemsImports = 4
+		src\Core_TextDump\Core_TextDump.projitems*{4026bb4c-6a7d-41b7-aebd-6044c9326523}*SharedItemsImports = 4
+		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{4026bb4c-6a7d-41b7-aebd-6044c9326523}*SharedItemsImports = 4
+		src\Shared\CommonCode.projitems*{4026bb4c-6a7d-41b7-aebd-6044c9326523}*SharedItemsImports = 4
+		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{49add937-3c6a-427c-910f-98a3ad1fccf9}*SharedItemsImports = 4
+		src\Core_TextResourceRedirector\Core_TextResourceRedirector.projitems*{49add937-3c6a-427c-910f-98a3ad1fccf9}*SharedItemsImports = 4
+		src\KK_TextResourceHelper\KK_TextResourceHelper.projitems*{49add937-3c6a-427c-910f-98a3ad1fccf9}*SharedItemsImports = 4
+		src\Shared\CommonCode.projitems*{49add937-3c6a-427c-910f-98a3ad1fccf9}*SharedItemsImports = 4
+		src\Shared\CommonCode.projitems*{4d019b66-3042-4abb-81a1-fc72d61844e5}*SharedItemsImports = 4
+		src\KK_TextResourceHelper\KK_TextResourceHelper.projitems*{50ba3baf-50d9-4e53-bf4a-2b804ce0e19b}*SharedItemsImports = 13
+		src\AI_TextResourceHelper\AI_TextResourceHelper.projitems*{6f1b1ae0-204d-4cb4-a290-a06a3dd56377}*SharedItemsImports = 13
+		src\Shared\CommonCode.projitems*{841ffff7-1940-4b7b-b21f-83e2f16333d4}*SharedItemsImports = 13
+		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{94670af2-2a1f-49af-a66f-03fa381a9f02}*SharedItemsImports = 13
+		src\Core_TextDump\Core_TextDump.projitems*{98b3ad67-6608-420f-a3a4-d1abd9402905}*SharedItemsImports = 4
+		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{98b3ad67-6608-420f-a3a4-d1abd9402905}*SharedItemsImports = 4
+		src\KK_TextResourceHelper\KK_TextResourceHelper.projitems*{98b3ad67-6608-420f-a3a4-d1abd9402905}*SharedItemsImports = 4
+		src\Shared\CommonCode.projitems*{98b3ad67-6608-420f-a3a4-d1abd9402905}*SharedItemsImports = 4
+		src\AI_TextResourceHelper\AI_TextResourceHelper.projitems*{b697727b-9f9c-44b0-baa4-de9cbf184ea5}*SharedItemsImports = 4
+		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{b697727b-9f9c-44b0-baa4-de9cbf184ea5}*SharedItemsImports = 4
+		src\Core_TextResourceRedirector\Core_TextResourceRedirector.projitems*{b697727b-9f9c-44b0-baa4-de9cbf184ea5}*SharedItemsImports = 4
+		src\Shared\CommonCode.projitems*{b697727b-9f9c-44b0-baa4-de9cbf184ea5}*SharedItemsImports = 4
+		src\Core_TextResourceRedirector\Core_TextResourceRedirector.projitems*{dcfde35b-c56b-48aa-8244-248ef1c805c3}*SharedItemsImports = 13
+		src\Core_TextDump\Core_TextDump.projitems*{dda0a733-3e5d-4f70-a91c-dc4fbf88e410}*SharedItemsImports = 13
+		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{e0b39dba-571c-4b01-8479-63b59aa86b88}*SharedItemsImports = 4
+		src\Core_TextResourceRedirector\Core_TextResourceRedirector.projitems*{e0b39dba-571c-4b01-8479-63b59aa86b88}*SharedItemsImports = 4
+		src\Shared\CommonCode.projitems*{e0b39dba-571c-4b01-8479-63b59aa86b88}*SharedItemsImports = 4
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{98B3AD67-6608-420F-A3A4-D1ABD9402905}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98B3AD67-6608-420F-A3A4-D1ABD9402905}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98B3AD67-6608-420F-A3A4-D1ABD9402905}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98B3AD67-6608-420F-A3A4-D1ABD9402905}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C56DBC3-848C-42FD-B4F2-AB31863261F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C56DBC3-848C-42FD-B4F2-AB31863261F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C56DBC3-848C-42FD-B4F2-AB31863261F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C56DBC3-848C-42FD-B4F2-AB31863261F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D019B66-3042-4ABB-81A1-FC72D61844E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D019B66-3042-4ABB-81A1-FC72D61844E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D019B66-3042-4ABB-81A1-FC72D61844E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D019B66-3042-4ABB-81A1-FC72D61844E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49ADD937-3C6A-427C-910F-98A3AD1FCCF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49ADD937-3C6A-427C-910F-98A3AD1FCCF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49ADD937-3C6A-427C-910F-98A3AD1FCCF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49ADD937-3C6A-427C-910F-98A3AD1FCCF9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0B39DBA-571C-4B01-8479-63B59AA86B88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0B39DBA-571C-4B01-8479-63B59AA86B88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0B39DBA-571C-4B01-8479-63B59AA86B88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0B39DBA-571C-4B01-8479-63B59AA86B88}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B697727B-9F9C-44B0-BAA4-DE9CBF184EA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B697727B-9F9C-44B0-BAA4-DE9CBF184EA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B697727B-9F9C-44B0-BAA4-DE9CBF184EA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B697727B-9F9C-44B0-BAA4-DE9CBF184EA5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4026BB4C-6A7D-41B7-AEBD-6044C9326523}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4026BB4C-6A7D-41B7-AEBD-6044C9326523}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4026BB4C-6A7D-41B7-AEBD-6044C9326523}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4026BB4C-6A7D-41B7-AEBD-6044C9326523}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{98B3AD67-6608-420F-A3A4-D1ABD9402905} = {C09C475A-6755-4E09-8D60-36B8FA2ADE63}
+		{0C56DBC3-848C-42FD-B4F2-AB31863261F8} = {CFCEA10E-502B-41CA-AD5A-7D3E16132868}
+		{4D019B66-3042-4ABB-81A1-FC72D61844E5} = {C09C475A-6755-4E09-8D60-36B8FA2ADE63}
+		{49ADD937-3C6A-427C-910F-98A3AD1FCCF9} = {57C76B28-11D8-4B59-AED0-AA3935FD7F93}
+		{E0B39DBA-571C-4B01-8479-63B59AA86B88} = {57C76B28-11D8-4B59-AED0-AA3935FD7F93}
+		{DCFDE35B-C56B-48AA-8244-248EF1C805C3} = {57C76B28-11D8-4B59-AED0-AA3935FD7F93}
+		{B697727B-9F9C-44B0-BAA4-DE9CBF184EA5} = {57C76B28-11D8-4B59-AED0-AA3935FD7F93}
+		{4026BB4C-6A7D-41B7-AEBD-6044C9326523} = {C09C475A-6755-4E09-8D60-36B8FA2ADE63}
+		{DDA0A733-3E5D-4F70-A91C-DC4FBF88E410} = {C09C475A-6755-4E09-8D60-36B8FA2ADE63}
+		{BBFC4A4F-16DE-4182-8BE1-D364D0F165A2} = {57C76B28-11D8-4B59-AED0-AA3935FD7F93}
+		{94670AF2-2A1F-49AF-A66F-03FA381A9F02} = {BBFC4A4F-16DE-4182-8BE1-D364D0F165A2}
+		{6F1B1AE0-204D-4CB4-A290-A06A3DD56377} = {BBFC4A4F-16DE-4182-8BE1-D364D0F165A2}
+		{50BA3BAF-50D9-4E53-BF4A-2B804CE0E19B} = {BBFC4A4F-16DE-4182-8BE1-D364D0F165A2}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D0F79985-4CB7-46CB-BEC2-FF89C476ED20}
+	EndGlobalSection
+EndGlobal
