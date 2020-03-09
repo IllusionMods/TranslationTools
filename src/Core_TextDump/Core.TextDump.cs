@@ -13,7 +13,7 @@ namespace IllusionMods
     {
         public const string GUID = "com.deathweasel.bepinex.textdump";
         public const string PluginName = "Text Dump";
-        public const string Version = "1.1";
+        public const string Version = "1.1.1";
 
         public static ConfigEntry<bool> Enabled { get; private set; }
 
@@ -126,7 +126,9 @@ namespace IllusionMods
                         File.WriteAllLines(FilePath, Lines.ToArray());
                     }
                     else
+                    {
                         Logger.LogInfo($"No Translations:{AssetName}");
+                    }
                 }
             }
             Logger.LogInfo($"[TextDump] Total Communication unique lines:{AllJPText.Count}");
@@ -310,7 +312,7 @@ namespace IllusionMods
 
                         HashSet<string> JPText = new HashSet<string>();
                         string[] Rows = Asset.text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-                        for (int i = 0; i < Rows.Count(); i++)
+                        for (int i = 0; i < Rows.Length; i++)
                         {
                             string[] Cells = Rows[i].Split('\t');
                             if (4 < Cells.Length && !Cells[4].IsNullOrEmpty())

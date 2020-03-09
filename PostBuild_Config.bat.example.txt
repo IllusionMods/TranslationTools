@@ -1,0 +1,13 @@
+@echo off
+
+REM 
+REM Copy to PostBuild_Config.bat and set paths to port to your installation directories.
+REM delete or REM out lines to disable specific targets
+REM
+
+set KK_DIR=C:\Illusion\Koikatu
+set KK_PARTY_DIR=C:\Steam\steamapps\common\Koikatsu Party
+set EC_DIR=C:\Illusion\EmotionCreators
+set HS_DIR=C:\Illusion\HoneySelect
+set PH_DIR=C:\Illusion\PlayHome
+set AI_DIR=C:\Illusion\AI-Syoujyo
