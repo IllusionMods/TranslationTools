@@ -19,50 +19,48 @@ IF EXIST %POSTBUILD_CONFIG% CALL "%POSTBUILD_CONFIG%"
 set TARGET_SUBDIR=BepInEx\plugins\TranslationTools
 
 IF "%2" == "KK" (
-	IF NOT "%KK_DIR%" == "" (
-		set TARGET=%KK_DIR%\%TARGET_SUBDIR%
-		call :COPY_TARGET "%1" "%TARGET%"
-		)
-	IF NOT "%KK_PARTY_DIR%" == "" (
-		set TARGET=%KK_PARTY_DIR%\%TARGET_SUBDIR%
-		call :COPY_TARGET "%1" "%TARGET%"
-		)
-	goto END
-	)
+    IF NOT "%KK_DIR%" == "" (
+        set TARGET=%KK_DIR%\%TARGET_SUBDIR%
+        call :COPY_TARGET "%1" "%TARGET%" 
+        )
+    IF NOT "%KK_PARTY_DIR%" == "" (
+        set TARGET=%KK_PARTY_DIR%\%TARGET_SUBDIR%
+        call :COPY_TARGET "%1" "%TARGET%" 
+        )
+    goto END
+    )
 
 IF "%2" == "EC" IF NOT "%EC_DIR%" == "" (
     set TARGET=%EC_DIR%\%TARGET_SUBDIR%
-    call :COPY_TARGET "%1" "%TARGET%"
-	goto END
+    call :COPY_TARGET "%1" "%TARGET%" 
+    goto END
     )
     
 IF "%2" == "AI" IF NOT "%AI_DIR%" == "" (
     set TARGET=%AI_DIR%\%TARGET_SUBDIR%
-    call :COPY_TARGET "%1" "%TARGET%"
-	goto END
+    call :COPY_TARGET "%1" "%TARGET%" 
+    goto END
     )
-	
+    
 IF "%2" == "HS" IF NOT "%HS_DIR%" == "" (
     set TARGET=%HS_DIR%\%TARGET_SUBDIR%
-    call :COPY_TARGET "%1" "%TARGET%"
-	goto END
+    call :COPY_TARGET "%1" "%TARGET%" 
+    goto END
     )
 
 IF "%2" == "PH" IF NOT "%PH_DIR%" == "" (
     set TARGET=%PH_DIR%\%TARGET_SUBDIR%
     call :COPY_TARGET "%1" "%TARGET%"
-	goto END
+    goto END
     )	
 
 goto NO_TARGET
 
 :COPY_TARGET
-set SRC="%1"
-set TARGET="%2"
 IF NOT EXIST "%TARGET%\" mkdir "%TARGET%"
 
 IF EXIST "%TARGET%\" (
-    XCOPY /f /y "%SRC%" "%TARGET%\"
+    XCOPY /f /y "%1" "%TARGET%"
     exit /b
     )
 
