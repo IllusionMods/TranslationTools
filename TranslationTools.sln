@@ -37,6 +37,12 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "KK_TextResourceHelper", "sr
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TranslationSync", "TranslationSync", "{CFCEA10E-502B-41CA-AD5A-7D3E16132868}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{56FBAB0A-C956-41AB-A888-66C00992E624}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		src\Shared\Shared.projitems*{0c56dbc3-848c-42fd-b4f2-ab31863261f8}*SharedItemsImports = 4

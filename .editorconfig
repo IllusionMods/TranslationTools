@@ -1,0 +1,17 @@
+# To learn more about .editorconfig see https://aka.ms/editorconfigdocs
+###############################
+# Core EditorConfig Options   #
+###############################
+# All files
+[*]
+end_of_line = crlf
+indent_style = space
+# Code files
+[*.{cs,csx,vb,vbx}]
+indent_size = 4
+insert_final_newline = true
+charset = utf-8-bom
+
+[*.cs]
+dotnet_diagnostic.RCS1058.severity = none
+dotnet_diagnostic.CA1825.severity = none
