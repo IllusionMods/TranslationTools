@@ -11,6 +11,10 @@ namespace IllusionMods
     {
         public const string PluginNameInternal = "KK_TextDump";
 
-        private readonly TextResourceHelper textResourceHelper = new KK_TextResourceHelper();
+        public TextDump()
+        {
+            textResourceHelper = new KK_TextResourceHelper();
+            assetDumpHelper = new KK_AssetDumpHelper(this);
+        }
     }
 }

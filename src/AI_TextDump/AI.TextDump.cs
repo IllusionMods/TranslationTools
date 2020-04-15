@@ -11,6 +11,15 @@ namespace IllusionMods
     {
         public const string PluginNameInternal = "AI_TextDump";
 
-        private readonly TextResourceHelper textResourceHelper = new AI_TextResourceHelper();
+        static TextDump()
+        {
+            WriteOnDump = true;
+            CurrentExecutionMode = TextDump.ExecutionMode.Startup;
+        }
+
+        public TextDump()
+        {
+            textResourceHelper = new AI_TextResourceHelper();
+        }
     }
 }

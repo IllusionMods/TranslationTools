@@ -1,11 +1,13 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
+using BepInEx.Logging;
+using Illusion.Extensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEngine;
-using Object = UnityEngine.Object;
+using System.Text.RegularExpressions;
+using UnityEngine.Assertions;
 
 namespace IllusionMods
 {
@@ -13,360 +15,344 @@ namespace IllusionMods
     {
         public const string GUID = "com.deathweasel.bepinex.textdump";
         public const string PluginName = "Text Dump";
-        public const string Version = "1.1.1";
+        public const string Version = "1.2.0";
+
+        internal readonly TextResourceHelper textResourceHelper = null;
+        internal TextAssetTableHelper textAssetTableHelper = null;
+        internal AssetDumpHelper assetDumpHelper = null;
+        internal LocalizationDumpHelper localizationDumpHelper = null;
 
         public static ConfigEntry<bool> Enabled { get; private set; }
 
+        public static string DumpRoot => CombinePaths(Paths.GameRootPath, "TextDump");
+        public static string AssetsRoot => CombinePaths(DumpRoot, "RedirectedResources", "assets", "abdata");
+        public static string LocalizationRoot => CombinePaths(DumpRoot, "Text", "Localizations");
+
+        public static ExecutionMode CurrentExecutionMode { get; internal set; } = ExecutionMode.Startup;
+
+        public static bool WriteOnDump { get; internal set; } = true;
+
+        public static bool ReleaseOnWrite { get; internal set; } = true;
+
+        internal static bool readyToDump = true;
+
+        new public static ManualLogSource Logger;
+
+        public static readonly string[] textAssetLineSplitter = new[] { "\r\n", "\r", "\n" };
+
+        public static void LogWithMessage(BepInEx.Logging.LogLevel logLevel, object data) => Logger?.Log(BepInEx.Logging.LogLevel.Message | logLevel, data);
+        public bool DumpStarted { get; private set; } = false;
+        public bool DumpCompleted { get; private set; } = false;
+
+        internal static bool IsReadyToDump()
+        {
+            return readyToDump;
+        }
+
         internal void Main()
         {
+            Logger = base.Logger;
             Enabled = Config.Bind("Settings", "Enabled", false, "Whether the plugin is enabled");
-            if (!Enabled.Value) return;
 
-            if (Directory.Exists(Path.Combine(Paths.GameRootPath, "TextDump")))
-                Directory.Delete(Path.Combine(Paths.GameRootPath, "TextDump"), true);
-
-            DumpText();
+            if (Enabled.Value && !DumpStarted && CurrentExecutionMode == TextDump.ExecutionMode.Startup)
+            {
+                Logger.LogInfo("[TextDump] Starting dump from Main");
+                DumpText();
+            }
         }
 
+        public static string CombinePaths(params string[] parts)
+        {
+            return TextResourceHelper.CombinePaths(parts);
+        }
+
+        private void InitHelpers()
+        {
+            Assert.IsNotNull(textResourceHelper, "textResourceHelper not initilized in time");
+            textAssetTableHelper = textAssetTableHelper ?? new TextAssetTableHelper(new string[] { "\r\n", "\r", "\n" }, new string[] { "\t" });
+            assetDumpHelper = assetDumpHelper ?? new AssetDumpHelper(this);
+            localizationDumpHelper = localizationDumpHelper ?? new LocalizationDumpHelper(this);
+        }
         private void DumpText()
         {
-            int a = DumpCommunicationText();
-            int b = DumpScenarioText();
-            int c = DumpHText();
-            Logger.LogInfo($"[TextDump] Total lines:{a + b + c}");
+            InitHelpers();
+            DumpStarted = true;
+
+            if (Directory.Exists(DumpRoot))
+            {
+                Directory.Delete(DumpRoot, true);
+            }
+            var total = 0;
+
+            total += DumpAssets();
+
+            total += DumpLocalizations();
+
+            Logger.LogInfo($"[TextDump] Total lines:{total}");
+            DumpCompleted = true;
+
+            if (WriteOnDump)
+            {
+                WriteTranslations();
+            }
         }
 
-        private int DumpCommunicationText()
+        private int DumpAssets()
         {
-            HashSet<string> AllJPText = new HashSet<string>();
+            InitHelpers();
+            string folderPath = AssetsRoot;
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
+            int total = 0;
 
-            foreach (var AssetBundleName in CommonLib.GetAssetBundleNameListFromPath("communication"))
+            foreach (var assetDumper in assetDumpHelper.GetAssetDumpers())
             {
-                if (AssetBundleName.Contains("hit_"))
+                var output = assetDumper.Path;
+                Dictionary<string, string> results;
+                try
+                {
+                    results = assetDumper.Collector();
+                }
+                catch (Exception e)
+                {
+                    results = new Dictionary<string, string>();
+                    Logger.LogError($"[TextDump] Asset {output}: Error executing {assetDumper.Collector.Method.Name}(): {e.Message}");
+                }
+                string filePath = Path.Combine(folderPath, $"{output}.txt");
+
+                if (!TranslationsDict.TryGetValue(filePath, out Dictionary<string, string> translations))
+                {
+                    TranslationsDict[filePath] = translations = new Dictionary<string, string>();
+                }
+                var origSize = translations.Count;
+                foreach (var localization in results)
+                {
+                    textResourceHelper.AddLocalizationToResults(translations, localization);
+                }
+                var added = translations.Count - origSize;
+                Logger.LogInfo($"[TextDump] Localization {output} lines:{added}");
+                total += added;
+            }
+
+            /*
+            total += DumpCommunicationText();
+            total += DumpScenarioText();
+            total += DumpHText();
+            total += DumpLists();
+            */
+            Logger.LogInfo($"[TextDump] Total Asset lines: {total}");
+            return total;
+        }
+
+        private int DumpLocalizations()
+        {
+            InitHelpers();
+            HashSet<string> AllJPText = new HashSet<string>();
+            string FolderPath = LocalizationRoot;
+            if (!Directory.Exists(FolderPath))
+                Directory.CreateDirectory(FolderPath);
+
+            foreach (var entry in localizationDumpHelper.GetLocalizations())
+            {
+                var output = entry.Path;
+                Dictionary<string, string> results;
+                try
+                {
+                    results = entry.Collector();
+                }
+                catch (Exception e)
+                {
+                    results = new Dictionary<string, string>();
+                    Logger.LogError($"[TextDump] Localization {output}: Error executing {entry.Collector.Method.Name}(): {e.Message}");
+                }
+                string filePath = Path.Combine(FolderPath, $"{output}.txt");
+
+                if (!TranslationsDict.TryGetValue(filePath, out Dictionary<string, string> translations))
+                {
+                    TranslationsDict[filePath] = translations = new Dictionary<string, string>();
+                }
+                foreach (var localization in results)
+                {
+                    textResourceHelper.AddLocalizationToResults(translations, localization);
+                    AllJPText.Add(localization.Key);
+                }
+                Logger.LogInfo($"[TextDump] Localization {output} lines: {translations.Count}");
+            }
+            Logger.LogInfo($"[TextDump] Total Localization lines:{AllJPText.Count}");
+            return AllJPText.Count;
+        }
+
+        internal static Dictionary<string, Dictionary<string, string>> TranslationsDict = new Dictionary<string, Dictionary<string, string>>();
+
+        private void RemapTranslations()
+        {
+            var remappedTranslations = new Dictionary<string, Dictionary<string, string>>();
+            foreach (var entry in TranslationsDict)
+            {
+                var filePath = entry.Key.Replace('/', '\\');
+                var mapPath = filePath;
+                var translations = entry.Value;
+                if (filePath.StartsWith(LocalizationRoot))
+                {
+                    mapPath = filePath.Substring(LocalizationRoot.Length).TrimStart('\\', '/');
+
+                    mapPath = CombinePaths(LocalizationRoot, localizationDumpHelper.LocalizationFileRemap(mapPath));
+                }
+
+                if (mapPath != filePath)
+                {
+                    Logger.LogInfo($"[TextDump] remapping {filePath} => {mapPath}");
+                }
+
+                if (!remappedTranslations.TryGetValue(mapPath, out var mappedTranslations))
+                {
+                    remappedTranslations[mapPath] = mappedTranslations = new Dictionary<string, string>();
+                }
+                foreach (var translation in entry.Value)
+                {
+                    textResourceHelper.AddLocalizationToResults(mappedTranslations, translation);
+                }
+            }
+            TranslationsDict = remappedTranslations;
+        }
+        private void WriteTranslations()
+        {
+            if (Directory.Exists(DumpRoot))
+            {
+                Directory.Delete(DumpRoot, true);
+            }
+            RemapTranslations();
+
+            foreach (var entry in TranslationsDict.ToArray())
+            {
+                var filePath = entry.Key;
+                var translations = entry.Value;
+                if (translations.Count > 0)
+                {
+                    List<string> lines;
+                    if (filePath.StartsWith(AssetsRoot))
+                    {
+                        lines = CreateResourceReplacementLines(translations);
+                    }
+                    else
+                    {
+                        lines = CreateLocalizationLines(translations);
+                    }
+                    if (ReleaseOnWrite)
+                    {
+                        entry.Value.Clear();
+                        TranslationsDict.Remove(entry.Key);
+                    }
+                    if (lines.Count > 0)
+                    {
+                        DumpToFile(filePath, lines);
+                    }
+                }
+            }
+            if (ReleaseOnWrite)
+            {
+                TranslationsDict.Clear();
+            }
+        }
+        private void DumpToFile(string filePath, IEnumerable<string> lines)
+        {
+            var parent = Path.GetDirectoryName(filePath);
+            if (!Directory.Exists(parent))
+                Directory.CreateDirectory(parent);
+            if (File.Exists(filePath))
+                File.Delete(filePath);
+            File.WriteAllLines(filePath, lines.ToArray());
+        }
+        private List<string> CreateLocalizationLines(Dictionary<string, string> translations)
+        {
+            List<string> lines = new List<string>();
+            foreach (var localization in translations)
+            {
+                var key = localization.Key;
+                var value = localization.Value;
+                value = value.IsNullOrWhiteSpace() ? string.Empty : value;
+                if (key.Trim() == value.Trim()) continue;
+
+                if (string.IsNullOrEmpty(value) && textResourceHelper.GlobalMappings.TryGetValue(key, out var globalValue))
+                {
+                    value = globalValue;
+                }
+                if (string.IsNullOrEmpty(key) || key == value || (string.IsNullOrEmpty(value) && !TextResourceHelper.ContainsNonAscii(key)))
+                {
                     continue;
-
-                foreach (var AssetName in AssetBundleCheck.GetAllAssetName(AssetBundleName))
+                }
+                if (!key.StartsWith("r:") && !key.StartsWith("sr:"))
                 {
-                    if (AssetName.Contains("speed_"))
-                        continue;
+                    key = key.Replace("=", "%3D").Replace("\n", "\\n");
+                    value = value?.Replace("=", "%3D")?.Replace("\n", "\\n").TrimEnd(textResourceHelper.WhitespaceCharacters);
 
-                    var Asset = ManualLoadAsset<ExcelData>(AssetBundleName, AssetName, "abdata");
+                    bool isFormat = FormatStringRegex.IsMatch(key);
+                    bool regex = isFormat;// || keyHasNewline;
 
-                    Dictionary<string, string> Translations = new Dictionary<string, string>();
-
-                    if (AssetName.StartsWith("optiondisplayitems"))
+                    if (isFormat)
                     {
-                        foreach (var param in Asset.list)
+                        for (int count = 1; FormatStringRegex.IsMatch(key); count++)
                         {
-                            if (param.list[0] == "no") continue;
-                            for (int i = 1; i < 4; i++)
-                            {
-                                if (param.list.Count <= i) continue;
-                                if (param.list[i].IsNullOrWhiteSpace()) continue;
-                                if (param.list[i] == "・・・") continue;
-                                AllJPText.Add(param.list[i]);
-                                Translations[param.list[i]] = "";
-                                try
-                                {
-                                    Translations[param.list[i]] = param.list[i + 3];
-                                }
-                                catch { }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        foreach (var param in Asset.list)
-                        {
-                            if (15 <= param.list.Count && !param.list[15].IsNullOrEmpty() && param.list[15] != "テキスト")
-                            {
-                                AllJPText.Add(param.list[15]);
-                                Translations[param.list[15]] = "";
-                                try
-                                {
-                                    Translations[param.list[15]] = param.list[20];
-                                }
-                                catch { }
-                            }
+                            key = FormatStringRegex.Replace(key, FormatStringPlaceholder, 1);
+                            value = FormatStringRegex.Replace(value, $"${count}");
                         }
                     }
 
-                    if (Translations.Count > 0)
+                    if (regex)
                     {
-                        Logger.LogInfo($"Writing Translations:{AssetName}");
-
-                        string FolderPath = Path.Combine(Paths.GameRootPath, "TextDump");
-                        FolderPath = Path.Combine(FolderPath, AssetBundleName.Replace(".unity3d", ""));
-                        FolderPath = Path.Combine(FolderPath, AssetName.Replace(".asset", ""));
-                        FolderPath = FolderPath.Replace('/', '\\');
-                        if (!Directory.Exists(FolderPath))
-                            Directory.CreateDirectory(FolderPath);
-
-                        string FilePath = Path.Combine(FolderPath, "translation.txt");
-                        if (File.Exists(FilePath))
-                            File.Delete(FilePath);
-
-                        List<string> Lines = new List<string>();
-                        foreach (var tl in Translations)
+                        key = Regex.Escape(key);
+                        if (isFormat)
                         {
-                            string JP = tl.Key.Trim();
-                            string ENG = tl.Value.Trim();
-                            if (JP.Contains("\n"))
-                                JP = $"\"{JP.Replace("\n", @"\n").Trim()}\"";
-                            if (ENG.Contains("\n"))
-                                ENG = $"\"{ENG.Replace("\n", @"\n").Trim()}\"";
-                            ENG = ENG.Replace(";", ",");
-
-                            if (ENG.IsNullOrEmpty())
-                                Lines.Add($"{JP}=");
-                            else
-                                Lines.Add($"{JP}={ENG}");
+                            key = key.Replace(FormatStringPlaceholder, "(.*)");
                         }
-
-                        File.WriteAllLines(FilePath, Lines.ToArray());
                     }
-                    else
+                    if (regex)
                     {
-                        Logger.LogInfo($"No Translations:{AssetName}");
+                        key = (isFormat ? "sr:" : "r:") + "\"^" + key + "$\"";
                     }
                 }
+
+                if (string.IsNullOrEmpty(value))
+                {
+                    key = $"//{key}";
+                }
+                lines.Add(string.Join("=", new[] { key, value }));
             }
-            Logger.LogInfo($"[TextDump] Total Communication unique lines:{AllJPText.Count}");
-            return AllJPText.Count;
+            return lines;
         }
 
-        private string BuildReplacementKey(string assetBundleName, string key)
+        private static List<string> CreateResourceReplacementLines(Dictionary<string, string> translations)
         {
-            return string.Join("|", new string[] { Path.GetDirectoryName(assetBundleName), key });
-        }
-
-        private Dictionary<string, string> BuildReplacementDictionary()
-        {
-            Dictionary<string, string> result = new Dictionary<string, string>();
-            List<string> assetBundleNames = CommonLib.GetAssetBundleNameListFromPath("adv/scenario", true);
-            assetBundleNames.Sort();
-
-            foreach (var AssetBundleName in assetBundleNames)
+            List<string> lines = new List<string>();
+            foreach (var tl in translations)
             {
-                List<string> AssetNameList = new List<string>(AssetBundleCheck.GetAllAssetName(AssetBundleName));
-                AssetNameList.Sort();
-                foreach (var AssetName in AssetNameList)
-                {
-                    var Asset = ManualLoadAsset<ADV.ScenarioData>(AssetBundleName, AssetName, "abdata");
-                    textResourceHelper.BuildReplacements(Asset.list).ToList().ForEach(x => result[BuildReplacementKey(AssetBundleName, x.Key)] = x.Value);
-                }
+                string JP = tl.Key.Trim();
+                string ENG = tl.Value.Trim();
+                if (JP.Contains("\n"))
+                    JP = $"\"{JP.Replace("\n", "\\n").Trim()}\"";
+                if (ENG.Contains("\n"))
+                    ENG = $"\"{ENG.Replace("\n", "\\n").Trim()}\"";
+                ENG = ENG.Replace(";", ",");
+
+                if (ENG.IsNullOrEmpty() && !JP.StartsWith("//"))
+                    lines.Add($"//{JP}=");
+                else
+                    lines.Add($"{JP}={ENG}");
             }
-            return result;
+            return lines;
         }
 
-        private int DumpScenarioText()
+        private static readonly Regex FormatStringRegex = new Regex($"\\{{[0-9]\\}}");
+
+        private const string FormatStringPlaceholder = "_P_L_A_C_E_H_O_L_D_E_R_";
+
+        public static T ManualLoadAsset<T>(string bundle, string asset, string manifest) where T : UnityEngine.Object
         {
-            HashSet<string> AllJPText = new HashSet<string>();
-
-            Dictionary<string, string> choiceDictionary = BuildReplacementDictionary();
-
-            foreach (var AssetBundleName in CommonLib.GetAssetBundleNameListFromPath("adv/scenario", true))
-            {
-                foreach (var AssetName in AssetBundleCheck.GetAllAssetName(AssetBundleName)) //.Where(x => x.StartsWith("personality_voice_"))
-                {
-                    var Asset = ManualLoadAsset<ADV.ScenarioData>(AssetBundleName, AssetName, "abdata");
-
-                    Dictionary<string, string> Translations = new Dictionary<string, string>();
-
-                    foreach (var param in Asset.list)
-                    {
-                        if (!textResourceHelper.IsSupportedCommand(param.Command))
-                        {
-                            continue;
-                        }
-
-                        if (param.Command == ADV.Command.Text)
-                        {
-                            if (param.Args.Length >= 2 && !param.Args[1].IsNullOrEmpty())
-                            {
-                                AllJPText.Add(param.Args[1]);
-                                Translations[param.Args[1]] = "";
-                                if (param.Args.Length >= 3 && !param.Args[2].IsNullOrEmpty())
-                                    Translations[param.Args[1]] = param.Args[2];
-                            }
-                        }
-                        else if (param.Command == ADV.Command.Calc)
-                        {
-                            if (param.Args.Length >= 3 && textResourceHelper.CalcKeys.Contains(param.Args[0]))
-                            {
-                                var key = textResourceHelper.GetSpecializedKey(param, 2, out string value);
-                                AllJPText.Add(key);
-                                Translations[key] = value;
-                            }
-                        }
-                        else if (param.Command == ADV.Command.Format)
-                        {
-                            if (param.Args.Length >= 2 && textResourceHelper.FormatKeys.Contains(param.Args[0]))
-                            {
-                                AllJPText.Add(param.Args[1]);
-                                Translations[param.Args[1]] = "";
-                            }
-                        }
-                        else if (param.Command == ADV.Command.Choice)
-                        {
-                            for (int i = 0; i < param.Args.Length; i++)
-                            {
-                                var key = textResourceHelper.GetSpecializedKey(param, i, out string fallbackValue);
-                                if (!key.IsNullOrEmpty())
-                                {
-                                    if (!choiceDictionary.TryGetValue(BuildReplacementKey(AssetBundleName, fallbackValue), out string value))
-                                    {
-                                        value = fallbackValue;
-                                    }
-                                    AllJPText.Add(key);
-                                    Translations[key] = value;
-                                }
-                            }
-                        }
-#if false
-                        else if (param.Command == ADV.Command.Switch)
-                        {
-                            for (int i = 0; i < param.Args.Length; i++)
-                            {
-                                var key = textResourceHelper.GetSpecializedKey(param, i, out string value);
-                                AllJPText.Add(key);
-                                Translations[key] = value;
-                            }
-                        }
-#endif
-#if false
-                        else if (param.Command == ADV.Command.InfoText)
-                        {
-                            for (int i = 2; i < param.Args.Length; i += 2)
-                            {
-                                AllJPText.Add(param.Args[i]);
-                                Translations[param.Args[i]] = "";
-                            }
-                        }
-#endif
-#if false
-                        else if (param.Command == ADV.Command.Jump)
-                        {
-                            if (param.Args.Length >= 1 && !AllAscii.IsMatch(param.Args[0]))
-                            {
-                                AllJPText.Add(param.Args[0]);
-                                Translations[param.Args[0]] = "Jump";
-                            }
-                        }
-#endif
-                        else
-                        {
-                            Logger.LogDebug($"[TextDump] Unsupported command: {param.Command}: {string.Join(",", param.Args.Select((a) => a?.ToString() ?? string.Empty).ToArray())}");
-                        }
-                    }
-
-                    if (Translations.Count > 0)
-                    {
-                        string FolderPath = Path.Combine(Paths.GameRootPath, "TextDump");
-                        FolderPath = Path.Combine(FolderPath, AssetBundleName.Replace(".unity3d", ""));
-                        FolderPath = Path.Combine(FolderPath, AssetName.Replace(".asset", ""));
-                        FolderPath = FolderPath.Replace('/', '\\');
-                        if (!Directory.Exists(FolderPath))
-                            Directory.CreateDirectory(FolderPath);
-
-                        string FilePath = Path.Combine(FolderPath, "translation.txt");
-                        if (File.Exists(FilePath))
-                            File.Delete(FilePath);
-
-                        List<string> Lines = new List<string>();
-                        foreach (var tl in Translations)
-                        {
-                            string JP = tl.Key.Trim();
-                            string ENG = tl.Value.Trim();
-                            if (JP.Contains("\n"))
-                                JP = $"\"{JP.Replace("\n", @"\n").Trim()}\"";
-                            if (ENG.Contains("\n"))
-                                ENG = $"\"{ENG.Replace("\n", @"\n").Trim()}\"";
-                            ENG = ENG.Replace(";", ",");
-
-                            if (ENG.IsNullOrEmpty())
-                                Lines.Add($"{JP}=");
-                            else
-                                Lines.Add($"{JP}={ENG}");
-                        }
-
-                        File.WriteAllLines(FilePath, Lines.ToArray());
-                    }
-                }
-            }
-            Logger.LogInfo($"[TextDump] Total Scenario unique lines:{AllJPText.Count}");
-            return AllJPText.Count;
+            return TextResourceHelper.ManualLoadAsset<T>(bundle, asset, manifest);
         }
 
-        private int DumpHText()
-        {
-            HashSet<string> AllJPText = new HashSet<string>();
+        public static void UnloadBundles() => TextResourceHelper.UnloadBundles();
 
-            foreach (var AssetBundleName in CommonLib.GetAssetBundleNameListFromPath("h/list/"))
-            {
-                foreach (var AssetName in AssetBundleCheck.GetAllAssetName(AssetBundleName).Where(x => x.StartsWith("personality_voice_")))
-                {
-                    if (AssetName.EndsWith(".txt"))
-                    {
-                        var Asset = ManualLoadAsset<TextAsset>(AssetBundleName, AssetName, "abdata");
-
-                        HashSet<string> JPText = new HashSet<string>();
-                        string[] Rows = Asset.text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-                        for (int i = 0; i < Rows.Length; i++)
-                        {
-                            string[] Cells = Rows[i].Split('\t');
-                            if (4 < Cells.Length && !Cells[4].IsNullOrEmpty())
-                            {
-                                AllJPText.Add($"{Cells[4]}=");
-                                JPText.Add($"{Cells[4]}=");
-                            }
-                            if (27 < Cells.Length && !Cells[27].IsNullOrEmpty())
-                            {
-                                AllJPText.Add($"{Cells[27]}=");
-                                JPText.Add($"{Cells[27]}=");
-                            }
-                            if (50 < Cells.Length && !Cells[50].IsNullOrEmpty())
-                            {
-                                AllJPText.Add($"{Cells[50]}=");
-                                JPText.Add($"{Cells[50]}=");
-                            }
-                            if (73 < Cells.Length && !Cells[73].IsNullOrEmpty())
-                            {
-                                AllJPText.Add($"{Cells[73]}=");
-                                JPText.Add($"{Cells[73]}=");
-                            }
-                        }
-
-                        if (JPText.Count > 0)
-                        {
-                            string FolderPath = Path.Combine(Paths.GameRootPath, "TextDump");
-                            FolderPath = Path.Combine(FolderPath, AssetBundleName.Replace(".unity3d", ""));
-                            FolderPath = Path.Combine(FolderPath, AssetName.Replace(".txt", ""));
-                            FolderPath = FolderPath.Replace('/', '\\');
-                            if (!Directory.Exists(FolderPath))
-                                Directory.CreateDirectory(FolderPath);
-
-                            string FilePath = Path.Combine(FolderPath, "translation.txt");
-                            if (File.Exists(FilePath))
-                                File.Delete(FilePath);
-
-                            File.WriteAllLines(FilePath, JPText.ToArray());
-                        }
-                    }
-                }
-            }
-            Logger.LogInfo($"[TextDump] Total H-Scene unique lines:{AllJPText.Count}");
-            return AllJPText.Count;
-        }
-
-        public static T ManualLoadAsset<T>(string bundle, string asset, string manifest) where T : Object
-        {
-            AssetBundleManager.LoadAssetBundleInternal(bundle, false, manifest);
-            var assetBundle = AssetBundleManager.GetLoadedAssetBundle(bundle, out _, manifest);
-
-            T output = assetBundle.m_AssetBundle.LoadAsset<T>(asset);
-
-            return output;
-        }
+        public static List<string> GetAllAssetBundles() => CommonLib.GetAssetBundleNameListFromPath(".", true);
     }
 }

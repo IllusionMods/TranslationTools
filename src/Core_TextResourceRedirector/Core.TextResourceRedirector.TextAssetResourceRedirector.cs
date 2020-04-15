@@ -1,4 +1,4 @@
-﻿#if !HS
+﻿#if false
 
 using BepInEx.Logging;
 using System;
@@ -17,7 +17,7 @@ namespace IllusionMods
     using BepinLogLevel = BepInEx.Logging.LogLevel;
     public class TextAssetResourceRedirector : AssetLoadedHandlerBaseV2<TextAsset>
     {
-        private readonly TextAssetHelper textAssetHelper;
+        private readonly TextAssetTableHelper textAssetHelper;
 
         private static readonly object replacementSync = new object();
         private static readonly Dictionary<string, string> replacements = new Dictionary<string, string>();
@@ -27,7 +27,7 @@ namespace IllusionMods
 
         public bool Enabled => textAssetHelper?.Enabled ?? false;
 
-        public TextAssetResourceRedirector(TextAssetHelper textAssetHelper)
+        public TextAssetResourceRedirector(TextAssetTableHelper textAssetHelper)
         {
             CheckDirectory = true;
             this.textAssetHelper = textAssetHelper;
@@ -74,7 +74,7 @@ namespace IllusionMods
                 return false;
             }
 
-            return textAssetHelper.ActOnCells(asset, DumpCell, out TextAssetHelper.TableResult tableResult);
+            return textAssetHelper.ActOnCells(asset, DumpCell, out TextAssetTableHelper.TableResult tableResult);
         }
 
         protected override bool ReplaceOrUpdateAsset(string calculatedModificationPath, ref TextAsset asset, IAssetOrResourceLoadedContext context)
@@ -98,7 +98,7 @@ namespace IllusionMods
 
         private bool TryRegisterTranslation(SimpleTextTranslationCache cache, ref TextAsset textAsset)
         {
-            string TranslateCell(string cellText)
+            string doTranslation(string cellText)
             {
                 if (cache.TryGetTranslation(cellText, false, out string newText))
                 {
@@ -116,13 +116,13 @@ namespace IllusionMods
                 }
                 return null;
             }
-
-            string result = textAssetHelper.ProcessTable(textAsset, TranslateCell, out TextAssetHelper.TableResult tableResult);
-            Logger.Log(BepinLogLevel.Debug, $"{this.GetType()}: {tableResult.RowsUpdated}/{tableResult.Rows} rows updated");
-            if (tableResult.RowsUpdated > 0)
+            if (Enabled)
             {
-                RegisterReplacement(textAsset, result);
-                return true;
+                if (textAssetHelper.TryTranslateTextAsset(ref textAsset, doTranslation, out string result))
+                {
+                    RegisterReplacement(textAsset, result);
+                    return true;
+                }
             }
             return false;
         }
@@ -190,7 +190,7 @@ namespace IllusionMods
 {
     public class TextAssetResourceRedirector
     {
-        public TextAssetResourceRedirector(TextAssetHelper textAssetHelper) { }
+        public TextAssetResourceRedirector(TextAssetTableHelper textAssetHelper) { }
     }
 }
 #endif

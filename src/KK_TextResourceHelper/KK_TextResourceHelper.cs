@@ -1,6 +1,7 @@
-﻿using System.Collections.Generic;
-using ADV;
-using BepInEx.Logging;
+﻿using ADV;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace IllusionMods
 {

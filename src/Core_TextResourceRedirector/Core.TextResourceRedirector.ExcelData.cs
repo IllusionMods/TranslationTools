@@ -7,15 +7,17 @@ using XUnity.AutoTranslator.Plugin.Core.Utilities;
 using XUnity.ResourceRedirector;
 using BepInEx.Logging;
 
-
-
 namespace IllusionMods
 {
     public class ExcelDataResourceRedirector : AssetLoadedHandlerBaseV2<ExcelData>
     {
         private static ManualLogSource Logger => TextResourceRedirector.Logger;
 
-        public ExcelDataResourceRedirector() => CheckDirectory = true;
+        public ExcelDataResourceRedirector()
+        {
+            CheckDirectory = true;
+            Logger.LogInfo($"{this.GetType()} enabled");
+        }
 
         protected override string CalculateModificationFilePath(ExcelData asset, IAssetOrResourceLoadedContext context) =>
             context.GetPreferredFilePathWithCustomFileName(asset, null).Replace(".unity3d", "");
@@ -62,11 +64,16 @@ namespace IllusionMods
                     {
                         if (cache.TryGetTranslation(key, true, out var translated))
                         {
+                            TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
                             param.list[i] = translated;
                         }
-                        else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled && LanguageHelper.IsTranslatable(key))
+                        else if (LanguageHelper.IsTranslatable(key))
                         {
-                            cache.AddTranslationToCache(key, key);
+                            TranslationHelper.RegisterRedirectedResourceTextToPath(key, calculatedModificationPath);
+                            if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled)
+                            {
+                                cache.AddTranslationToCache(key, key);
+                            }
                         }
                     }
                 }

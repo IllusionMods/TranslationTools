@@ -6,6 +6,7 @@
         internal const string GameName = "AI Girl";
         internal const string StudioProcessName = "StudioNEOV2";
         internal const string MainGameProcessName = "AI-Syoujyo";
+        internal const string MainGameProcessNameSteam = "AI-Shoujo";
 #elif EC
         internal const string GameName = "Emotion Creators";
         internal const string MainGameProcessName = "EmotionCreators";

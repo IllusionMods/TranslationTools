@@ -64,7 +64,6 @@ namespace IllusionMods
                 SyncTLs(TLType.H);
                 Logger.Log(LogLevel.Info, "Sync complete.");
             }
-
         }
 
         internal void CountText()

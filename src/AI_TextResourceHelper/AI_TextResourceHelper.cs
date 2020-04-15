@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using ADV;
+using Illusion.Extensions;
+using System.Collections.Generic;
 using System.Linq;
-using BepInEx.Logging;
-using ADV;
 
 namespace IllusionMods
 {
@@ -13,12 +13,22 @@ namespace IllusionMods
             FormatKeys = new HashSet<string>(new string[] { "パターン", "セリフ" });
             TextKeysBlacklist = new HashSet<string>(CalcKeys.Concat(FormatKeys).ToArray());
 
-            SupportedCommands[ADV.Command.Calc] = true;
-            SupportedCommands[ADV.Command.Format] = true;
-            SupportedCommands[ADV.Command.Choice] = true;
-            SupportedCommands[ADV.Command.Switch] = true;
+            SupportedCommands[Command.Calc] = true;
+            SupportedCommands[Command.Format] = true;
+            SupportedCommands[Command.Choice] = true;
+            SupportedCommands[Command.Switch] = true;
+            SupportedCommands[(ADV.Command)242] = true;
         }
 
-        override public bool IsReplacement(ScenarioData.Param param) => param.Command == Command.ReplaceLanguage;
+        public override bool IsReplacement(ScenarioData.Param param) => param.Command == Command.ReplaceLanguage;
+
+        public override IEnumerable<string> GetScenarioDirs()
+        {
+            foreach (string dir in base.GetScenarioDirs())
+            {
+                yield return dir;
+            }
+            yield return "adv/message";
+        }
     }
 }

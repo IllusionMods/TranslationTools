@@ -11,6 +11,7 @@ using XUnity.ResourceRedirector;
 
 namespace IllusionMods
 {
+    using BepinLogLevel = BepInEx.Logging.LogLevel;
     public class ScenarioDataResourceRedirector : AssetLoadedHandlerBaseV2<ScenarioData>
     {
         private readonly TextResourceHelper textResourceHelper;
@@ -20,6 +21,7 @@ namespace IllusionMods
         {
             CheckDirectory = true;
             textResourceHelper = helper;
+            Logger.LogInfo($"{this.GetType()} enabled");
         }
 
         protected override string CalculateModificationFilePath(ScenarioData asset, IAssetOrResourceLoadedContext context) =>
@@ -136,7 +138,7 @@ namespace IllusionMods
                         var key = param.Args[i];
                         if (!key.IsNullOrEmpty() && !textResourceHelper.TextKeysBlacklist.Contains(key))
                         {
-                            TryRegisterTranslation(cache, param, i);
+                            TryRegisterTranslation(cache, param, i, calculatedModificationPath);
                         }
                     }
                 }
@@ -144,21 +146,21 @@ namespace IllusionMods
                 {
                     if (param.Args.Length >= 3 && textResourceHelper.CalcKeys.Contains(param.Args[0]))
                     {
-                        TryRegisterTranslation(cache, param, 2);
+                        TryRegisterTranslation(cache, param, 2, calculatedModificationPath);
                     }
                 }
                 else if (param.Command == Command.Format)
                 {
                     if (param.Args.Length >= 2 && textResourceHelper.FormatKeys.Contains(param.Args[0]))
                     {
-                        TryRegisterTranslation(cache, param, 1);
+                        TryRegisterTranslation(cache, param, 1, calculatedModificationPath);
                     }
                 }
                 else if (param.Command == Command.Choice)
                 {
                     for (int i = 0; i < param.Args.Length; i++)
                     {
-                        TryRegisterTranslation(cache, param, i);
+                        TryRegisterTranslation(cache, param, i, calculatedModificationPath);
                     }
                 }
 #if false
@@ -185,19 +187,25 @@ namespace IllusionMods
             return true;
         }
 
-        private bool TryRegisterTranslation(SimpleTextTranslationCache cache, ScenarioData.Param param, int i)
+        private bool TryRegisterTranslation(SimpleTextTranslationCache cache, ScenarioData.Param param, int i, string calculatedModificationPath)
         {
             var key = textResourceHelper.GetSpecializedKey(param, i, out string value);
             if (!string.IsNullOrEmpty(key))
             {
                 if (cache.TryGetTranslation(key, true, out var translated))
                 {
-                    param.Args[i] = textResourceHelper.GetSpecializedTranslation(param, i, translated);
+                    var result = textResourceHelper.GetSpecializedTranslation(param, i, translated);
+                    TranslationHelper.RegisterRedirectedResourceTextToPath(result, calculatedModificationPath); ;
+                    param.Args[i] = result;
                     return true;
                 }
-                else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled && LanguageHelper.IsTranslatable(key))
+                else if (LanguageHelper.IsTranslatable(key))
                 {
-                    cache.AddTranslationToCache(key, value);
+                    TranslationHelper.RegisterRedirectedResourceTextToPath(key, calculatedModificationPath); ;
+                    if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled)
+                    {
+                        cache.AddTranslationToCache(key, value);
+                    }
                 }
             }
             return false;

@@ -6,15 +6,17 @@ using UnityEngine;
 
 namespace IllusionMods
 {
-    public class TextAssetHelper
+    public class TextAssetTableHelper
     {
         public bool Enabled { get; }
         public IEnumerable<string> RowSplitStrings { get; }
         public IEnumerable<string> ColSplitStrings { get; }
         public IEnumerable<string> InvalidColStrings { get; }
 
-        public TextAssetHelper(IEnumerable<string> rowSplitStrings = null, IEnumerable<string> colSplitStrings = null)
+        public Encoding TextAssetEncoding { get; }
+        public TextAssetTableHelper(IEnumerable<string> rowSplitStrings = null, IEnumerable<string> colSplitStrings = null, Encoding encoding = null)
         {
+            TextAssetEncoding = encoding ?? Encoding.UTF8;
             int comp(string a, string b) => b.Length.CompareTo(a.Length);
 
             List<string> tmpList = new List<string>();
@@ -40,18 +42,22 @@ namespace IllusionMods
             Enabled = ColSplitStrings.Any() && RowSplitStrings.Any();
         }
 
+        #region table processing
         public bool IsTable(TextAsset textAsset)
         {
-            return IsTable(textAsset.text);
+            return textAsset.text != null && IsTable(textAsset.text);
         }
 
         public bool IsTable(string table)
         {
-            foreach (string colSplit in ColSplitStrings)
+            if (!string.IsNullOrEmpty(table))
             {
-                if (table.Contains(colSplit))
+                foreach (string colSplit in ColSplitStrings)
                 {
-                    return true;
+                    if (table.Contains(colSplit))
+                    {
+                        return true;
+                    }
                 }
             }
             return false;
@@ -67,6 +73,11 @@ namespace IllusionMods
                 }
             }
             return true;
+        }
+
+        virtual public bool ShouldHandleAsset(TextAsset asset)
+        {
+            return Enabled && IsTable(asset);
         }
 
         public IEnumerable<string> SplitTableToRows(TextAsset textAsset)
@@ -94,27 +105,39 @@ namespace IllusionMods
             ActOnCells(textAsset, (cell) => { cellAction(cell); return false; }, out tableResult);
         }
 
-        public bool ActOnCells(TextAsset textAsset, Func<string, bool> cellAction, out TableResult tableResult)
+        public bool ActOnCells(TextAsset textAsset, Func<int, int, string, bool> cellAction, out TableResult tableResult)
         {
             tableResult = new TableResult();
-            //foreach (string row in EnumerateRows(textAsset))
+            int i = 0;
             foreach (string row in SplitTableToRows(textAsset))
             {
                 tableResult.Rows++;
                 int colCount = 0;
 
-                //foreach (string col in EnumerateCols(row))
+                int j = 0;
                 foreach (string col in SplitRowToCells(row))
                 {
                     colCount++;
-                    if (cellAction(col))
+                    if (cellAction(i, j, col))
                     {
                         tableResult.CellsActedOn++;
                     }
+                    j++;
                 }
                 tableResult.Cols = Math.Max(tableResult.Cols, colCount);
+                i++;
             }
             return tableResult.CellsActedOn > 0;
+        }
+        public bool ActOnCells(TextAsset textAsset, Func<string, bool> cellAction, out TableResult tableResult)
+        {
+            bool actOnCellsWrapper(int i, int j, string cellContents)
+            {
+                var _ = i;
+                _ = j;
+                return cellAction(cellContents);
+            }
+            return ActOnCells(textAsset, actOnCellsWrapper, out tableResult);
         }
 
         public string ProcessTable(TextAsset textAsset, Func<string, string> columnTransform, out TableResult tableResult)
@@ -139,7 +162,7 @@ namespace IllusionMods
                         tableResult.CellsUpdated++;
                         rowUpdated = true;
                         foreach (string invalid in InvalidColStrings)
-                        {     
+                        {
                             newCol = newCol.Replace(invalid, " ");
                         }
                         result.Append(newCol);
@@ -185,6 +208,22 @@ namespace IllusionMods
             }
 
             public bool Updated { get => RowsUpdated > 0; }
+        }
+
+        #endregion
+
+        virtual public bool TryTranslateTextAsset(ref TextAsset textAsset, Func<string, string> translator, out string result)
+        {
+            if (IsTable(textAsset))
+            {
+                result = ProcessTable(textAsset, translator, out TextAssetTableHelper.TableResult tableResult);
+                if (tableResult.RowsUpdated > 0)
+                {
+                    return true;
+                }
+            }
+            result = null;
+            return false;
         }
     }
 }

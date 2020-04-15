@@ -1,4 +1,4 @@
-﻿#if !HS
+﻿#if false
 using BepInEx.Logging;
 using MonoMod.RuntimeDetour;
 using System;
