@@ -15,5 +15,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextDump.Enums.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextDump.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.LocalizationDumpHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TranslationCount.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextDump.InitialDumpHook.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Helpers.cs" />
   </ItemGroup>
 </Project>

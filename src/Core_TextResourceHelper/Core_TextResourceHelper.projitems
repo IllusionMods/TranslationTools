@@ -14,5 +14,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextAssetTableHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TranslationDumper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextAssetTableResult.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceHelper.Helpers.cs" />
   </ItemGroup>
 </Project>

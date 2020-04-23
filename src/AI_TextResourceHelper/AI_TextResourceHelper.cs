@@ -1,7 +1,6 @@
-﻿using ADV;
-using Illusion.Extensions;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using ADV;
 
 namespace IllusionMods
 {
@@ -9,25 +8,29 @@ namespace IllusionMods
     {
         public AI_TextResourceHelper()
         {
-            CalcKeys = new HashSet<string>(new string[] { "want" });
-            FormatKeys = new HashSet<string>(new string[] { "パターン", "セリフ" });
+            CalcKeys = new HashSet<string>(new[] {"want"});
+            FormatKeys = new HashSet<string>(new[] {"パターン", "セリフ"});
             TextKeysBlacklist = new HashSet<string>(CalcKeys.Concat(FormatKeys).ToArray());
 
-            SupportedCommands[Command.Calc] = true;
-            SupportedCommands[Command.Format] = true;
-            SupportedCommands[Command.Choice] = true;
-            SupportedCommands[Command.Switch] = true;
-            SupportedCommands[(ADV.Command)242] = true;
+            SupportedCommands.Add(Command.Calc);
+            SupportedCommands.Add(Command.Format);
+            SupportedCommands.Add(Command.Choice);
+            SupportedCommands.Add(Command.Switch);
+            SupportedCommands.Add((Command) 242);
         }
 
-        public override bool IsReplacement(ScenarioData.Param param) => param.Command == Command.ReplaceLanguage;
+        public override bool IsReplacement(ScenarioData.Param param)
+        {
+            return param.Command == Command.ReplaceLanguage;
+        }
 
         public override IEnumerable<string> GetScenarioDirs()
         {
-            foreach (string dir in base.GetScenarioDirs())
+            foreach (var dir in base.GetScenarioDirs())
             {
                 yield return dir;
             }
+
             yield return "adv/message";
         }
     }

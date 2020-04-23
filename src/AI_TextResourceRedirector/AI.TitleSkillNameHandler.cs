@@ -13,9 +13,9 @@ namespace IllusionMods
         public TitleSkillNameHandler()
         {
             CheckDirectory = true;
-            Logger.LogDebug($"{this.GetType()} enabled");
+            Logger.LogDebug($"{GetType()} enabled");
         }
-        private static ManualLogSource Logger = TextResourceRedirector.Logger;
+        private static ManualLogSource Logger => TextResourceRedirector.Logger;
         protected override string CalculateModificationFilePath(TitleSkillName asset, IAssetOrResourceLoadedContext context) =>
              context.GetPreferredFilePathWithCustomFileName(asset, null).Replace(".unity3d", "");
         protected override bool DumpAsset(string calculatedModificationPath, TitleSkillName asset, IAssetOrResourceLoadedContext context)
@@ -66,6 +66,10 @@ namespace IllusionMods
 
             return true;
         }
-        protected override bool ShouldHandleAsset(TitleSkillName asset, IAssetOrResourceLoadedContext context) => !context.HasReferenceBeenRedirectedBefore(asset);
+        protected override bool ShouldHandleAsset(TitleSkillName asset, IAssetOrResourceLoadedContext context)
+        {
+            return !context.HasReferenceBeenRedirectedBefore(asset);
+        }
+            
     }
 }

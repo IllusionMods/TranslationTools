@@ -2,10 +2,11 @@
 {
     public partial class TextDump
     {
-        public enum ExecutionMode : int
+        public enum ExecutionMode
         {
-            Startup = 0,
-            Other = 1
+            BeforeFirstLoad = 0,
+            Startup = 1,
+            Other = 2
         }
     }
 }

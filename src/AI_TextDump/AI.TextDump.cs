@@ -2,9 +2,9 @@
 
 namespace IllusionMods
 {
-    /// <summary>
-    /// Dumps untranslated text to .txt files
-    /// </summary>
+    /// <remarks>
+    ///     Uses studio executable for single stage dump.
+    /// </remarks>
     [BepInProcess(Constants.StudioProcessName)]
     [BepInPlugin(GUID, PluginName, Version)]
     public partial class TextDump : BaseUnityPlugin
@@ -13,13 +13,13 @@ namespace IllusionMods
 
         static TextDump()
         {
-            WriteOnDump = true;
-            CurrentExecutionMode = TextDump.ExecutionMode.Startup;
+            CurrentExecutionMode = ExecutionMode.Startup;
         }
 
         public TextDump()
         {
-            textResourceHelper = new AI_TextResourceHelper();
+            TextResourceHelper = new AI_TextResourceHelper();
+            AssetDumpHelper = new AI_AssetDumpHelper(this);
         }
     }
 }

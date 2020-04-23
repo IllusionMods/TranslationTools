@@ -2,9 +2,9 @@
 
 namespace IllusionMods
 {
-    public  class AI_Int_AssetDumpHelper : AI_AssetDumpHelper
+    public class AI_INT_AssetDumpHelper : AI_AssetDumpHelper
     {
-        public AI_Int_AssetDumpHelper(TextDump plugin) : base(plugin) { }
+        public AI_INT_AssetDumpHelper(TextDump plugin) : base(plugin) { }
 
         protected override IEnumerable<KeyValuePair<string, AssetDumpColumnInfo>> GetLists()
         {
@@ -13,9 +13,9 @@ namespace IllusionMods
                 yield return list;
             }
 
-            if (TextDump.IsReadyToDump())
+            if (TextDump.IsReadyForFinalDump())
             {
-                yield return new KeyValuePair<string, AssetDumpColumnInfo>("title", titleAssetCols);
+                yield return new KeyValuePair<string, AssetDumpColumnInfo>("title", TitleAssetCols);
             }
         }
     }

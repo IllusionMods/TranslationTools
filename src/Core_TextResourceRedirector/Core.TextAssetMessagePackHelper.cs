@@ -1,100 +1,110 @@
-﻿#if !HS
-using ADV.Commands.Base;
+﻿#if false
 using BepInEx.Logging;
 using MessagePack;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
+using XUnity.ResourceRedirector;
 
 namespace IllusionMods
 {
     public static class TextAssetMessagePackHelper
     {
         private static ManualLogSource Logger => TextResourceRedirector.Logger;
-        private static readonly List<IHandler> handlers = new List<IHandler>();
-        internal static TextAssetMessagePackHandler _textAssetMessagePackHandler = null;
+        private static readonly List<IHandler> Handlers = new List<IHandler>();
+        internal static TextAssetMessagePackHandler TextAssetMessagePackHandler = null;
 
-        public delegate bool CanHandleAssetDelegate(TextAsset textAsset);
+        public delegate bool CanHandleAssetDelegate(TextAsset textAsset, IAssetOrResourceLoadedContext context);
         public delegate bool CanHandleTypeDelegate(Type type);
         public delegate T LoadDelegate<T>(TextAsset textAsset) where T : class;
         public delegate TextAndEncoding StoreDelegate<T>(T obj) where T : class;
         public delegate bool TranslateDelegate<T>(ref T obj, SimpleTextTranslationCache cache, string calculatedModificationPath) where T : class;
-        public static int HandlerCount => handlers.Count;
+        public static int HandlerCount => Handlers?.Count ?? 0;
 
         public static bool Enabled { get; private set; } = false;
 
-        public static CanHandleAssetDelegate MakeStandardCanHandleAsset(string mark, int searchLength = -1, Encoding markEncoding = null)
+        public static CanHandleAssetDelegate MakeStandardCanHandleAsset(string mark, int searchLength = -1, Encoding markEncoding = null, IEnumerable<string> searchPaths = null)
         {
             markEncoding = markEncoding ?? Encoding.UTF8;
             var searchMark = markEncoding.GetBytes(mark);
-            var _searchLength = searchLength != -1 ? searchLength : searchMark.Length * 3;
-            bool stdCanHandleAsset(TextAsset textAsset)
+            var capSearchLength = searchLength != -1 ? searchLength : searchMark.Length * 3;
+            var capSearchPaths = searchPaths?.Select((s) => s.ToLowerInvariant()).ToArray();
+            bool StdCanHandleAsset(TextAsset textAsset, IAssetOrResourceLoadedContext context)
             {
-                return textAsset.bytes != null && TextResourceHelper.ArrayContains<byte>(textAsset.bytes.Take(_searchLength), searchMark);
+                return textAsset.bytes != null && TextResourceHelper.Helpers.ArrayContains(textAsset.bytes.Take(capSearchLength), searchMark);
             }
-            return stdCanHandleAsset;
+            if (capSearchPaths != null)
+            {
+                bool StdCanHandleAssetSearchPth(TextAsset textAsset, IAssetOrResourceLoadedContext context)
+                {
+                    var pth = context.GetUniqueFileSystemAssetPath(textAsset);
+                    return Array.Find(capSearchPaths, (p) => pth.StartsWith(p)) != null && StdCanHandleAsset(textAsset, context);
+                }
+                return StdCanHandleAssetSearchPth;
+            }
+            return StdCanHandleAsset;
         }
+
         public static CanHandleTypeDelegate MakeStandardCanHandleType<T>() where T : class
         {
             var searchType = typeof(T);
-            bool stdCanHandleType(Type type)
+            bool StdCanHandleType(Type type)
             {
                 return type == searchType;
             }
-            return stdCanHandleType;
+            return StdCanHandleType;
         }
 
         public static LoadDelegate<T> MakeStandardLoad<T>() where T : class
         {
-            T stdLoad(TextAsset textAsset)
+            T StdLoad(TextAsset textAsset)
             {
                 return MessagePackSerializer.Deserialize<T>(textAsset.bytes);
             }
-            return stdLoad;
+            return StdLoad;
         }
 
         public static StoreDelegate<T> MakeStandardStore<T>() where T : class
         {
-            TextAndEncoding stdStore(T obj)
+            TextAndEncoding StdStore(T obj)
             {
                 byte[] bytes;
                 using (var stream = new MemoryStream())
                 {
-                    MessagePackSerializer.Serialize<T>(stream, obj);
+                    MessagePackSerializer.Serialize(stream, obj);
                     bytes = stream.ToArray();
                 }
                 return new TextAndEncoding(bytes, Encoding.UTF8);
             }
-            return stdStore;
+            return StdStore;
         }
 
         public static void RegisterHandler<T>(TranslateDelegate<T> translate, CanHandleAssetDelegate canHandleAsset, CanHandleTypeDelegate canHandleType = null, LoadDelegate<T> load = null, StoreDelegate<T> store = null) where T : class
         {
-            handlers.Add(new Handler<T>(
+            Handlers.Add(new Handler<T>(
                 translate,
                 canHandleAsset,
                 canHandleType ?? MakeStandardCanHandleType<T>(),
                 load ?? MakeStandardLoad<T>(),
                 store ?? MakeStandardStore<T>()));
 
-            Enabled = HandlerCount > 0;
-            if (Enabled && _textAssetMessagePackHandler is null)
+            Enabled = Handlers.Count > 0;
+            if (Enabled && TextAssetMessagePackHandler is null)
             {
                 // don't create until needed to improve performance
-                _textAssetMessagePackHandler = new TextAssetMessagePackHandler();
+                TextAssetMessagePackHandler = new TextAssetMessagePackHandler();
             }
         }
-        public static void RegisterHandler<T>(TranslateDelegate<T> translate, string mark, int searchLength = -1, Encoding markEncoding = null, CanHandleTypeDelegate canHandleType = null, LoadDelegate<T> load = null, StoreDelegate<T> store = null) where T: class
+        public static void RegisterHandler<T>(TranslateDelegate<T> translate, string mark, int searchLength = -1, Encoding markEncoding = null, IEnumerable<string> searchPaths = null, CanHandleTypeDelegate canHandleType = null, LoadDelegate<T> load = null, StoreDelegate<T> store = null) where T: class
         {
             RegisterHandler(
                 translate,
-                MakeStandardCanHandleAsset(mark, searchLength, markEncoding),
+                MakeStandardCanHandleAsset(mark, searchLength, markEncoding, searchPaths),
                 canHandleType,
                 load,
                 store);
@@ -102,41 +112,41 @@ namespace IllusionMods
 
         public static bool RemoveHandler(IHandler handler)
         {
-            var result = handlers.Remove(handler);
-            Enabled = HandlerCount > 0;
+            bool result = Handlers.Remove(handler);
+            Enabled = Handlers.Count > 0;
             return result;
         }
 
-        public static IHandler GetHandler(TextAsset textAsset) => textAsset.bytes is null ? null : handlers.Find((h) => h.CanHandleAsset(textAsset));
+        public static IHandler GetHandler(TextAsset textAsset, IAssetOrResourceLoadedContext context) => textAsset.bytes is null ? null : Handlers.Find((h) => h.CanHandleAsset(textAsset, context));
                 
-        public static IHandler GetHandler(Type type) => handlers.Find((h) => h.CanHandleType(type));
-        public static Handler<T> GetHandler<T>() where T : class => handlers.Find((h) => h is Handler<T> th && th.CanHandleType<T>()) as Handler<T>;
+        public static IHandler GetHandler(Type type) => Handlers.Find((h) => h.CanHandleType(type));
+        public static Handler<T> GetHandler<T>() where T : class => Handlers.Find((h) => h is Handler<T> th && th.CanHandleType<T>()) as Handler<T>;
 
-        public static Handler<T> GetHandler<T>(TextAsset textAsset) where T : class => textAsset.bytes is null ? null : handlers.Find((h) => h is Handler<T> th && th.CanHandleAsset(textAsset)) as Handler<T>;
+        public static Handler<T> GetHandler<T>(TextAsset textAsset, IAssetOrResourceLoadedContext context) where T : class => textAsset.bytes is null ? null : Handlers.Find((h) => h is Handler<T> th && th.CanHandleAsset(textAsset, context)) as Handler<T>;
  
 
-        public static bool CanHandleAsset<T>(TextAsset textAsset, out Handler<T> handler) where T : class
+        public static bool CanHandleAsset<T>(TextAsset textAsset, IAssetOrResourceLoadedContext context, out Handler<T> handler) where T : class
         {
             handler = null;
             if (textAsset.bytes != null)
             {
-                handler = GetHandler<T>(textAsset);
+                handler = GetHandler<T>(textAsset, context);
             }
             return handler != null;
         }
 
-        public static bool CanHandleAsset(TextAsset textAsset, out IHandler handler)
+        public static bool CanHandleAsset(TextAsset textAsset, IAssetOrResourceLoadedContext context, out IHandler handler)
         {
             handler = null;
-            if (textAsset.bytes != null)
+            if (textAsset.bytes?.Length > 0)
             {
-                handler = GetHandler(textAsset);
+                handler = GetHandler(textAsset, context);
             }
             return handler != null;
         }
 
-        public static bool CanHandleAsset(TextAsset textAsset) => CanHandleAsset(textAsset, out var _);
-        public static bool CanHandleAsset<T>(TextAsset textAsset) where T : class => CanHandleAsset<T>(textAsset, out var _);
+        public static bool CanHandleAsset(TextAsset textAsset, IAssetOrResourceLoadedContext context) => CanHandleAsset(textAsset, context, out var _);
+        public static bool CanHandleAsset<T>(TextAsset textAsset, IAssetOrResourceLoadedContext context) where T : class => CanHandleAsset<T>(textAsset, context, out var _);
 
         public static bool CanHandleType(Type type, out IHandler handler)
         {
@@ -148,9 +158,9 @@ namespace IllusionMods
         public static bool CanHandleType<TObj>() => CanHandleType<TObj>(out var _);
         public static bool CanHandleType(Type type) => CanHandleType(type, out var _);
 
-        public static T Load<T>(TextAsset textAsset) where T : class
+        public static T Load<T>(TextAsset textAsset, IAssetOrResourceLoadedContext context) where T : class
         {
-            if (!CanHandleAsset<T>(textAsset, out var handler))
+            if (!CanHandleAsset<T>(textAsset, context, out var handler))
             {
                 throw new NotSupportedException($"No registered handler supports {textAsset.name}");
             }
@@ -179,7 +189,7 @@ namespace IllusionMods
 
         public interface IHandler
         {
-            bool CanHandleAsset(TextAsset textAsset);
+            bool CanHandleAsset(TextAsset textAsset, IAssetOrResourceLoadedContext context);
             bool CanHandleType(Type type);
             object Load(TextAsset textAsset);
             TextAndEncoding Store(object obj);
@@ -203,9 +213,9 @@ namespace IllusionMods
                 _translate = translate;
             }
 
-            public bool CanHandleAsset(TextAsset textAsset) => textAsset.bytes != null && _canHandleAsset(textAsset);
+            public bool CanHandleAsset(TextAsset textAsset, IAssetOrResourceLoadedContext context) => textAsset.bytes != null && _canHandleAsset(textAsset, context);
             public bool CanHandleType(Type type) => _canHandlType(type);
-            public bool CanHandleType<Tobj>() => CanHandleType(typeof(Tobj));
+            public bool CanHandleType<TObj>() => CanHandleType(typeof(TObj));
             public T Load(TextAsset textAsset) => textAsset.bytes is null ? null : _load(textAsset);
 
             public TextAndEncoding Store(T obj) => _store(obj);

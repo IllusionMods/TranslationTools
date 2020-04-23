@@ -1,7 +1,5 @@
 ﻿using ADV;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace IllusionMods
 {
@@ -13,9 +11,10 @@ namespace IllusionMods
             FormatKeys = new HashSet<string>();
             TextKeysBlacklist = new HashSet<string>();
 
-            SupportedCommands[ADV.Command.Choice] = true;
+            SupportedCommands.Add(Command.Choice);
+            SupportedCommands.Add((Command)242);
         }
 
-        override public bool IsReplacement(ScenarioData.Param param) => (int)param.Command == 223; // only Party has ADV.Command.ReplaceLanguage
+        public override bool IsReplacement(ScenarioData.Param param) => (int)param.Command == 223; // only Party has ADV.Command.ReplaceLanguage
     }
 }

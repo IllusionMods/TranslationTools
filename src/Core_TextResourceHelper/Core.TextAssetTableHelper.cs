@@ -2,47 +2,75 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using BepInEx.Logging;
 using UnityEngine;
 
 namespace IllusionMods
 {
     public class TextAssetTableHelper
     {
-        public bool Enabled { get; }
-        public IEnumerable<string> RowSplitStrings { get; }
-        public IEnumerable<string> ColSplitStrings { get; }
-        public IEnumerable<string> InvalidColStrings { get; }
+        private ManualLogSource _logger;
 
-        public Encoding TextAssetEncoding { get; }
-        public TextAssetTableHelper(IEnumerable<string> rowSplitStrings = null, IEnumerable<string> colSplitStrings = null, Encoding encoding = null)
+        public TextAssetTableHelper(IEnumerable<string> rowSplitStrings = null,
+            IEnumerable<string> colSplitStrings = null, Encoding encoding = null)
         {
             TextAssetEncoding = encoding ?? Encoding.UTF8;
-            int comp(string a, string b) => b.Length.CompareTo(a.Length);
 
-            List<string> tmpList = new List<string>();
+            int Comp(string a, string b)
+            {
+                return b.Length.CompareTo(a.Length);
+            }
+
+            var tmpList = new List<string>();
 
             // row split strings
             tmpList.AddRange(rowSplitStrings?.ToArray() ?? new string[0]);
-            tmpList.Sort(comp);
+            tmpList.Sort(Comp);
             RowSplitStrings = tmpList.ToArray();
 
             // col split strings
             tmpList.Clear();
             tmpList.AddRange(colSplitStrings?.ToArray() ?? new string[0]);
-            tmpList.Sort(comp);
+            tmpList.Sort(Comp);
             ColSplitStrings = tmpList.ToArray();
 
             // invalid col strings
             tmpList.Clear();
             tmpList.AddRange(RowSplitStrings);
             tmpList.AddRange(ColSplitStrings);
-            tmpList.Sort(comp);
+            tmpList.Sort(Comp);
             InvalidColStrings = tmpList.ToArray();
 
             Enabled = ColSplitStrings.Any() && RowSplitStrings.Any();
         }
 
+        protected ManualLogSource Logger => _logger = _logger ?? BepInEx.Logging.Logger.CreateLogSource(GetType().Name);
+
+        public bool Enabled { get; }
+        public IEnumerable<string> RowSplitStrings { get; }
+        public IEnumerable<string> ColSplitStrings { get; }
+        public IEnumerable<string> InvalidColStrings { get; }
+
+        public Encoding TextAssetEncoding { get; }
+
+        public virtual bool TryTranslateTextAsset(ref TextAsset textAsset, Func<string, string> translator,
+            out string result)
+        {
+            if (IsTable(textAsset))
+            {
+                result = ProcessTable(textAsset, translator, out var tableResult);
+                if (tableResult.RowsUpdated > 0)
+                {
+                    return true;
+                }
+            }
+
+            result = null;
+            return false;
+        }
+
         #region table processing
+
         public bool IsTable(TextAsset textAsset)
         {
             return textAsset.text != null && IsTable(textAsset.text);
@@ -52,7 +80,7 @@ namespace IllusionMods
         {
             if (!string.IsNullOrEmpty(table))
             {
-                foreach (string colSplit in ColSplitStrings)
+                foreach (var colSplit in ColSplitStrings)
                 {
                     if (table.Contains(colSplit))
                     {
@@ -60,22 +88,24 @@ namespace IllusionMods
                     }
                 }
             }
+
             return false;
         }
 
         public bool IsTableRow(string row)
         {
-            foreach (string rowSplit in ColSplitStrings)
+            foreach (var rowSplit in ColSplitStrings)
             {
                 if (row.Contains(rowSplit))
                 {
                     return false;
                 }
             }
+
             return true;
         }
 
-        virtual public bool ShouldHandleAsset(TextAsset asset)
+        public virtual bool ShouldHandleAsset(TextAsset asset)
         {
             return Enabled && IsTable(asset);
         }
@@ -91,6 +121,7 @@ namespace IllusionMods
             {
                 throw new ArgumentException("textAsset does not contain a table");
             }
+
             return table.Split(RowSplitStrings.ToArray(), StringSplitOptions.None);
         }
 
@@ -100,79 +131,93 @@ namespace IllusionMods
             return row.Split(ColSplitStrings.ToArray(), StringSplitOptions.None);
         }
 
-        public void ActOnCells(TextAsset textAsset, Action<string> cellAction, out TableResult tableResult)
+        public void ActOnCells(TextAsset textAsset, Action<string> cellAction, out TextAssetTableResult tableResult)
         {
-            ActOnCells(textAsset, (cell) => { cellAction(cell); return false; }, out tableResult);
+            ActOnCells(textAsset, cell =>
+            {
+                cellAction(cell);
+                return false;
+            }, out tableResult);
         }
 
-        public bool ActOnCells(TextAsset textAsset, Func<int, int, string, bool> cellAction, out TableResult tableResult)
+        public bool ActOnCells(TextAsset textAsset, Func<int, int, string, bool> cellAction,
+            out TextAssetTableResult tableResult)
         {
-            tableResult = new TableResult();
-            int i = 0;
-            foreach (string row in SplitTableToRows(textAsset))
+            tableResult = new TextAssetTableResult();
+            var i = 0;
+            foreach (var row in SplitTableToRows(textAsset))
             {
                 tableResult.Rows++;
-                int colCount = 0;
+                var colCount = 0;
 
-                int j = 0;
-                foreach (string col in SplitRowToCells(row))
+                var j = 0;
+                foreach (var col in SplitRowToCells(row))
                 {
                     colCount++;
                     if (cellAction(i, j, col))
                     {
                         tableResult.CellsActedOn++;
                     }
+
                     j++;
                 }
+
                 tableResult.Cols = Math.Max(tableResult.Cols, colCount);
                 i++;
             }
+
             return tableResult.CellsActedOn > 0;
         }
-        public bool ActOnCells(TextAsset textAsset, Func<string, bool> cellAction, out TableResult tableResult)
+
+        public bool ActOnCells(TextAsset textAsset, Func<string, bool> cellAction, out TextAssetTableResult tableResult)
         {
-            bool actOnCellsWrapper(int i, int j, string cellContents)
+            bool ActOnCellsWrapper(int i, int j, string cellContents)
             {
                 var _ = i;
                 _ = j;
                 return cellAction(cellContents);
             }
-            return ActOnCells(textAsset, actOnCellsWrapper, out tableResult);
+
+            return ActOnCells(textAsset, ActOnCellsWrapper, out tableResult);
         }
 
-        public string ProcessTable(TextAsset textAsset, Func<string, string> columnTransform, out TableResult tableResult)
+        public string ProcessTable(TextAsset textAsset, Func<string, string> columnTransform,
+            out TextAssetTableResult tableResult)
         {
-            tableResult = new TableResult();
-            string colJoin = ColSplitStrings.First();
-            StringBuilder result = new StringBuilder(textAsset.text.Length * 2);
+            tableResult = new TextAssetTableResult();
+            var colJoin = ColSplitStrings.First();
+            var result = new StringBuilder(textAsset.text.Length * 2);
             //foreach (string row in EnumerateRows(textAsset))
-            foreach (string row in SplitTableToRows(textAsset))
+            foreach (var row in SplitTableToRows(textAsset))
             {
                 tableResult.Rows++;
-                int colCount = 0;
+                var colCount = 0;
 
-                bool rowUpdated = false;
+                var rowUpdated = false;
                 //foreach (string col in EnumerateCols(row))
-                foreach (string col in SplitRowToCells(row))
+                foreach (var col in SplitRowToCells(row))
                 {
                     colCount++;
-                    string newCol = columnTransform(col);
+                    var newCol = columnTransform(col);
                     if (newCol != null && col != newCol)
                     {
                         tableResult.CellsUpdated++;
                         rowUpdated = true;
-                        foreach (string invalid in InvalidColStrings)
+                        foreach (var invalid in InvalidColStrings)
                         {
                             newCol = newCol.Replace(invalid, " ");
                         }
+
                         result.Append(newCol);
                     }
                     else
                     {
                         result.Append(col);
                     }
+
                     result.Append(colJoin);
                 }
+
                 // row complete
                 // remove trailing colSplit
                 result.Length -= colJoin.Length;
@@ -181,8 +226,10 @@ namespace IllusionMods
                 {
                     tableResult.RowsUpdated++;
                 }
+
                 tableResult.Cols = Math.Max(tableResult.Cols, colCount);
             }
+
             // table complete
             // remove last newline
             result.Length -= Environment.NewLine.Length;
@@ -191,39 +238,10 @@ namespace IllusionMods
             {
                 return textAsset.text;
             }
+
             return result.ToString();
         }
 
-        public class TableResult
-        {
-            public int Rows;
-            public int Cols;
-            public int RowsUpdated;
-            public int CellsUpdated;
-            public int CellsActedOn;
-
-            public TableResult()
-            {
-                Rows = Cols = RowsUpdated = CellsUpdated = CellsActedOn = 0;
-            }
-
-            public bool Updated { get => RowsUpdated > 0; }
-        }
-
         #endregion
-
-        virtual public bool TryTranslateTextAsset(ref TextAsset textAsset, Func<string, string> translator, out string result)
-        {
-            if (IsTable(textAsset))
-            {
-                result = ProcessTable(textAsset, translator, out TextAssetTableHelper.TableResult tableResult);
-                if (tableResult.RowsUpdated > 0)
-                {
-                    return true;
-                }
-            }
-            result = null;
-            return false;
-        }
     }
 }

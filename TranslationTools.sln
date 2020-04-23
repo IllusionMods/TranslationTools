@@ -44,7 +44,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AI_Int_TextDump", "src\AI_Int_TextDump\AI_Int_TextDump.csproj", "{9B93AB99-A9A9-4D91-A419-9C124E79E3BA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AI_INT_TextDump", "src\AI_INT_TextDump\AI_INT_TextDump.csproj", "{9B93AB99-A9A9-4D91-A419-9C124E79E3BA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KKP_TextDump", "src\KKP_TextDump\KKP_TextDump.csproj", "{29F5E391-4979-49D2-9DF2-11BDC7D7252E}"
 EndProject

@@ -1,63 +1,56 @@
-﻿using AIChara;
-using MessagePack;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.IO;
 
 namespace IllusionMods
 {
     public class AI_AssetDumpHelper : AssetDumpHelper
     {
-        protected readonly AssetDumpColumnInfo titleAssetCols;
-
-        protected readonly AssetDumpColumnInfo stdExcelAssetCols;
-        protected readonly AssetDumpColumnInfo itemLookup;
-        protected readonly AssetDumpColumnInfo itemLookupAndAssetCols;
+        protected readonly AssetDumpColumnInfo ItemLookup;
+        protected readonly AssetDumpColumnInfo ItemLookupAndAssetCols;
+        protected readonly AssetDumpColumnInfo TitleAssetCols;
 
         public AI_AssetDumpHelper(TextDump plugin) : base(plugin)
         {
-            titleAssetCols = new AssetDumpColumnInfo { CombineWithParentBundle = true };
+            TitleAssetCols = new AssetDumpColumnInfo {CombineWithParentBundle = true};
 
-            stdExcelAssetCols = new AssetDumpColumnInfo(new Dictionary<string, string>
+            ItemLookup = new AssetDumpColumnInfo(null, null, true, new[]
             {
-                {"Text", "Text _EnUS" },
-                {"タイトル(日本語)", "タイトル(英語)" },
-                {"サブタイトル(日本語)", "サブタイトル(英語)" },
-                {"タイトル", "英語" },
-                {"日本語", "英語" },
-                {"本文(日本語)", "本文(英語？)" },
-                {"日本語(0)", "英語" }
-            });
-
-            itemLookup = new AssetDumpColumnInfo(null, null, true, new string[] {
                 "アイテム名",
                 "名前(メモ)"
             });
 
-            itemLookupAndAssetCols = new AssetDumpColumnInfo(null, stdExcelAssetCols.NameMappings, true, itemLookup.ItemLookupColumns);
+            ItemLookupAndAssetCols =
+                new AssetDumpColumnInfo(null, StdExcelAssetCols.NameMappings, true, ItemLookup.ItemLookupColumns);
 
             ListEntryDumpers.Add(TryDumpTitleSkillName);
         }
 
-        protected virtual bool TryDumpTitleSkillName(string assetBundleName, string assetName, AssetDumpColumnInfo _, ref Dictionary<string, string> translations)
+        protected virtual bool TryDumpTitleSkillName(string assetBundleName, string assetName, AssetDumpColumnInfo _,
+            ref Dictionary<string, string> translations)
         {
             var titleSkillName = ManualLoadAsset<TitleSkillName>(assetBundleName, assetName, "abdata");
             if (titleSkillName is null)
             {
                 return false;
             }
+
             foreach (var entry in titleSkillName.param)
             {
                 var key = entry.name0;
                 var value = entry.name1;
                 ResourceHelper.AddLocalizationToResults(translations, key, value);
             }
-            LocalizationDumpHelper?.AddAutoLocalizer($"{assetBundleName.Replace(".unity3d", string.Empty)}/{System.IO.Path.GetFileNameWithoutExtension(assetName)}", new Dictionary<string, string>(translations));
+
+            LocalizationDumpHelper?.AddAutoLocalizer(
+                $"{assetBundleName.Replace(".unity3d", string.Empty)}/{Path.GetFileNameWithoutExtension(assetName)}",
+                new Dictionary<string, string>(translations));
             return true;
         }
-        private IEnumerable<KeyValuePair<string, string>> HandleChaListData(byte[] bytes, AssetDumpColumnInfo assetDumpColumnInfo)
+
+        /*
+        private IEnumerable<KeyValuePair<string, string>> HandleChaListData(UnityEngine.TextAsset asset, AssetDumpColumnInfo assetDumpColumnInfo)
         {
-            ChaListData chaListData = MessagePackSerializer.Deserialize<ChaListData>(bytes);
+            ChaListData chaListData = MessagePackSerializer.Deserialize<ChaListData>(asset.bytes);
             foreach (var entry in chaListData.dictList.Values)
             {
                 foreach (var mapping in assetDumpColumnInfo.NumericMappings)
@@ -92,26 +85,8 @@ namespace IllusionMods
                 }
             }
         }
-        protected override IEnumerable<KeyValuePair<string, string>> DumpListBytes(byte[] bytes, AssetDumpColumnInfo assetDumpColumnInfo)
-        {
-            bool handled = false;
-            foreach (var result in base.DumpListBytes(bytes, assetDumpColumnInfo))
-            {
-                handled = true;
-                yield return result;
-            }
 
-            if (!handled)
-            {
-                if (TextResourceHelper.ArrayContains<byte>(bytes, Encoding.UTF8.GetBytes(ChaListData.ChaListDataMark)))
-                {
-                    foreach (var entry in HandleChaListData(bytes, assetDumpColumnInfo))
-                    {
-                        yield return entry;
-                    }
-                }
-            }
-        }
+        */
 
         protected override IEnumerable<KeyValuePair<string, AssetDumpColumnInfo>> GetLists()
         {
@@ -120,21 +95,22 @@ namespace IllusionMods
                 yield return list;
             }
 
-            yield return new KeyValuePair<string, AssetDumpColumnInfo>("actor/animal", itemLookupAndAssetCols);
+            yield return new KeyValuePair<string, AssetDumpColumnInfo>("actor/animal", ItemLookupAndAssetCols);
 
-            foreach (var animal in new string[] { "cat", "chicken" })
+            foreach (var animal in new[] {"cat", "chicken"})
             {
-                foreach (var state in new string[] { "wild", "pet" })
+                foreach (var state in new[] {"wild", "pet"})
                 {
-                    yield return new KeyValuePair<string, AssetDumpColumnInfo>($"actor/animal/action/{animal}/{state}", stdExcelAssetCols);
+                    yield return new KeyValuePair<string, AssetDumpColumnInfo>($"actor/animal/action/{animal}/{state}",
+                        StdExcelAssetCols);
                 }
             }
 
-            yield return new KeyValuePair<string, AssetDumpColumnInfo>("actor/gameitem/recipe/recycling", itemLookup);
+            yield return new KeyValuePair<string, AssetDumpColumnInfo>("actor/gameitem/recipe/recycling", ItemLookup);
 
-            foreach (var mapdir in new string[] { "eventpoint", "popupinfo" })
+            foreach (var mapdir in new[] {"eventpoint", "popupinfo"})
             {
-                yield return new KeyValuePair<string, AssetDumpColumnInfo>($"map/{mapdir}", stdExcelAssetCols);
+                yield return new KeyValuePair<string, AssetDumpColumnInfo>($"map/{mapdir}", StdExcelAssetCols);
             }
         }
     }

@@ -9,14 +9,14 @@
     <Import_RootNamespace>IllusionMods</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.TextAssetMessagePackHelper.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.TextAssetMessagePackHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextAssetMessagePackHandlerBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AssemblyInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.ExcelData.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.ScenarioData.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.TextAssetResourceRedirector.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.TextAssetPatcher.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.TextAssetTableHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.ExcelDataHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.ScenarioDataHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextAssetTableHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.PathList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.IPathListBoundHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.ChaListDataHandler.cs" />
   </ItemGroup>
 </Project>

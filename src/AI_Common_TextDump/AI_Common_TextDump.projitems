@@ -11,5 +11,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)AI.BaseDumpHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AI_AssetDumpHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AI.TextDump.Helpers.cs" />
   </ItemGroup>
 </Project>

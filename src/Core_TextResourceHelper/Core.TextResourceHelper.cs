@@ -1,41 +1,29 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using BepInEx.Logging;
+
+
 #if !HS
 using ADV;
+using System.Collections.Generic;
+using System.Linq;
 #endif
 
 namespace IllusionMods
 {
     public partial class TextResourceHelper
     {
-        private static ManualLogSource _logger = null;
-        private static readonly HashSet<string> loadedBundles = new HashSet<string>();
+        private static ManualLogSource _logger;
         protected static readonly string ChoiceDelimiter = ",";
         protected static readonly string SpecializedKeyDelimiter = ":";
-        public readonly char[] WhitespaceCharacters = new[] { ' ', '\t' };
+        public readonly char[] WhitespaceCharacters = {' ', '\t'};
 
-        protected static ManualLogSource Logger => _logger = _logger ?? BepInEx.Logging.Logger.CreateLogSource(typeof(TextResourceHelper).Name);
-        public static string CombinePaths(params string[] parts)
-        {
-            string result = string.Empty;
-            for (int i = 0; i < parts.Length; i++)
-            {
-                if (i == 0)
-                {
-                    result = parts[i];
-                }
-                else
-                {
-                    result = System.IO.Path.Combine(result, parts[i]);
-                }
-            }
-            return result.Replace('/', '\\');
-        }
+        protected static ManualLogSource Logger =>
+            _logger = _logger ?? BepInEx.Logging.Logger.CreateLogSource(nameof(TextResourceHelper));
+
 
         public virtual bool IsValidLocalization(string original, string localization)
         {
+            if (original == null) throw new ArgumentNullException(nameof(original));
             return !string.IsNullOrEmpty(localization) && localization != "0" && localization != original;
         }
 
@@ -45,36 +33,34 @@ namespace IllusionMods
 
         // Contains strings that should not be replaced in `Command.Text` based resources
         public HashSet<string> TextKeysBlacklist { get; protected set; }
+
         // Only dump `Command.Calc` strings if `params.Args[0]` listed here
         public HashSet<string> CalcKeys { get; protected set; }
+
         // Only dump `Command.Format` strings if `params.Args[0]` listed here
         public HashSet<string> FormatKeys { get; protected set; }
 
-        protected Dictionary<Command, bool> SupportedCommands = new Dictionary<Command, bool>() {
-            { ADV.Command.Text, true }
+        protected HashSet<Command> SupportedCommands { get; } = new HashSet<Command>
+        {
+            Command.Text
         };
-        public static bool ContainsNonAscii(string input) => input.ToCharArray().Any((c) => c > sbyte.MaxValue);
 
         public bool IsSupportedCommand(Command command)
         {
-            if (SupportedCommands.TryGetValue(command, out bool result))
-            {
-                return result;
-            }
-            // default to false
-            return false;
+            return SupportedCommands.Contains(command);
         }
 
         public virtual string BuildSpecializedKey(ScenarioData.Param param, string toTranslate)
         {
-            return string.Join(SpecializedKeyDelimiter, new string[] { param.Command.ToString().ToUpperInvariant(), toTranslate });
+            return Helpers.JoinStrings(SpecializedKeyDelimiter, param.Command.ToString().ToUpperInvariant(), toTranslate);
         }
+
         // Certain commands encode multiple pieces of data into their strings
         // we only want to expose the part that should be translated
         // use prefixing to signal to resource replacement when this is needed
         public virtual string GetSpecializedKey(ScenarioData.Param param, int i, out string toTranslate)
         {
-            string key = toTranslate = param.Args[i];
+            var key = toTranslate = param.Args[i];
             if (key.IsNullOrEmpty() || param.Command == Command.Text)
             {
                 return key;
@@ -87,6 +73,7 @@ namespace IllusionMods
                     // only choices that contain delimiters need translation
                     return string.Empty;
                 }
+
                 toTranslate = key.Split(ChoiceDelimiter.ToCharArray())[0];
             }
             else
@@ -94,22 +81,26 @@ namespace IllusionMods
                 // does not used specialized key
                 return key;
             }
+
             return BuildSpecializedKey(param, toTranslate);
         }
 
-        public string GetSpecializedKey(ScenarioData.Param param, int i) => GetSpecializedKey(param, i, out string _);
+        public string GetSpecializedKey(ScenarioData.Param param, int i)
+        {
+            return GetSpecializedKey(param, i, out _);
+        }
 
         // For commands that encode multiple pieces of data into their strings
         // keep all the extra data from the asset file and only replace the
         // displayed section (otherwise just returns the passed translation)
-        public string GetSpecializedTranslation(ScenarioData.Param param, int i, string translation)
+        public virtual string GetSpecializedTranslation(ScenarioData.Param param, int i, string translation)
         {
             if (param.Command == Command.Choice)
             {
                 try
                 {
-                    return string.Join(ChoiceDelimiter,
-                                new string[] { translation, param.Args[i].Split(ChoiceDelimiter.ToCharArray(), 2)[1] });
+                    return Helpers.JoinStrings(ChoiceDelimiter, translation,
+                        param.Args[i].Split(ChoiceDelimiter.ToCharArray(), 2)[1]);
                 }
                 catch
                 {
@@ -120,68 +111,67 @@ namespace IllusionMods
             return translation;
         }
 
-        virtual public bool IsReplacement(ScenarioData.Param param) => false;
-
-        public Dictionary<string, KeyValuePair<string, string>> BuildReplacements(IEnumerable<ScenarioData.Param> assetList) => BuildReplacements(assetList.ToArray());
-
-        virtual public Dictionary<string, KeyValuePair<string, string>> BuildReplacements(params ScenarioData.Param[] assetList)
+        public virtual bool IsReplacement(ScenarioData.Param param)
         {
-            Dictionary<string, KeyValuePair<string, string>> result = new Dictionary<string, KeyValuePair<string, string>>();
+            return false;
+        }
 
-            foreach (ScenarioData.Param param in assetList)
+        public Dictionary<string, KeyValuePair<string, string>> BuildReplacements(
+            IEnumerable<ScenarioData.Param> assetList)
+        {
+            return BuildReplacements(assetList.ToArray());
+        }
+
+        public virtual Dictionary<string, KeyValuePair<string, string>> BuildReplacements(
+            params ScenarioData.Param[] assetList)
+        {
+            var result = new Dictionary<string, KeyValuePair<string, string>>();
+
+            foreach (var param in assetList)
             {
                 if (IsReplacement(param) && param.Args.Length > 2 && param.Args[0].StartsWith("sel"))
                 {
                     var key = param.Args[0];
-                    KeyValuePair<string, string> entry = new KeyValuePair<string, string>(param.Args[1], param.Args[2]);
-                    if (result.TryGetValue(key, out KeyValuePair<string, string> existing))
+                    var entry = new KeyValuePair<string, string>(param.Args[1], param.Args[2]);
+                    if (result.TryGetValue(key, out var existing))
                     {
                         if (existing.Key != entry.Key || existing.Value != entry.Value)
                         {
-                            Logger.LogWarning($"Duplicate replacement key: {key} in (replacing {result[key]} with {entry}'");
+                            Logger.LogWarning(
+                                $"Duplicate replacement key: {key} in (replacing {result[key]} with {entry}'");
                         }
                     }
+
                     result[key] = entry;
                 }
             }
+
             return result;
         }
 
-        virtual public IEnumerable<string> GetScenarioDirs()
+        public virtual IEnumerable<string> GetScenarioDirs()
         {
             yield return "adv/scenario";
         }
 
-        virtual public IEnumerable<KeyValuePair<string, AssetDumpColumnInfo>> GetLists()
+        public virtual IEnumerable<KeyValuePair<string, AssetDumpColumnInfo>> GetLists()
         {
             return new Dictionary<string, AssetDumpColumnInfo>();
         }
 
-        /*
-        public virtual IEnumerable<KeyValuePair<string, TranslationCollector>> GetLocalizations()
+        public virtual void AddLocalizationToResults(Dictionary<string, string> results, string origTxt,
+            string transTxt)
         {
-            foreach (var entry in AutoLocalizers)
+            if (origTxt.IsNullOrWhiteSpace()) return;
+            var localization = CleanLocalization(origTxt, transTxt);
+            if (!string.IsNullOrEmpty(localization) || !results.ContainsKey(origTxt))
             {
-                yield return new TranslationDumper(
-                    CombinePaths("AutoLocalizers", entry.Key),
-                    () => entry.Value);
-            }
-        }
-        */
-
-        public virtual void AddLocalizationToResults(Dictionary<string, string> results, string origTxt, string transTxt)
-        {
-            if (!origTxt.IsNullOrWhiteSpace())
-            {
-                var localization = CleanLocalization(origTxt, transTxt);
-                if (!string.IsNullOrEmpty(localization) || !results.ContainsKey(origTxt))
-                {
-                    results[origTxt] = localization;
-                }
+                results[origTxt] = localization;
             }
         }
 
-        public virtual void AddLocalizationToResults(Dictionary<string, string> results, KeyValuePair<string, string> mapping)
+        public virtual void AddLocalizationToResults(Dictionary<string, string> results,
+            KeyValuePair<string, string> mapping)
         {
             AddLocalizationToResults(results, mapping.Key, mapping.Value);
         }
@@ -192,92 +182,37 @@ namespace IllusionMods
             {
                 return localization.TrimEnd(WhitespaceCharacters);
             }
+
             return string.Empty;
         }
 
-        public virtual IEnumerable<KeyValuePair<string, string>> DumpListBytes(byte[] bytes, AssetDumpColumnInfo assetDumpColumnInfo)
+        public virtual IEnumerable<KeyValuePair<string, string>> DumpListBytes(byte[] bytes,
+            AssetDumpColumnInfo assetDumpColumnInfo)
         {
             return new Dictionary<string, string>();
         }
 
         public virtual int[] GetItemLookupColumns(List<string> headers, string nameLookupColumnName)
         {
-            return new int[0];
+            var srcCol = headers.IndexOf(nameLookupColumnName);
+            return srcCol == -1 ? new int[0] : new[] {srcCol, -1};
         }
 
         public virtual KeyValuePair<string, string> PerformNameLookup(List<string> row, int[] lookup)
         {
-            return new KeyValuePair<string, string>(string.Empty, string.Empty);
-        }
+            var key = string.Empty;
+            var val = string.Empty;
+            if (lookup[0] > -1 && row.Count > lookup[0]) key = row[lookup[0]];
+            if (lookup[1] > -1 && row.Count > lookup[1]) val = row[lookup[1]];
 
-        //public virtual string LocalizationFileRemap(string outputFile) => outputFile;
+            if (val.IsNullOrEmpty())
+            {
+                GlobalMappings.TryGetValue(key, out val);
+            }
+
+            return new KeyValuePair<string, string>(key, val);
+        }
 
 #endif
-        public static bool ArrayContains<T>(IEnumerable<T> haystack, IEnumerable<T> needle) where T : IComparable
-        {
-            var haystackList = haystack.ToList();
-            var haystackLength = haystackList.Count;
-            var needleList = needle.ToList();
-            var needleLength = needleList.Count;
-
-            int start = 0;
-            // while first character exists in remaining haystack
-            while ((start = haystackList.IndexOf(needleList[0], start)) != -1)
-            {
-                if ((start + needleLength) > haystackLength)
-                {
-                    // can't fit in remaining bytes
-                    break;
-                }
-                bool found = true;
-                for (int i = 1; i < needleLength; i++)
-                {
-                    if (needleList[i].CompareTo(haystackList[start + i]) != 0)
-                    {
-                        // mismatch
-                        found = false;
-                        break;
-                    }
-                }
-                if (found)
-                {
-                    // loop completed without mismatch
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public static void UnloadBundles()
-        {
-            var bundles = loadedBundles.ToArray();
-            loadedBundles.Clear();
-            foreach (var assetBundle in bundles)
-            {
-                AssetBundleManager.UnloadAssetBundle(assetBundle, false);
-            }
-        }
-        public static T ManualLoadAsset<T>(string bundle, string asset, string manifest) where T : UnityEngine.Object
-        {
-            loadedBundles.Add(bundle);
-#if AI && LOCALIZE
-            return AIProject.AssetUtility.LoadAsset<T>(bundle, asset, manifest);
-#else
-#if HS
-            var _ = asset;
-            _ = manifest;
-            return null;
-#else
-            AssetBundleManager.LoadAssetBundleInternal(bundle, false, manifest);
-            var assetBundle = AssetBundleManager.GetLoadedAssetBundle(bundle, out string error, manifest);
-            if (!string.IsNullOrEmpty(error))
-            {
-                Logger?.LogError($"ManualLoadAsset: {error}");
-            }
-            var result = assetBundle.m_AssetBundle.LoadAsset<T>(asset);
-            return result;
-#endif
-#endif
-        }
     }
 }

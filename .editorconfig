@@ -1,17 +1,48 @@
-# To learn more about .editorconfig see https://aka.ms/editorconfigdocs
-###############################
-# Core EditorConfig Options   #
-###############################
-# All files
 [*]
-end_of_line = crlf
-indent_style = space
-# Code files
-[*.{cs,csx,vb,vbx}]
-indent_size = 4
-insert_final_newline = true
-charset = utf-8-bom
+
+# Standard properties
+end_of_line=crlf
+indent_style=space
+indent_size=4
+tab_width=4
+insert_final_newline=true
+
+# Microsoft .NET properties
+csharp_new_line_before_members_in_object_initializers=false
+csharp_preferred_modifier_order=public, private, protected, internal, new, abstract, virtual, sealed, override, static, readonly, extern, unsafe, volatile, async:suggestion
+csharp_style_var_elsewhere=true:suggestion
+csharp_style_var_for_built_in_types=true:suggestion
+csharp_style_var_when_type_is_apparent=true:suggestion
+dotnet_style_parentheses_in_arithmetic_binary_operators=never_if_unnecessary:none
+dotnet_style_parentheses_in_other_binary_operators=never_if_unnecessary:none
+dotnet_style_parentheses_in_relational_binary_operators=never_if_unnecessary:none
+dotnet_style_predefined_type_for_locals_parameters_members=true:suggestion
+dotnet_style_predefined_type_for_member_access=true:suggestion
+dotnet_style_qualification_for_event=false:suggestion
+dotnet_style_qualification_for_field=false:suggestion
+dotnet_style_qualification_for_method=false:suggestion
+dotnet_style_qualification_for_property=false:suggestion
+dotnet_style_require_accessibility_modifiers=for_non_interface_members:suggestion
+
+# ReSharper properties
+resharper_apply_auto_detected_rules=false
+resharper_braces_for_for=required_for_multiline_statement
+resharper_braces_for_foreach=required_for_multiline_statement
+resharper_braces_for_ifelse=required_for_multiline_statement
+resharper_braces_for_while=required_for_multiline_statement
+resharper_csharp_empty_block_style=together_same_line
+resharper_enforce_line_ending_style=true
+resharper_xml_indent_size=2
+resharper_xml_tab_width=2
+
 
 [*.cs]
-dotnet_diagnostic.RCS1058.severity = none
-dotnet_diagnostic.CA1825.severity = none
+# disable some diagnostics that don't apply when code shared with net35 projects
+dotnet_diagnostic.rcs1058.severity=none
+dotnet_diagnostic.ca1825.severity=none
+
+[*.{appxmanifest,axml,build,config,csproj,dbml,discomap,dtd,jsproj,lsproj,njsproj,nuspec,proj,props,StyleCop,targets,tasks,vbproj,xaml,xamlx,xml,xoml,xsd}]
+indent_style=space
+indent_size=2
+tab_width=2
+

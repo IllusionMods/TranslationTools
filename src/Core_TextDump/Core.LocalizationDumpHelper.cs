@@ -1,24 +1,29 @@
-﻿using HarmonyLib;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using HarmonyLib;
+using static IllusionMods.TextResourceHelper.Helpers;
 
 namespace IllusionMods
 {
     public class LocalizationDumpHelper : BaseDumpHelper
     {
-        protected readonly Dictionary<string, Dictionary<string, string>> AutoLocalizers = new Dictionary<string, Dictionary<string, string>>();
+        protected readonly Dictionary<string, Dictionary<string, string>> AutoLocalizers =
+            new Dictionary<string, Dictionary<string, string>>();
 
         public LocalizationDumpHelper(TextDump plugin) : base(plugin) { }
 
-        public virtual string LocalizationFileRemap(string outputFile) => outputFile;
+        public virtual string LocalizationFileRemap(string outputFile)
+        {
+            return outputFile;
+        }
 
         protected virtual IEnumerable<TranslationGenerator> GetLocalizationGenerators()
         {
             yield return GetAutoLocalizerDumpers;
             yield return GetStaticLocalizers;
-            if (TextDump.IsReadyToDump())
+            if (TextDump.IsReadyForFinalDump())
             {
                 yield return GetInstanceLocalizers;
             }
@@ -28,7 +33,7 @@ namespace IllusionMods
         {
             var localizers = GetLocalizationGenerators().ToList();
 
-            int tryCount = 0;
+            var tryCount = 0;
             var retryLocalizers = new List<TranslationGenerator>();
             while (localizers.Count > 0)
             {
@@ -37,7 +42,7 @@ namespace IllusionMods
                 while (localizers.Count > 0)
                 {
                     var localizerGenerator = localizers.PopFront();
-                    List<TranslationDumper> entries = new List<TranslationDumper>();
+                    var entries = new List<TranslationDumper>();
                     try
                     {
                         foreach (var entry in localizerGenerator())
@@ -51,11 +56,13 @@ namespace IllusionMods
                         Logger.LogError($"Re-adding localizer to end: {nameof(localizerGenerator)} : {err}");
                         retryLocalizers.Add(localizerGenerator);
                     }
+
                     foreach (var l in entries)
                     {
                         yield return l;
                     }
                 }
+
                 localizers.AddRange(retryLocalizers);
                 retryLocalizers.Clear();
             }
@@ -67,6 +74,7 @@ namespace IllusionMods
             {
                 AutoLocalizers[path] = translations = new Dictionary<string, string>();
             }
+
             foreach (var entry in newTranslations)
             {
                 AddLocalizationToResults(translations, entry);
@@ -83,43 +91,50 @@ namespace IllusionMods
             }
         }
 
-        protected void FieldLocalizerAddResults(object srcs, ref Dictionary<string, string> results)
+        protected void FieldLocalizerAddResults(object sources, ref Dictionary<string, string> results)
         {
-            void addResult(string[] src, ref Dictionary<string, string> _results)
+            void AddResult(string[] src, ref Dictionary<string, string> localizations)
             {
                 //Logger.LogWarning(src);
-                AddLocalizationToResults(_results, src[0], src.Length > 1 ? src[1] : string.Empty);
+                AddLocalizationToResults(localizations, src[0], src.Length > 1 ? src[1] : string.Empty);
             }
 
-            if (srcs is string[][] nested)
+            while (true)
             {
-                for (int i = 0; i < nested.Length; i++)
+                switch (sources)
                 {
-                    addResult(nested[i], ref results);
+                    case string[][] nested:
+                    {
+                        foreach (var entry in nested)
+                        {
+                            AddResult(entry, ref results);
+                        }
+
+                        break;
+                    }
+                    case string[] single:
+                        AddResult(single, ref results);
+                        break;
+                    case IDictionary sourcesDict:
+                        sources = sourcesDict.Values;
+                        continue;
+                    case IEnumerable<string[]> entries:
+                        sources = entries.ToArray();
+                        continue;
+                    default:
+                        Logger.LogError($"FieldLocalizerAddResults: Unexpected object: {sources}");
+                        break;
                 }
-            }
-            else if (srcs is string[] single)
-            {
-                addResult(single, ref results);
-            }
-            else if (srcs is IDictionary srcsDict)
-            {
-                FieldLocalizerAddResults(srcsDict.Values, ref results);
-            }
-            else if (srcs is IEnumerable<string[]> entries)
-            {
-                FieldLocalizerAddResults(entries.ToArray(), ref results);
-            }
-            else
-            {
-                Logger.LogError($"FieldLocalizerAddResults: Unexpected object: {srcs}");
+
+                break;
             }
         }
+
         protected TranslationDumper MakeStandardInstanceLocalizer<T>(params string[] fieldNames) where T : new()
         {
-            Dictionary<string, string> localizer()
+            Dictionary<string, string> Localizer()
             {
-                Dictionary<string, string> results = new Dictionary<string, string>();
+                var results = new Dictionary<string, string>();
 
                 var instance = new T();
 
@@ -128,7 +143,8 @@ namespace IllusionMods
                     var field = AccessTools.Field(typeof(T), fieldName);
                     if (field is null)
                     {
-                        Logger.LogWarning($"MakeStandardInstanceLocalizer: Unable to find field: {typeof(T).Name}.{fieldName}");
+                        Logger.LogWarning(
+                            $"MakeStandardInstanceLocalizer: Unable to find field: {typeof(T).Name}.{fieldName}");
                         continue;
                     }
 
@@ -137,14 +153,15 @@ namespace IllusionMods
 
                 return results;
             }
-            return new TranslationDumper($"Instance/{typeof(T).FullName.Replace('.', '/').Replace('+', '/')}", localizer);
+
+            return new TranslationDumper($"Instance/{GetPathForType(typeof(T))}", Localizer);
         }
 
         protected TranslationDumper MakeStandardStaticLocalizer(Type type, params string[] fieldNames)
         {
-            Dictionary<string, string> localizer()
+            Dictionary<string, string> Localizer()
             {
-                Dictionary<string, string> results = new Dictionary<string, string>();
+                var results = new Dictionary<string, string>();
 
                 foreach (var fieldName in fieldNames)
                 {
@@ -154,12 +171,21 @@ namespace IllusionMods
                         Logger.LogWarning($"MakeStandardStaicLocalizer: Unable to find field: {type.Name}.{fieldName}");
                         continue;
                     }
+
                     FieldLocalizerAddResults(field.GetValue(null), ref results);
                 }
 
                 return results;
             }
-            return new TranslationDumper($"Static/{type.FullName.Replace('.', '/').Replace('+', '/')}", localizer);
+
+            return new TranslationDumper($"Static/{GetPathForType(type)}", Localizer);
+        }
+
+        private static string GetPathForType(Type type)
+        {
+            return type.FullName != null
+                ? type.FullName.Replace('.', '/').Replace('+', '/')
+                : (type.Name ?? "Unknown");
         }
 
         public virtual IEnumerable<TranslationDumper> GetStaticLocalizers()

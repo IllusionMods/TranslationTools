@@ -1,7 +1,8 @@
-﻿using BepInEx;
+﻿using System;
+using BepInEx;
 using BepInEx.Logging;
-using System;
 using XUnity.AutoTranslator.Plugin.Core;
+
 
 #if AI
 using AIChara;
@@ -10,45 +11,49 @@ using AIChara;
 //Adopted from gravydevsupreme's TextResourceRedirector
 namespace IllusionMods
 {
+    [BepInDependency(XUnity.ResourceRedirector.Constants.PluginData.Identifier, XUnity.ResourceRedirector.Constants.PluginData.Version)]
+    [BepInDependency(XUnity.AutoTranslator.Plugin.Core.Constants.PluginData.Identifier, XUnity.AutoTranslator.Plugin.Core.Constants.PluginData.Version)]
     public partial class TextResourceRedirector : BaseUnityPlugin
     {
+        public delegate void TextResourceRedirectorAwakeHandler(TextResourceRedirector sender, EventArgs eventArgs);
+
         public const string PluginName = "Text Resource Redirector";
         public const string GUID = "com.deathweasel.bepinex.textresourceredirector";
         public const string Version = "1.2.0";
-        internal static new ManualLogSource Logger;
+        internal new static ManualLogSource Logger;
+        internal static TextAssetTableHelper TextAssetTableHelper;
+#if !HS
+        internal ChaListDataHandler ChaListDataHandler;
+#endif
 
-        internal ExcelDataResourceRedirector _excelRedirector;
-        internal ScenarioDataResourceRedirector _scenarioRedirector;
+        internal ExcelDataHandler ExcelDataHandler;
+        internal ScenarioDataHandler ScenarioDataHandler;
+
+        internal TextAssetTableHandler TextAssetTableHandler;
         //internal TextAssetResourceRedirector _textAssetResourceRedirector;
-        internal TextResourceHelper _textResourceHelper;
-        internal static TextAssetTableHelper _textAssetTableHelper;
-        internal static TextAssetTableHandler _textAssetTableHandler;
-
-        public delegate void TextResourceRedirectorAwakeHandler(TextResourceRedirector sender, EventArgs eventArgs);
+        internal TextResourceHelper TextResourceHelper;
 
         public event TextResourceRedirectorAwakeHandler TextResourceRedirectorAwake;
+
         internal void Awake()
         {
             Logger = Logger ?? base.Logger;
-            _textResourceHelper = GetTextResourceHelper();
-            _textAssetTableHelper = GetTextAssetTableHelper();
+            TextResourceHelper = GetTextResourceHelper();
+            TextAssetTableHelper = GetTextAssetTableHelper();
 
-            _excelRedirector = new ExcelDataResourceRedirector();
-            _scenarioRedirector = new ScenarioDataResourceRedirector(_textResourceHelper);
-            //_textAssetResourceRedirector = new TextAssetResourceRedirector(_textAssetTableHelper);
-            _textAssetTableHandler = new TextAssetTableHandler(_textAssetTableHelper);
-
-            this.OnTextResourceRedirectorAwake(EventArgs.Empty);
-
+            ExcelDataHandler = new ExcelDataHandler();
+            ScenarioDataHandler = new ScenarioDataHandler(TextResourceHelper);
+            TextAssetTableHandler = new TextAssetTableHandler(TextAssetTableHelper);
             enabled = false;
+#if !HS
+            ChaListDataHandler = new ChaListDataHandler();
+#endif
+            OnTextResourceRedirectorAwake(EventArgs.Empty);
         }
 
         internal void Main()
         {
             Logger = Logger ?? base.Logger;
-#if !HS
-            TextResourceRedirectorAwake += AddChaListDataHandler;
-#endif
         }
 
         internal void OnTextResourceRedirectorAwake(EventArgs eventArgs)
@@ -57,29 +62,21 @@ namespace IllusionMods
         }
 
 #if !HS
-        private void AddChaListDataHandler(TextResourceRedirector sender, EventArgs eventArgs)
-        {
-            TextAssetMessagePackHelper.RegisterHandler<ChaListData>(
-                translate: ChaListDataTranslate,
-                mark: ChaListData.ChaListDataMark);
-        }
-
-        protected virtual bool ChaListDataTranslate(ref ChaListData chaListData, SimpleTextTranslationCache cache, string calculatedModificationPath)
+        protected virtual bool ChaListDataTranslate(ref ChaListData chaListData, SimpleTextTranslationCache cache,
+            string calculatedModificationPath)
         {
             var idx = chaListData.lstKey.IndexOf("Name");
-            bool result = false;
-            if (idx != -1)
+            var result = false;
+            if (idx == -1) return result;
+            foreach (var entry in chaListData.dictList.Values)
             {
-                foreach (var entry in chaListData.dictList.Values)
-                {
-                    if (entry.Count > idx && cache.TryGetTranslation(entry[idx], true, out string translation))
-                    {
-                        TranslationHelper.RegisterRedirectedResourceTextToPath(translation, calculatedModificationPath);
-                        result = true;
-                        entry[idx] = translation;
-                    }
-                }
+                if (entry.Count <= idx || !cache.TryGetTranslation(entry[idx], true, out var translation)) continue;
+
+                TranslationHelper.RegisterRedirectedResourceTextToPath(translation, calculatedModificationPath);
+                result = true;
+                entry[idx] = translation;
             }
+
             return result;
         }
 #endif
