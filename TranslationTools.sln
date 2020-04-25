@@ -54,6 +54,7 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "KK_Common_TextDump", "src\K
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{0c56dbc3-848c-42fd-b4f2-ab31863261f8}*SharedItemsImports = 4
 		src\Shared\Shared.projitems*{0c56dbc3-848c-42fd-b4f2-ab31863261f8}*SharedItemsImports = 4
 		src\Core_TextDump\Core_TextDump.projitems*{29f5e391-4979-49d2-9df2-11bdc7d7252e}*SharedItemsImports = 4
 		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{29f5e391-4979-49d2-9df2-11bdc7d7252e}*SharedItemsImports = 4

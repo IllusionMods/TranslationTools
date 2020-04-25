@@ -30,6 +30,7 @@ namespace IllusionMods
             Logger = base.Logger;
             TextResourceHelper = new KK_TextResourceHelper();
             AssetDumpHelper = new KKP_AssetDumpHelper(this);
+            LocalizationDumpHelper = new KKP_LocalizationDumpHelper(this);
 
             CheckReadyToDumpChecker = KKP_CheckReadyToDump;
 
@@ -62,27 +63,34 @@ namespace IllusionMods
 
         private static IEnumerator KKP_CheckReadyToDump()
         {
-            yield return null;
+            yield return new WaitForSeconds(1);
             Logger.LogDebug("CheckReadyToDump: waiting on level 2 dump completes");
-            yield return new WaitUntil(() => DumpLevelCompleted >= 2);
+            while (DumpLevelCompleted < 2) yield return new WaitForSeconds(1);
 
             Logger.LogDebug("CheckReadyToDump: waiting for Localize.Translate.Manager");
-            while (!Localize.Translate.Manager.initialized) yield return null;
+            while (!Localize.Translate.Manager.initialized) yield return new WaitForSeconds(1);
 
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Game");
-            while (!Singleton<Game>.IsInstance()) yield return null;
+            while (!Singleton<Game>.IsInstance()) yield return new WaitForSeconds(1);
 
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Game.actScene");
-            while (Singleton<Game>.Instance?.actScene == null) yield return null;
+            while (Singleton<Game>.Instance?.actScene == null) yield return new WaitForSeconds(1);
 
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Game.actScene.Player");
-            while (Singleton<Game>.Instance?.actScene?.Player == null) yield return null;
+            while (Singleton<Game>.Instance?.actScene?.Player == null) yield return new WaitForSeconds(1);
 
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Game.Player.isActive");
-            while (!Singleton<Game>.Instance.actScene.Player.isActive) yield return null;
+            while (!Singleton<Game>.Instance.actScene.Player.isActive) yield return new WaitForSeconds(1);
+
+            while (Singleton<Manager.Scene>.Instance.IsNowLoading || Singleton<Manager.Scene>.Instance.IsNowLoadingFade)
+            {
+                yield return new WaitForSeconds(1);
+            }
 
             Logger.LogDebug($"CheckReadyToDump: waiting until {DumpLevelMax - 1} completes");
-            yield return new WaitUntil(() => DumpLevelCompleted >= DumpLevelMax - 1);
+            while (DumpLevelCompleted < DumpLevelMax - 1) yield return new WaitForSeconds(1);
+
+
 
             Logger.LogDebug("CheckReadyToDump: ready!");
 

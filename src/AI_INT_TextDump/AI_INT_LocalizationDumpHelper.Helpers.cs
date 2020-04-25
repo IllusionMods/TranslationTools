@@ -419,7 +419,7 @@ namespace IllusionMods
                 string[] assetNames = null;
                 try
                 {
-                    assetNames = GetAllAssetName(assetBundleName);
+                    assetNames = GetAssetNamesFromBundle(assetBundleName);
                 }
                 catch
                 {

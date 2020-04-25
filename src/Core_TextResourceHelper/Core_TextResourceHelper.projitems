@@ -16,5 +16,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core.TranslationDumper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextAssetTableResult.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceHelper.Helpers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TrimmedStringComparer.cs" />
   </ItemGroup>
 </Project>

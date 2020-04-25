@@ -192,7 +192,7 @@ namespace IllusionMods
                 //Logger.Log(LogLevel.Info, $"+{Ending}");
 
                 string[] Lines1 = File.ReadAllLines(File1);
-                Dictionary<string, string> TLLines = new Dictionary<string, string>();
+                Dictionary<string, string> TLLines = new Dictionary<string, string>(new TrimmedStringComparer());
 
                 for (int i = 0; i < Lines1.Count(); i++)
                 {

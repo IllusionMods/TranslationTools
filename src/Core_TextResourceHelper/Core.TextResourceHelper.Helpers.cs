@@ -100,6 +100,12 @@ namespace IllusionMods
 
                 return false;
             }
+
+            public static bool StringIsSingleReplacement(string str)
+            {
+                if (str.IsNullOrEmpty()) return false;
+                return str.StartsWith("[") && str.EndsWith("]") && str.Count(c => c == '[') == 1;
+            }
         }
     }
 }

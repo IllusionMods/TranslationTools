@@ -113,7 +113,7 @@ namespace IllusionMods
             int[] cellsToDump = {4, 27, 50, 73};
             foreach (var assetBundleName in GetAssetBundleNameListFromPath("h/list/"))
             {
-                foreach (var assetName in GetAllAssetName(assetBundleName)
+                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName)
                     .Where(x => x.StartsWith("personality_voice_")))
                 {
                     if (!assetName.EndsWith(".txt")) continue;
@@ -209,13 +209,11 @@ namespace IllusionMods
 
                 foreach (var param in asset.list)
                 {
-                    var value = string.Empty;
-                    if (15 <= param.list.Count && !param.list[15].IsNullOrEmpty() && param.list[15] != "テキスト")
-                    {
-                        value = param.list.Count > 20 ? param.list[20] : string.Empty;
-                    }
+                    if (15 > param.list.Count || param.list[15].IsNullOrEmpty() || param.list[15] == "テキスト") continue;
 
                     var key = param.list[15];
+                    var value = param.list.Count > 20 ? param.list[20] : string.Empty;
+
                     ResourceHelper.AddLocalizationToResults(translations, key, value);
                 }
 
@@ -231,7 +229,7 @@ namespace IllusionMods
             {
                 if (assetBundleName.Contains("hit_")) continue;
 
-                var assetNames = GetAllAssetName(assetBundleName);
+                var assetNames = GetAssetNamesFromBundle(assetBundleName);
 
                 foreach (var assetName in assetNames)
                 {
@@ -288,16 +286,16 @@ namespace IllusionMods
             }
         }
 
-        private Dictionary<string, KeyValuePair<string, string>> BuildReplacementDictionary(string scenaioRoot)
+        private Dictionary<string, KeyValuePair<string, string>> BuildReplacementDictionary(string scenarioRoot)
         {
             var result = new Dictionary<string, KeyValuePair<string, string>>();
 
-            var assetBundleNames = GetAssetBundleNameListFromPath(scenaioRoot, true);
+            var assetBundleNames = GetAssetBundleNameListFromPath(scenarioRoot, true);
             assetBundleNames.Sort();
 
             foreach (var assetBundleName in assetBundleNames)
             {
-                var assetNameList = new List<string>(GetAllAssetName(assetBundleName));
+                var assetNameList = new List<string>(GetAssetNamesFromBundle(assetBundleName));
                 assetNameList.Sort();
                 foreach (var assetName in assetNameList)
                 {
@@ -320,7 +318,7 @@ namespace IllusionMods
                 var baseChoiceDictionary = BuildReplacementDictionary(scenarioRoot);
                 foreach (var assetBundleName in GetAssetBundleNameListFromPath(scenarioRoot, true))
                 {
-                    foreach (var assetName in GetAllAssetName(assetBundleName))
+                    foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
                     {
                         var asset = ManualLoadAsset<ScenarioData>(assetBundleName, assetName, "abdata");
                         if (asset?.list is null) continue;
@@ -344,11 +342,24 @@ namespace IllusionMods
                                     continue;
                                 }
 
+
                                 switch (param.Command)
                                 {
                                     case Command.Text:
                                     case (Command) 242:
                                     {
+                                        // Text: 0 - jp speaker (if present), 1 - jp text,  2 - eng text
+                                        if (param.Args.Length == 0) continue;
+
+                                        var speaker = param.Args[0];
+                                        if (!speaker.IsNullOrEmpty() && !StringIsSingleReplacement(speaker) &&
+                                              !ResourceHelper.TextKeysBlacklist.Contains(speaker))
+                                        {
+                                            // capture speaker name
+                                            AddLocalizationToResults(translations, speaker,
+                                                LookupSpeakerLocalization(speaker, assetBundleName, assetName));
+                                        }
+
                                         if (param.Args.Length >= 2 && !param.Args[1].IsNullOrEmpty())
                                         {
                                             var key = param.Args[1];
@@ -361,7 +372,7 @@ namespace IllusionMods
                                                 }
 
                                                 allJpText.Add(key);
-                                                ResourceHelper.AddLocalizationToResults(translations, key, value);
+                                                AddLocalizationToResults(translations, key, value);
                                             }
                                         }
 
@@ -466,6 +477,11 @@ namespace IllusionMods
             }
         }
 
+        protected virtual string LookupSpeakerLocalization(string speaker, string bundle, string asset)
+        {
+            return ResourceHelper.GlobalMappings.TryGetValue(speaker, out var result) ? result : string.Empty;
+        }
+
         #endregion ScenarioText
 
         #region Lists
@@ -502,7 +518,7 @@ namespace IllusionMods
 
             foreach (var assetBundleName in GetAssetBundleNameListFromPath(rootPath))
             {
-                foreach (var assetName in GetAllAssetName(assetBundleName))
+                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
                 {
                     var filePath = BuildAssetFilePath(assetBundleName, assetName);
 

@@ -123,7 +123,7 @@ namespace IllusionMods
 
                 var assetBundleNameUS = assetBundleNames.FirstOrDefault(x => x.EndsWith("us.unity3d"));
 
-                var assetNamesJp = GetAllAssetName(assetBundleNameJP);
+                var assetNamesJp = GetAssetNamesFromBundle(assetBundleNameJP);
 
                 foreach (var tmp in assetNamesJp)
                 {
@@ -843,26 +843,25 @@ namespace IllusionMods
             yield return MakeManagerResourceLocalizers;
             yield return WrapTranslationCollector("Fallback/PersonalityLines", FallbackPersonalityLinesLocalizer);
 
-            if (readyToDump)
-            {
-                yield return MakeCharacterCategoryLocalizers;
-                yield return WrapTranslationCollector("Personalities", PersonalityLocalizer);
-                yield return WrapTranslationCollector("GameInfoTables/AgentLifeStyle", AgentLifeStyleLocalizer);
-                yield return GetRecipeLocalizers;
+            if (!readyToDump) yield break;
 
-                yield return WrapTranslationCollector("Manager/Resources/DateActionName", DateActionNameLocalizer);
+            yield return MakeCharacterCategoryLocalizers;
+            yield return WrapTranslationCollector("Personalities", PersonalityLocalizer);
+            yield return WrapTranslationCollector("GameInfoTables/AgentLifeStyle", AgentLifeStyleLocalizer);
+            yield return GetRecipeLocalizers;
 
-                yield return WrapTranslationCollector("Manager/Resources/MapName", MapNameLocalizer);
-                yield return WrapTranslationCollector("Manager/Resources/ActionName", ActionNameLocalizer);
-                yield return WrapTranslationCollector("Manager/Resources/SickName", SickNameLocalizer);
-                yield return () => new[]
-                    {MapLabelPostProcessor(new TranslationDumper("Manager/Resources/BaseName", BaseNameLocalizer))};
-                yield return WrapTranslationCollector("Manager/Resources/MiniMapIconName", MiniMapIconNameLocalizer);
-                yield return GetHAnimationLocalizers;
+            yield return WrapTranslationCollector("Manager/Resources/DateActionName", DateActionNameLocalizer);
 
-                // add this one an extra time at the end
-                yield return () => GetBindLocalizers("scene/map");
-            }
+            yield return WrapTranslationCollector("Manager/Resources/MapName", MapNameLocalizer);
+            yield return WrapTranslationCollector("Manager/Resources/ActionName", ActionNameLocalizer);
+            yield return WrapTranslationCollector("Manager/Resources/SickName", SickNameLocalizer);
+            yield return () => new[]
+                {MapLabelPostProcessor(new TranslationDumper("Manager/Resources/BaseName", BaseNameLocalizer))};
+            yield return WrapTranslationCollector("Manager/Resources/MiniMapIconName", MiniMapIconNameLocalizer);
+            yield return GetHAnimationLocalizers;
+
+            // add this one an extra time at the end
+            yield return () => GetBindLocalizers("scene/map");
         }
     }
 }

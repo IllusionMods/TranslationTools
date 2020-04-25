@@ -39,9 +39,9 @@ namespace IllusionMods
             }
 
 #if HS
-            public static string[] GetAllAssetName(string assetBundleName) => AssetBundleCheck.GetAllAssetName(assetBundleName);
+            public static string[] GetAssetNamesFromBundle(string assetBundleName) => AssetBundleCheck.GetAllAssetName(assetBundleName);
 #else
-            public static string[] GetAllAssetName(string assetBundleName)
+            public static string[] GetAssetNamesFromBundle(string assetBundleName)
             {
                 try
                 {

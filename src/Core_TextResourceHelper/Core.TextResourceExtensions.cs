@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using BepInEx.Logging;
 
 namespace IllusionMods
 {
@@ -17,7 +18,7 @@ namespace IllusionMods
         }
 
 
-        public static void DebugLogDebug(this BepInEx.Logging.ManualLogSource logger, object data)
+        public static void DebugLogDebug(this ManualLogSource logger, object data)
         {
 #if DEBUG
             logger.LogDebug(data);

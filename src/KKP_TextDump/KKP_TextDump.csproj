@@ -65,6 +65,7 @@
   <ItemGroup>
     <Compile Include="KKP.TextDump.cs" />
     <Compile Include="KKP_AssetDumpHelper.cs" />
+    <Compile Include="KKP_LocalizationDumpHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -43,8 +43,6 @@ namespace IllusionMods
         internal static Dictionary<string, Dictionary<string, string>> TranslationsDict =
             new Dictionary<string, Dictionary<string, string>>();
 
-        private static readonly Regex FormatStringRegex = new Regex("\\{[0-9]\\}");
-
         private static string _dumpRoot;
 
 
@@ -56,7 +54,11 @@ namespace IllusionMods
         internal LocalizationDumpHelper LocalizationDumpHelper;
         internal TextAssetTableHelper TextAssetTableHelper;
 
-        protected Func<IEnumerator> CheckReadyToDumpChecker { get; } = null;
+        private TranslationCount _total = new TranslationCount();
+        private TranslationCount _assetTotal = new TranslationCount();
+        private TranslationCount _localizationTotal = new TranslationCount();
+
+        protected Func<IEnumerator> CheckReadyToDumpChecker { get; }
         protected Coroutine CheckReadyCoroutine { get; private set; }
         public string CheckReadyNotificationMessage { get; private set; } = string.Empty;
 
@@ -218,25 +220,28 @@ namespace IllusionMods
             InitHelpers();
             DumpStarted = true;
             LogWithMessage(BepInExLogLevel.Warning,
-                $"[TextDump] Starting dump {DumpLevelCompleted + 1} from {from}. Application may become unresponsive, please wait.");
+                $"[TextDump] Starting dump {DumpLevelCompleted + 1}/{DumpLevelMax} from {from}. Application may become unresponsive, please wait.");
 
             if (Directory.Exists(DumpRoot)) Directory.Delete(DumpRoot, true);
-            var total = new TranslationCount();
 
-            total += DumpAssets();
+            // if using BeforeFirstLoad it's best not to try doing localizations (if we're dumping more than once).
+            var skipLocalizations = CurrentExecutionMode == ExecutionMode.BeforeFirstLoad && DumpLevelCompleted == 0 &&
+                                     DumpLevelMax > 1;
+            _total += DumpAssets();
 
-            total += DumpLocalizations();
+            if (!skipLocalizations)
+            {
+                _total += DumpLocalizations();
+            }
 
-            Logger.LogInfo($"[TextDump] Total lines (translated):{total}");
+            Logger.LogInfo($"[TextDump] Total lines (translated):{_total}");
             DumpCompleted = true;
             DumpLevelCompleted++;
-            LogWithMessage(BepInExLogLevel.Info, $"[TextDump] Dump {DumpLevelCompleted} completed.");
+            LogWithMessage(BepInExLogLevel.Info, $"[TextDump] Dump {DumpLevelCompleted}/{DumpLevelMax} completed.");
 
-            if (WriteAfterEachDump || WriteAfterFinalDump && AreAllDumpsComplete())
-            {
-                if (_writeInProgress) return;
-                StartCoroutine(WriteTranslations());
-            }
+            if (!WriteAfterEachDump && (!WriteAfterFinalDump || !AreAllDumpsComplete())) return;
+            if (_writeInProgress) return;
+            StartCoroutine(WriteTranslations());
         }
 
         private void LogDumpResults(string prefix, string output, TranslationCount before, TranslationCount after)
@@ -254,9 +259,6 @@ namespace IllusionMods
             {
                 Directory.CreateDirectory(folderPath);
             }
-
-            var total = new TranslationCount();
-
 
             foreach (var assetDumper in AssetDumpHelper.GetAssetDumpers())
             {
@@ -290,11 +292,11 @@ namespace IllusionMods
 
                 LogDumpResults("Asset", output, beforeCount, afterCount);
 
-                total += afterCount - beforeCount;
+                _assetTotal += afterCount - beforeCount;
             }
 
-            Logger.LogInfo($"[TextDump] Total Asset lines (translated): {total}");
-            return total;
+            Logger.LogInfo($"[TextDump] Total Asset lines (translated): {_assetTotal}");
+            return _assetTotal;
         }
 
         private TranslationCount DumpLocalizations()
@@ -305,8 +307,7 @@ namespace IllusionMods
             {
                 Directory.CreateDirectory(folderPath);
             }
-
-            var total = new TranslationCount();
+           
             foreach (var entry in LocalizationDumpHelper.GetLocalizations())
             {
                 var output = entry.Path;
@@ -337,11 +338,11 @@ namespace IllusionMods
 
                 var afterCount = new TranslationCount(translations);
                 LogDumpResults("Localization", output, beforeCount, afterCount);
-                total += afterCount - beforeCount;
+                _localizationTotal += afterCount - beforeCount;
             }
 
-            Logger.LogInfo($"[TextDump] Total Localization lines (translated): {total}");
-            return total;
+            Logger.LogInfo($"[TextDump] Total Localization lines (translated): {_localizationTotal}");
+            return _localizationTotal;
         }
 
         private void RemapTranslations()
@@ -381,8 +382,15 @@ namespace IllusionMods
             yield return null;
             RemapTranslations();
             yield return null;
+            var count = 0;
             foreach (var entry in TranslationsDict.ToArray())
             {
+                count++;
+                if ((count % 100) == 0)
+                {
+                    if ((count % 1000) == 0) LogWithMessage(BepInExLogLevel.Warning, $"[TextDump] Writing translation files, please wait.");
+                    yield return null;
+                }
                 var filePath = entry.Key;
                 var translations = entry.Value;
                 if (translations.Count <= 0) continue;
@@ -485,6 +493,7 @@ namespace IllusionMods
 
         private List<string> CreateLocalizationLines(Dictionary<string, string> translations)
         {
+            var formatStringRegex = LocalizationDumpHelper.FormatStringRegex;
             var lines = new List<string>();
             foreach (var localization in translations)
             {
@@ -505,21 +514,33 @@ namespace IllusionMods
                     continue;
                 }
 
+                LocalizationDumpHelper.PrepareLineForDump(ref key, ref value);
+
+
                 if (!key.StartsWith("r:") && !key.StartsWith("sr:"))
                 {
                     key = key.Replace("=", "%3D").Replace("\n", "\\n");
                     value = (value?.Replace("=", "%3D").Replace("\n", "\\n") ?? string.Empty)
                         .TrimEnd(TextResourceHelper.WhitespaceCharacters);
 
-                    var isFormat = FormatStringRegex.IsMatch(key);
+                    var isFormat = formatStringRegex.IsMatch(key);
                     var regex = isFormat; // || keyHasNewline;
 
                     if (isFormat)
                     {
-                        for (var count = 1; FormatStringRegex.IsMatch(key); count++)
+                        for (var count = 1; formatStringRegex.IsMatch(key); count++)
                         {
-                            key = FormatStringRegex.Replace(key, FormatStringPlaceholder, 1);
-                            value = FormatStringRegex.Replace(value, $"${count}");
+                            var match = formatStringRegex.Match(key);
+                            key = formatStringRegex.Replace(key, FormatStringPlaceholder, 1);
+                            try
+                            {
+                                value = new Regex(Regex.Escape(match.Value)).Replace(value, $"${count}", 1);
+                            }
+                            catch (ArgumentException err)
+                            {
+                                Logger.LogWarning(
+                                    $"Unable to correctly create replacements for {match.Value} in {value}, check your output files: {err}");
+                            }
                         }
                     }
 
@@ -538,14 +559,16 @@ namespace IllusionMods
 
             return lines;
         }
-
-        private static List<string> CreateResourceReplacementLines(Dictionary<string, string> translations)
+        private List<string> CreateResourceReplacementLines(Dictionary<string, string> translations)
         {
             var lines = new List<string>();
             foreach (var localization in translations)
             {
                 var key = localization.Key.Trim();
                 var value = localization.Value.Trim();
+
+                AssetDumpHelper.PrepareLineForDump(ref key, ref value);
+
                 if (key.Contains("\n"))
                 {
                     key = $"\"{key.Replace("\n", "\\n").Trim()}\"";

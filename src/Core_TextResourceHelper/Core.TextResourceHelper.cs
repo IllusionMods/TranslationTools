@@ -1,11 +1,10 @@
 ﻿using System;
 using BepInEx.Logging;
-
-
 #if !HS
 using ADV;
 using System.Collections.Generic;
 using System.Linq;
+
 #endif
 
 namespace IllusionMods
@@ -52,7 +51,8 @@ namespace IllusionMods
 
         public virtual string BuildSpecializedKey(ScenarioData.Param param, string toTranslate)
         {
-            return Helpers.JoinStrings(SpecializedKeyDelimiter, param.Command.ToString().ToUpperInvariant(), toTranslate);
+            return Helpers.JoinStrings(SpecializedKeyDelimiter, param.Command.ToString().ToUpperInvariant(),
+                toTranslate);
         }
 
         // Certain commands encode multiple pieces of data into their strings
@@ -164,7 +164,7 @@ namespace IllusionMods
         {
             if (origTxt.IsNullOrWhiteSpace()) return;
             var localization = CleanLocalization(origTxt, transTxt);
-            if (!string.IsNullOrEmpty(localization) || !results.ContainsKey(origTxt))
+            if (!results.ContainsKey(origTxt) || !string.IsNullOrEmpty(localization))
             {
                 results[origTxt] = localization;
             }
@@ -178,12 +178,9 @@ namespace IllusionMods
 
         public virtual string CleanLocalization(string origTxt, string localization)
         {
-            if (IsValidLocalization(origTxt, localization))
-            {
-                return localization.TrimEnd(WhitespaceCharacters);
-            }
-
-            return string.Empty;
+            return IsValidLocalization(origTxt, localization)
+                ? localization.TrimEnd(WhitespaceCharacters)
+                : string.Empty;
         }
 
         public virtual IEnumerable<KeyValuePair<string, string>> DumpListBytes(byte[] bytes,

@@ -7,6 +7,7 @@ using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
 using XUnity.ResourceRedirector;
+using static IllusionMods.TextResourceHelper.Helpers;
 using BepinLogLevel = BepInEx.Logging.LogLevel;
 
 namespace IllusionMods
@@ -137,64 +138,79 @@ namespace IllusionMods
                 Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath} (no cache)");
                 return false;
             }
+
             var result = false;
             foreach (var param in asset.list)
             {
                 if (!_textResourceHelper.IsSupportedCommand(param.Command))
                 {
+                    Logger.DebugLogDebug($"{GetType()} skipping unsupported command: {param.Command}");
                     continue;
                 }
 
-                if (param.Command == Command.Text)
+                switch (param.Command)
                 {
-                    for (var i = 0; i < param.Args.Length; i++)
+                    case Command.Text:
+
+                        // Text: 0 - jp speaker (if present), 1 - text
+                        for (var i = 0; i < param.Args.Length && i < 2; i++)
+                        {
+                            var key = param.Args[i];
+                            if (key.IsNullOrEmpty() || _textResourceHelper.TextKeysBlacklist.Contains(key) || StringIsSingleReplacement(key)) continue;
+                            if (TryRegisterTranslation(cache, param, i, calculatedModificationPath)) result = true;
+                        }
+
+                        break;
+
+                    case Command.Calc:
                     {
-                        var key = param.Args[i];
-                        if (!key.IsNullOrEmpty() && !_textResourceHelper.TextKeysBlacklist.Contains(key))
+                        if (param.Args.Length >= 3 && _textResourceHelper.CalcKeys.Contains(param.Args[0]))
+                        {
+                            if (TryRegisterTranslation(cache, param, 2, calculatedModificationPath)) result = true;
+                        }
+
+                        break;
+                    }
+                    case Command.Format:
+                    {
+                        if (param.Args.Length >= 2 && _textResourceHelper.FormatKeys.Contains(param.Args[0]))
+                        {
+                            if (TryRegisterTranslation(cache, param, 1, calculatedModificationPath)) result = true;
+                        }
+
+                        break;
+                    }
+                    case Command.Choice:
+                    {
+                        for (var i = 0; i < param.Args.Length; i++)
                         {
                             if (TryRegisterTranslation(cache, param, i, calculatedModificationPath)) result = true;
                         }
+
+                        break;
                     }
-                }
-                else if (param.Command == Command.Calc)
-                {
-                    if (param.Args.Length >= 3 && _textResourceHelper.CalcKeys.Contains(param.Args[0]))
-                    {
-                        if (TryRegisterTranslation(cache, param, 2, calculatedModificationPath)) result = true;
-                    }
-                }
-                else if (param.Command == Command.Format)
-                {
-                    if (param.Args.Length >= 2 && _textResourceHelper.FormatKeys.Contains(param.Args[0]))
-                    {
-                        if (TryRegisterTranslation(cache, param, 1, calculatedModificationPath)) result = true;
-                    }
-                }
-                else if (param.Command == Command.Choice)
-                {
-                    for (var i = 0; i < param.Args.Length; i++)
-                    {
-                        if (TryRegisterTranslation(cache, param, i, calculatedModificationPath)) result = true;
-                    }
-                }
 #if false
-                else if (param.Command == ADV.Command.Switch)
-                {
-                    // TODO
-                }
+                    case ADV.Command.Switch:
+                        // TODO
+                        break;
+#if AI
+                    case ADV.Command.InfoText:
+                        // TODO
+                        break;
 #endif
-#if false
-                else if (param.Command == ADV.Command.InfoText)
-                {
-                    // TODO
-                }
+                    case ADV.Command.Jump:
+                        // TODO
+                        break;
 #endif
-#if false
-                else if (param.Command == ADV.Command.Jump)
-                {
-                    // TODO
+                    default:
+                    {
+                        Logger.LogWarning(
+                            $"{GetType()} expected to handle {param.Command}, but support not implemented");
+
+                        break;
+                    }
                 }
-#endif
+
             }
 
             Logger.DebugLogDebug(result
@@ -240,17 +256,17 @@ namespace IllusionMods
             return result;
         }
 
-        #region IPathListBoundHandler
+                        #region IPathListBoundHandler
 
         public PathList WhiteListPaths { get; } = new PathList();
 
         public PathList BlackListPaths { get; } = new PathList();
 
-        #endregion IPathListBoundHandler
+                        #endregion IPathListBoundHandler
     }
 }
 #else //Stub for HS which has no ScenarioData
-namespace IllusionMods
+    namespace IllusionMods
 {
     public class ScenarioDataHandler
     {

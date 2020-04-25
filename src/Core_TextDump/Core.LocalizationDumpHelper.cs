@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using HarmonyLib;
 using static IllusionMods.TextResourceHelper.Helpers;
 
@@ -13,6 +14,8 @@ namespace IllusionMods
             new Dictionary<string, Dictionary<string, string>>();
 
         public LocalizationDumpHelper(TextDump plugin) : base(plugin) { }
+
+        public static Regex FormatStringRegex { get; protected set; } = new Regex(@"\{[0-9]\}");
 
         public virtual string LocalizationFileRemap(string outputFile)
         {
@@ -185,7 +188,7 @@ namespace IllusionMods
         {
             return type.FullName != null
                 ? type.FullName.Replace('.', '/').Replace('+', '/')
-                : (type.Name ?? "Unknown");
+                : type.Name ?? "Unknown";
         }
 
         public virtual IEnumerable<TranslationDumper> GetStaticLocalizers()

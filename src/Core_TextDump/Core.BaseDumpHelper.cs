@@ -46,7 +46,7 @@ namespace IllusionMods
             return Generator;
         }
 
-        public static List<string> GetAllAssetBundles()
+        public static List<string> GetAllAssetBundleNames()
         {
             return TextDump.Helpers.GetAllAssetBundleNames();
         }
@@ -61,14 +61,16 @@ namespace IllusionMods
             TextDump.Helpers.UnloadBundles();
         }
 
-        public static string[] GetAllAssetName(string assetBundleName)
+        public static string[] GetAssetNamesFromBundle(string assetBundleName)
         {
-            return TextDump.Helpers.GetAllAssetName(assetBundleName);
+            return TextDump.Helpers.GetAssetNamesFromBundle(assetBundleName);
         }
 
         public static T ManualLoadAsset<T>(string bundle, string asset, string manifest) where T : Object
         {
             return TextDump.Helpers.ManualLoadAsset<T>(bundle, asset, manifest);
         }
+
+        public virtual void PrepareLineForDump(ref string key, ref string value) { }
     }
 }
