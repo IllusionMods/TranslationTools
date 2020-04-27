@@ -159,7 +159,7 @@ namespace IllusionMods
             return new Dictionary<string, AssetDumpColumnInfo>();
         }
 
-        public virtual void AddLocalizationToResults(Dictionary<string, string> results, string origTxt,
+        public virtual void AddLocalizationToResults(IDictionary<string, string> results, string origTxt,
             string transTxt)
         {
             if (origTxt.IsNullOrWhiteSpace()) return;
@@ -170,7 +170,7 @@ namespace IllusionMods
             }
         }
 
-        public virtual void AddLocalizationToResults(Dictionary<string, string> results,
+        public virtual void AddLocalizationToResults(IDictionary<string, string> results,
             KeyValuePair<string, string> mapping)
         {
             AddLocalizationToResults(results, mapping.Key, mapping.Value);

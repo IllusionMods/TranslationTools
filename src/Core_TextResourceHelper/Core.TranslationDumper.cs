@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace IllusionMods
 {
-    public delegate Dictionary<string, string> TranslationCollector();
+    public delegate IDictionary<string, string> TranslationCollector();
 
     public delegate IEnumerable<TranslationDumper> TranslationGenerator();
 

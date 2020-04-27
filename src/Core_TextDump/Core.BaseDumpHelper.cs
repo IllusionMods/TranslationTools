@@ -20,12 +20,12 @@ namespace IllusionMods
         protected TextResourceHelper ResourceHelper => Plugin?.TextResourceHelper;
         protected TextAssetTableHelper TableHelper => Plugin?.TextAssetTableHelper;
 
-        public void AddLocalizationToResults(Dictionary<string, string> results, string origText, string transText)
+        public void AddLocalizationToResults(IDictionary<string, string> results, string origText, string transText)
         {
             ResourceHelper.AddLocalizationToResults(results, origText, transText);
         }
 
-        public void AddLocalizationToResults(Dictionary<string, string> results, KeyValuePair<string, string> mapping)
+        public void AddLocalizationToResults(IDictionary<string, string> results, KeyValuePair<string, string> mapping)
         {
             ResourceHelper.AddLocalizationToResults(results, mapping);
         }
@@ -69,6 +69,11 @@ namespace IllusionMods
         public static T ManualLoadAsset<T>(string bundle, string asset, string manifest) where T : Object
         {
             return TextDump.Helpers.ManualLoadAsset<T>(bundle, asset, manifest);
+        }
+
+        public static T ManualLoadAsset<T>(AssetBundleAddress assetBundleAddress) where T : Object
+        {
+            return TextDump.Helpers.ManualLoadAsset<T>(assetBundleAddress);
         }
 
         public virtual void PrepareLineForDump(ref string key, ref string value) { }

@@ -10,7 +10,6 @@ using UnityEngine.Assertions;
 using static IllusionMods.TextResourceHelper.Helpers;
 #if AI
 using AIChara;
-
 #endif
 
 namespace IllusionMods
@@ -18,7 +17,7 @@ namespace IllusionMods
     public class AssetDumpHelper : BaseDumpHelper
     {
         public delegate bool TryDumpListEntry(string assetBundleName, string assetName,
-            AssetDumpColumnInfo assetDumpColumnInfo, ref Dictionary<string, string> translations);
+            AssetDumpColumnInfo assetDumpColumnInfo, IDictionary<string, string> translations);
 
         protected readonly List<TranslationGenerator> AssetDumpGenerators;
 
@@ -120,9 +119,9 @@ namespace IllusionMods
 
                     var filePath = BuildAssetFilePath(assetBundleName, assetName);
 
-                    Dictionary<string, string> AssetDumper()
+                    IDictionary<string, string> AssetDumper()
                     {
-                        var translations = new Dictionary<string, string>();
+                        var translations = new OrderedDictionary<string, string>();
 
                         var asset = ManualLoadAsset<TextAsset>(assetBundleName, assetName, "abdata");
                         if (asset is null) return translations;
@@ -130,7 +129,7 @@ namespace IllusionMods
                         bool CellHandler(int _, int j, string contents)
                         {
                             if (!cellsToDump.Contains(j)) return false;
-                            ResourceHelper.AddLocalizationToResults(translations, contents, string.Empty);
+                            AddLocalizationToResults(translations, contents, string.Empty);
                             return true;
                         }
 
@@ -149,9 +148,9 @@ namespace IllusionMods
 
         protected virtual TranslationCollector MakeOptionDisplayItemsCollector(string assetBundleName, string assetName)
         {
-            Dictionary<string, string> AssetDumper()
+            IDictionary<string, string> AssetDumper()
             {
-                var translations = new Dictionary<string, string>();
+                var translations = new OrderedDictionary<string, string>();
                 var asset = ManualLoadAsset<ExcelData>(assetBundleName, assetName, "abdata");
                 if (asset is null) return translations;
 
@@ -188,7 +187,7 @@ namespace IllusionMods
                         }
 
                         var key = param.list[i];
-                        ResourceHelper.AddLocalizationToResults(translations, key, value);
+                        AddLocalizationToResults(translations, key, value);
                     }
                 }
 
@@ -201,9 +200,9 @@ namespace IllusionMods
         protected virtual TranslationCollector MakeStandardCommunicationTextCollector(string assetBundleName,
             string assetName)
         {
-            Dictionary<string, string> AssetDumper()
+            IDictionary<string, string> AssetDumper()
             {
-                var translations = new Dictionary<string, string>();
+                var translations = new OrderedDictionary<string, string>();
                 var asset = ManualLoadAsset<ExcelData>(assetBundleName, assetName, "abdata");
                 if (asset is null) return translations;
 
@@ -214,7 +213,7 @@ namespace IllusionMods
                     var key = param.list[15];
                     var value = param.list.Count > 20 ? param.list[20] : string.Empty;
 
-                    ResourceHelper.AddLocalizationToResults(translations, key, value);
+                    AddLocalizationToResults(translations, key, value);
                 }
 
                 return translations;
@@ -327,9 +326,9 @@ namespace IllusionMods
                         var choiceDictionary =
                             new Dictionary<string, KeyValuePair<string, string>>(baseChoiceDictionary);
 
-                        Dictionary<string, string> AssetDumper()
+                        IDictionary<string, string> AssetDumper()
                         {
-                            var translations = new Dictionary<string, string>();
+                            var translations = new OrderedDictionary<string, string>();
                             foreach (var param in asset.list)
                             {
                                 // update as we go so most recent entries are in place
@@ -385,7 +384,7 @@ namespace IllusionMods
                                         {
                                             var key = ResourceHelper.GetSpecializedKey(param, 2, out var value);
                                             allJpText.Add(key);
-                                            ResourceHelper.AddLocalizationToResults(translations, key, value);
+                                            AddLocalizationToResults(translations, key, value);
                                         }
 
                                         break;
@@ -397,7 +396,7 @@ namespace IllusionMods
                                         {
                                             var key = param.Args[1];
                                             allJpText.Add(key);
-                                            ResourceHelper.AddLocalizationToResults(translations, key, string.Empty);
+                                            AddLocalizationToResults(translations, key, string.Empty);
 
                                             // not sure where localizations are, but they're not in the next arg
                                         }
@@ -420,7 +419,7 @@ namespace IllusionMods
                                             }
 
                                             allJpText.Add(key);
-                                            ResourceHelper.AddLocalizationToResults(translations, key, value);
+                                            AddLocalizationToResults(translations, key, value);
                                         }
 
                                         break;
@@ -431,7 +430,7 @@ namespace IllusionMods
                                         {
                                             var key = ResourceHelper.GetSpecializedKey(param, i, out var value);
                                             allJpText.Add(key);
-                                            ResourceHelper.AddLocalizationToResults(translations, key, value);
+                                            AddLocalizationToResults(translations, key, value);
                                         }
 
                                         break;
@@ -443,7 +442,7 @@ namespace IllusionMods
                                         {
                                             var key = param.Args[i];
                                             allJpText.Add(key);
-                                            ResourceHelper.AddLocalizationToResults(translations, key, string.Empty);
+                                            AddLocalizationToResults(translations, key, string.Empty);
                                         }
 
                                         break;
@@ -455,7 +454,7 @@ namespace IllusionMods
                                             ContainsNonAscii(param.Args[0]))
                                         {
                                             allJpText.Add(param.Args[0]);
-                                            ResourceHelper.AddLocalizationToResults(translations, param.Args[0],
+                                            AddLocalizationToResults(translations, param.Args[0],
                                                 "Jump");
                                         }
 
@@ -522,14 +521,14 @@ namespace IllusionMods
                 {
                     var filePath = BuildAssetFilePath(assetBundleName, assetName);
 
-                    var translations = new Dictionary<string, string>();
+                    var translations = new OrderedDictionary<string, string>();
 
-                    Dictionary<string, string> AssetDumper()
+                    IDictionary<string, string> AssetDumper()
                     {
                         var done = false;
                         foreach (var tryDump in ListEntryDumpers)
                         {
-                            done = tryDump(assetBundleName, assetName, assetDumpColumnInfo, ref translations);
+                            done = tryDump(assetBundleName, assetName, assetDumpColumnInfo, translations);
                             if (done) break;
                         }
 
@@ -561,7 +560,7 @@ namespace IllusionMods
         }
 
         protected virtual bool TryDumpExcelData(string assetBundleName, string assetName,
-            AssetDumpColumnInfo assetDumpColumnInfo, ref Dictionary<string, string> translations)
+            AssetDumpColumnInfo assetDumpColumnInfo, IDictionary<string, string> translations)
         {
             var excelAsset = ManualLoadAsset<ExcelData>(assetBundleName, assetName, null);
             if (excelAsset is null) return false;
@@ -611,7 +610,7 @@ namespace IllusionMods
                             {
                                 if (mapping.Value > -1 && row.Count > mapping.Value) value = row[mapping.Value];
 
-                                ResourceHelper.AddLocalizationToResults(translations, key, value);
+                                AddLocalizationToResults(translations, key, value);
                             }
                         }
                     }
@@ -625,7 +624,7 @@ namespace IllusionMods
                         var translatedName = ResourceHelper.PerformNameLookup(row, mapping);
                         var key = translatedName.Key;
                         var value = translatedName.Value;
-                        ResourceHelper.AddLocalizationToResults(translations, key, value);
+                        AddLocalizationToResults(translations, key, value);
                     }
                 }
             }
@@ -686,7 +685,7 @@ namespace IllusionMods
         }
 
         protected virtual bool TryDumpTextAsset(string assetBundleName, string assetName,
-            AssetDumpColumnInfo assetDumpColumnInfo, ref Dictionary<string, string> translations)
+            AssetDumpColumnInfo assetDumpColumnInfo, IDictionary<string, string> translations)
         {
             var textAsset = ManualLoadAsset<TextAsset>(assetBundleName, assetName, "abdata");
 
@@ -701,7 +700,7 @@ namespace IllusionMods
                     var key = entry.Key;
                     var value = entry.Value ?? string.Empty;
                     value = value != "0" ? value : string.Empty;
-                    ResourceHelper.AddLocalizationToResults(translations, key, value);
+                    AddLocalizationToResults(translations, key, value);
                 }
             }
             else
@@ -721,7 +720,7 @@ namespace IllusionMods
                         var trans = string.Empty;
                         if (transCol >= 0 && cells.Length > transCol) trans = cells[transCol];
 
-                        ResourceHelper.AddLocalizationToResults(translations, orig, trans);
+                        AddLocalizationToResults(translations, orig, trans);
                     }
                 }
             }

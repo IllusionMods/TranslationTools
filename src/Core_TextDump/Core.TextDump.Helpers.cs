@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using UnityEngine;
@@ -118,6 +119,17 @@ namespace IllusionMods
                 }
             }
 #endif
+
+            public static T ManualLoadAsset<T>(AssetBundleAddress assetBundleAddress) where T : Object
+            {
+#if AI
+                LoadedBundles.Add(assetBundleAddress.AssetBundle);
+                return AssetUtility.LoadAsset<T>((UnityEx.AssetBundleInfo)assetBundleAddress);
+#else
+                return ManualLoadAsset<T>(assetBundleAddress.AssetBundle, assetBundleAddress.Asset,
+                    assetBundleAddress.Manifest);
+#endif
+            }
 
             public static T ManualLoadAsset<T>(string bundle, string asset, string manifest) where T : Object
             {

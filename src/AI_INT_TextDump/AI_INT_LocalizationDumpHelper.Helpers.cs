@@ -123,7 +123,6 @@ namespace IllusionMods
                 yield return childText;
             }
         }
-
         private bool GetAssetInfo(List<string> address, ref int idx, out AssetBundleInfo assetBundleInfo)
         {
             var startIdx = idx;
@@ -356,7 +355,7 @@ namespace IllusionMods
                 {
                     var row = entry.list;
                     var idx = 0;
-                    if (int.TryParse(row.GetElement(idx++) ?? string.Empty, out var entryId))
+                    if (int.TryParse(row.GetElement(idx++) ?? string.Empty, out var _))
                     {
                         if (GetAssetInfo(row, ref idx, out var nestedAssetBundleInfo))
                         {
@@ -395,7 +394,7 @@ namespace IllusionMods
                 {
                     var row = entry.list;
                     var idx = 0;
-                    if (int.TryParse(row.GetElement(idx++) ?? string.Empty, out var entryId))
+                    if (int.TryParse(row.GetElement(idx++) ?? string.Empty, out var _))
                     {
                         if (GetAssetInfo(row, ref idx, out var nestedAssetBundleInfo))
                         {
@@ -505,7 +504,6 @@ namespace IllusionMods
                 }
             }
         }
-
         private TranslationCollector MakePopupLocalizer<TValue>(IEnumerable<KeyValuePair<int, TValue>> dict,
             Func<TValue, IEnumerable<string[]>> converter)
         {
@@ -580,7 +578,7 @@ namespace IllusionMods
 
         private TranslationDumper MapLabelPostProcessor(TranslationDumper localizer)
         {
-            Dictionary<string, string> PostLocalizer()
+            IDictionary<string, string> PostLocalizer()
             {
                 var results = localizer.Collector();
                 var keys = results.Keys.ToArray();
@@ -601,7 +599,7 @@ namespace IllusionMods
             return new TranslationDumper(localizer.Path, PostLocalizer);
         }
 
-        #region extracted data
+#region extracted data
 
         private readonly Dictionary<int, Dictionary<string, string>> _otherDataByTag =
             new Dictionary<int, Dictionary<string, string>>
@@ -790,6 +788,6 @@ namespace IllusionMods
                 //{"SickName", new Dictionary<int, string> { } } // handled
             };
 
-        #endregion extracted data
+#endregion extracted data
     }
 }

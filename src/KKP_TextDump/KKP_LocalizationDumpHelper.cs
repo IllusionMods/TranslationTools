@@ -28,6 +28,7 @@ namespace IllusionMods
             yield return WrapTranslationCollector("Names/ScenarioChars", CollectScenarioCharsLocalizations);
             yield return WrapTranslationCollector("Names/Clubs", CollectClubNameLocalizations);
             yield return WrapTranslationCollector("Names/Personalities", CollectPersonalityLocalizations);
+            yield return WrapTranslationCollector("WakeUp", CollectCycleLocalizaitons);
         }
 
 
@@ -65,6 +66,44 @@ namespace IllusionMods
             return results;
         }
 
+        private Dictionary<string, string> CollectCycleLocalizaitons()
+        {
+            var results = new Dictionary<string, string>();
+            if (!Localize.Translate.Manager.initialized) return results;
+            if (!Singleton<Game>.IsInstance()) return results;
+
+            var cycle = Singleton<Game>.Instance?.actScene?.Cycle;
+
+            if (cycle == null) return results;
+
+            var getWords = AccessTools.Method(cycle.GetType(), "GetWords");
+            if (getWords == null) return results;
+
+            var lookupTable = new Dictionary<string, string>
+            {
+                {"Date", "_wakeUpDateWords"},
+                {"Holiday", "_wakeUpHolidayWords"},
+                {"Saturday", "_wakeUpSaturdayWords"},
+                {"WakeUp", "_wakeUpWeekdayWords"}
+            };
+
+            foreach (var entry in lookupTable)
+            {
+                var prop = AccessTools.Field(cycle.GetType(), entry.Value);
+
+                var orig = (string[]) prop?.GetValue(cycle);
+                if (orig == null) continue;
+
+                var trans = (string[]) getWords.Invoke(cycle, new object[] {entry.Key});
+                for (var i = 0; i < orig.Length; i++)
+                {
+                    AddLocalizationToResults(results, orig[i], trans != null && trans.Length > i ? trans[i] : string.Empty);
+                }
+            }
+
+            return results;
+
+        }
         private Dictionary<string, string> CollectClubNameLocalizations()
         {
             var results = new Dictionary<string, string>();

@@ -5,7 +5,7 @@ namespace IllusionMods
 {
     public class TranslationCount
     {
-        public TranslationCount(Dictionary<string, string> translations) : this()
+        public TranslationCount(IDictionary<string, string> translations) : this()
         {
             Lines = translations.Count;
             TranslatedLines = translations.Count(tl => !tl.Value.IsNullOrEmpty() && tl.Value != tl.Key);

@@ -8,7 +8,7 @@ using static IllusionMods.TextResourceHelper.Helpers;
 
 namespace IllusionMods
 {
-    public class LocalizationDumpHelper : BaseDumpHelper
+    public partial class LocalizationDumpHelper : BaseDumpHelper
     {
         protected readonly Dictionary<string, Dictionary<string, string>> AutoLocalizers =
             new Dictionary<string, Dictionary<string, string>>();

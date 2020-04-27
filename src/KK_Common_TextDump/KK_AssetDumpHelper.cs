@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using static IllusionMods.TextResourceHelper.Helpers;
 
 namespace IllusionMods
@@ -141,9 +139,9 @@ namespace IllusionMods
 
                     if (toUpdate.Count == 0) continue;
 
-                    Dictionary<string, string> Dumper()
+                    IDictionary<string, string> Dumper()
                     {
-                        var result = new Dictionary<string, string>();
+                        var result = new OrderedDictionary<string, string>();
 
                         foreach (var key in toUpdate)
                         {

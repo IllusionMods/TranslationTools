@@ -12,7 +12,7 @@ namespace IllusionMods
 
         private TextResourceHelper GetTextResourceHelper() => new AI_TextResourceHelper();
 
-        private TextAssetTableHelper GetTextAssetTableHelper() => new TextAssetTableHelper(new string[] { "\r\n", "\r", "\n" }, new string[] { "\t" });
+        private TextAssetTableHelper GetTextAssetTableHelper() => new TextAssetTableHelper(new [] { "\r\n", "\r", "\n" }, new [] { "\t" });
 
         public TextResourceRedirector()
         {

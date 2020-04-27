@@ -40,8 +40,8 @@ namespace IllusionMods
 
         public static readonly string[] TextAssetLineSplitter = {"\r\n", "\r", "\n"};
 
-        internal static Dictionary<string, Dictionary<string, string>> TranslationsDict =
-            new Dictionary<string, Dictionary<string, string>>();
+        internal static Dictionary<string, IDictionary<string, string>> TranslationsDict =
+            new Dictionary<string, IDictionary<string, string>>();
 
         private static string _dumpRoot;
 
@@ -263,7 +263,7 @@ namespace IllusionMods
             foreach (var assetDumper in AssetDumpHelper.GetAssetDumpers())
             {
                 var output = assetDumper.Path;
-                Dictionary<string, string> results;
+                IDictionary<string, string> results;
                 try
                 {
                     results = assetDumper.Collector();
@@ -279,7 +279,7 @@ namespace IllusionMods
 
                 if (!TranslationsDict.TryGetValue(filePath, out var translations))
                 {
-                    TranslationsDict[filePath] = translations = new Dictionary<string, string>();
+                    TranslationsDict[filePath] = translations = new OrderedDictionary<string, string>();
                 }
 
                 var beforeCount = new TranslationCount(translations);
@@ -311,7 +311,7 @@ namespace IllusionMods
             foreach (var entry in LocalizationDumpHelper.GetLocalizations())
             {
                 var output = entry.Path;
-                Dictionary<string, string> results;
+                IDictionary<string, string> results;
                 try
                 {
                     results = entry.Collector();
@@ -347,7 +347,7 @@ namespace IllusionMods
 
         private void RemapTranslations()
         {
-            var remappedTranslations = new Dictionary<string, Dictionary<string, string>>();
+            var remappedTranslations = new Dictionary<string, IDictionary<string, string>>();
             foreach (var entry in TranslationsDict)
             {
                 var filePath = entry.Key.Replace('/', '\\');
@@ -491,7 +491,7 @@ namespace IllusionMods
             File.WriteAllLines(filePath, lines.ToArray());
         }
 
-        private List<string> CreateLocalizationLines(Dictionary<string, string> translations)
+        private List<string> CreateLocalizationLines(IDictionary<string, string> translations)
         {
             var formatStringRegex = LocalizationDumpHelper.FormatStringRegex;
             var lines = new List<string>();
@@ -559,7 +559,7 @@ namespace IllusionMods
 
             return lines;
         }
-        private List<string> CreateResourceReplacementLines(Dictionary<string, string> translations)
+        private List<string> CreateResourceReplacementLines(IDictionary<string, string> translations)
         {
             var lines = new List<string>();
             foreach (var localization in translations)

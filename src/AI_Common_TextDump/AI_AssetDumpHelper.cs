@@ -26,7 +26,7 @@ namespace IllusionMods
         }
 
         protected virtual bool TryDumpTitleSkillName(string assetBundleName, string assetName, AssetDumpColumnInfo _,
-            ref Dictionary<string, string> translations)
+            IDictionary<string, string> translations)
         {
             var titleSkillName = ManualLoadAsset<TitleSkillName>(assetBundleName, assetName, "abdata");
             if (titleSkillName is null)
