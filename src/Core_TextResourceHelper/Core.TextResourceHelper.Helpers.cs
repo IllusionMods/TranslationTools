@@ -83,22 +83,15 @@ namespace IllusionMods
                     var found = true;
                     for (var i = 1; i < needleLength; i++)
                     {
-                        if (needleList[i].CompareTo(haystackList[start + i]) != 0)
-                        {
-                            // mismatch
-                            found = false;
-                            break;
-                        }
+                        if (needleList[i].CompareTo(haystackList[start + i]) == 0) continue;
+
+                        // mismatch
+                        found = false;
+                        break;
                     }
 
-                    if (found)
-                    {
-                        Logger.LogFatal($"ArrayContains: match at {start}/{haystackLength}");
-                        // loop completed without mismatch
-                        return true;
-                    }
+                    if (found) return true;
                 }
-                Logger.LogFatal($"ArrayContains: gave up at {start}/{haystackLength}");
                 return false;
             }
 

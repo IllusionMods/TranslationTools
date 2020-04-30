@@ -106,17 +106,14 @@ namespace IllusionMods
 
             string FolderPath = Path.Combine(Paths.PluginPath, TranslationsRoot);
             FolderPath = Path.Combine(FolderPath, "adv");
-            Logger.LogFatal(FolderPath);
             CountJPText(FolderPath);
 
             FolderPath = Path.Combine(Paths.PluginPath, TranslationsRoot);
             FolderPath = Path.Combine(FolderPath, "communication");
-            Logger.LogFatal(FolderPath);
             CountJPText(FolderPath);
 
             FolderPath = Path.Combine(Paths.PluginPath, TranslationsRoot);
             FolderPath = Path.Combine(FolderPath, "h");
-            Logger.LogFatal(FolderPath);
             CountJPText(FolderPath);
 
             Logger.Log(LogLevel.Info, $"Total Japanese lines: {AllJPText.Count}");
@@ -125,10 +122,7 @@ namespace IllusionMods
         private void SyncTLs(TLType translationType, bool ForceOverwrite = false)
         {
             string PersonalityNumber = Personality.Value.Replace("c", "");
-            Logger.LogFatal(Paths.PluginPath);
-            Logger.LogFatal(TranslationsRoot);
             string FolderPath = Path.Combine(Paths.PluginPath, TranslationsRoot);
-            Logger.LogFatal(FolderPath);
             switch (translationType)
             {
                 case TLType.Scenario:
@@ -152,7 +146,6 @@ namespace IllusionMods
                 default:
                     return;
             }
-            Logger.LogFatal(FolderPath);
 
             if (!Directory.Exists(FolderPath))
                 return;

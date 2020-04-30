@@ -608,22 +608,18 @@ namespace IllusionMods
                     for (var i = firstRow; i < excelAsset.list.Count; i++)
                     {
                         var row = excelAsset.GetRow(i);
-                        Logger.LogFatal($"item lookup: row='{string.Join("', '", row.ToArray())}'");
-                        if (row.Count == 0) continue;
-                        if (row[0] == "no") continue;
-                        if (row.Count > mapping.Key)
-                        {
-                            var key = row[mapping.Key];
-                            var value = string.Empty;
-                            if (skipName.TryGetValue(mapping.Key, out var checkKey) && checkKey == key) continue;
+                        
+                        if (row.Count == 0 || row[0] == "no" || row.Count <= mapping.Key) continue;
 
-                            if (ContainsNonAscii(key))
-                            {
-                                if (mapping.Value > -1 && row.Count > mapping.Value) value = row[mapping.Value];
+                        var key = row[mapping.Key];
+                        var value = string.Empty;
+                        if (skipName.TryGetValue(mapping.Key, out var checkKey) && checkKey == key) continue;
 
-                                AddLocalizationToResults(translations, key, value);
-                            }
-                        }
+                        if (!ContainsNonAscii(key)) continue;
+
+                        if (mapping.Value > -1 && row.Count > mapping.Value) value = row[mapping.Value];
+
+                        AddLocalizationToResults(translations, key, value);
                     }
                 }
 
