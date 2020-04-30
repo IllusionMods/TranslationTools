@@ -5,17 +5,21 @@ Translation tools for Illusion games
 
 ### TextResourceRedirector
 
-- **v1.1.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r2/AI_TextResourceRedirector.v1.1.1.zip)** - For AI Girl
+- **v1.2.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r4/AI_TextResourceRedirector.v1.2.1.zip)** - For AI Girl
 - **v1.1.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r2/HS_TextResourceRedirector.v1.1.1.zip)** - For Honey Select
-- **v1.1.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r2/KK_TextResourceRedirector.v1.1.1.zip)** - For Koikatsu
+- **v1.2.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r4/KK_TextResourceRedirector.v1.2.1.zip)** - For Koikatsu
+
 
 Allows translations to override individual assets. Required for some translations to function correctly. Requires [XUnity.AutoTranslator](https://github.com/bbepis/XUnity.AutoTranslator) v4.11 or greater.
 
 ### TextDump
 
-- **v1.1.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r2/AI_TextDump.v1.1.1.zip)** - For AI Girl
-- **v1.1.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r2/HS_TextDump.v1.1.1.zip)** - For Honey Select
-- **v1.1.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r2/KK_TextDump.v1.1.1.zip)** - For Koikatsu
+- **v1.2.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r4/AI_TextDump.v1.2.1.zip)** - For AI Girl
+- **v1.2.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r4/AI_INT_TextDump.v1.2.1.zip)** - For AI Shoujo (Steam)
+- **v1.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r2/HS_TextDump.v1.1.zip)** - For Honey Select
+- **v1.2.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r4/KK_TextDump.v1.2.1.zip)** - For Koikatsu
+- **v1.2.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r4/KKP_TextDump.v1.2.1.zip)** - For Koikatsu Party
+
 
 Dumps untranslated text in to .txt files so that the lines can be used by translators working on the translation projects. Normally only executes under studio on initial load. Versions for localized games run under the main game and require multiple dump stages. Check the console and/or log file for specifics.
 
@@ -23,7 +27,7 @@ Marked incompatible with [XUnity.AutoTranslator and XUnity.ResourceRedirector](h
 
 ### TranslationSync
 
-- **v1.2 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r2/KK_TranslationSync.v1.2.zip)** - For Koikatsu
+- **v1.3.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r4/KK_TranslationSync.v1.3.1.zip)** - For Koikatsu
 
 A plugin for correctly formatting translation files. Corrects formatting and copies translations from one file to another for the same personality in case of duplicate entries. Used by translators working on the [Koikatsu Story Translation](https://github.com/IllusionMods/KoikatsuStoryTranslation) project. No need to download unless you're working on translations.
 
