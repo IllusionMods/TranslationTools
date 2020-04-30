@@ -78,18 +78,8 @@ namespace IllusionMods
 
         public bool IsTable(string table)
         {
-            if (!string.IsNullOrEmpty(table))
-            {
-                foreach (var colSplit in ColSplitStrings)
-                {
-                    if (table.Contains(colSplit))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            // possible table is only 1 row, so only check for column split strings
+            return !string.IsNullOrEmpty(table) && ColSplitStrings.Any(table.Contains);
         }
 
         public bool IsTableRow(string row)

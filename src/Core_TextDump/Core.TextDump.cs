@@ -9,6 +9,7 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using UnityEngine;
 using UnityEngine.Assertions;
+using IllusionMods.Shared;
 using BepInExLogLevel = BepInEx.Logging.LogLevel;
 using static IllusionMods.TextResourceHelper.Helpers;
 
@@ -21,12 +22,12 @@ namespace IllusionMods
     [BepInIncompatibility("gravydevsupreme.xunity.resourceredirector")]
     public partial class TextDump
     {
-        public delegate void MonoBehaviorScriptFunctionHandler(TextDump sender, EventArgs eventArgs);
+        public delegate void TextDumpEventHandler(TextDump sender, EventArgs eventArgs);
 
 
         public const string GUID = "com.deathweasel.bepinex.textdump";
         public const string PluginName = "Text Dump";
-        public const string Version = "1.2.0";
+        public const string Version = "1.2.1";
 
         private const string FormatStringPlaceholder = "_P_L_A_C_E_H_O_L_D_E_R_";
 
@@ -60,7 +61,18 @@ namespace IllusionMods
 
         protected Func<IEnumerator> CheckReadyToDumpChecker { get; }
         protected Coroutine CheckReadyCoroutine { get; private set; }
-        public string CheckReadyNotificationMessage { get; private set; } = string.Empty;
+        
+        private string _notificationMessage = string.Empty;
+
+        public string NotificationMessage
+        {
+            get => _notificationMessage;
+            private set 
+            { 
+                _notificationMessage = value;
+                _nextNotify = 0;
+            }
+        }
 
 
         public static ConfigEntry<bool> Enabled { get; private set; }
@@ -127,9 +139,10 @@ namespace IllusionMods
             Enabled = Enabled ?? Config.Bind("Settings", "Enabled", false, "Whether the plugin is enabled");
         }
 
-        public event MonoBehaviorScriptFunctionHandler TextDumpAwake;
-        public event MonoBehaviorScriptFunctionHandler TextDumpMain;
-        public event MonoBehaviorScriptFunctionHandler TextDumpUpdate;
+        public event TextDumpEventHandler TextDumpAwake;
+        public event TextDumpEventHandler TextDumpMain;
+        public event TextDumpEventHandler TextDumpUpdate;
+        public event TextDumpEventHandler TextDumpLevelComplete;
 
         internal void OnTextDumpAwake(EventArgs eventArgs)
         {
@@ -144,6 +157,11 @@ namespace IllusionMods
         internal void OnTextDumpUpdate(EventArgs eventArgs)
         {
             TextDumpUpdate?.Invoke(this, eventArgs);
+        }
+
+        internal void OnTextDumpLevelComplete(EventArgs eventArgs)
+        {
+            TextDumpLevelComplete?.Invoke(this, eventArgs);
         }
 
         internal void Awake()
@@ -188,11 +206,14 @@ namespace IllusionMods
             }
 
 
-            if (Time.unscaledTime > _nextNotify && !string.IsNullOrEmpty(CheckReadyNotificationMessage))
-            {
-                LogWithMessage(BepInExLogLevel.Warning, $"[TextDump] {CheckReadyNotificationMessage}");
-                _nextNotify = Time.unscaledTime + NotificationDelay;
-            }
+            HandleNotification();
+        }
+
+        private void HandleNotification()
+        {
+            if (string.IsNullOrEmpty(NotificationMessage) || !(Time.unscaledTime > _nextNotify)) return;
+            LogWithMessage(BepInExLogLevel.Warning, $"[TextDump] {NotificationMessage}");
+            _nextNotify = Time.unscaledTime + NotificationDelay;
         }
 
 
@@ -239,6 +260,8 @@ namespace IllusionMods
             DumpLevelCompleted++;
             LogWithMessage(BepInExLogLevel.Info, $"[TextDump] Dump {DumpLevelCompleted}/{DumpLevelMax} completed.");
 
+            OnTextDumpLevelComplete(EventArgs.Empty);
+
             if (!WriteAfterEachDump && (!WriteAfterFinalDump || !AreAllDumpsComplete())) return;
             if (_writeInProgress) return;
             StartCoroutine(WriteTranslations());
@@ -247,8 +270,8 @@ namespace IllusionMods
         private void LogDumpResults(string prefix, string output, TranslationCount before, TranslationCount after)
         {
             var delta = after - before;
-            Logger.LogInfo(
-                $"[TextDump] lines:{after.Lines,5:D} (new:{delta.Lines,5:D}) translations:{after.TranslatedLines,5:D} (new:{delta.TranslatedLines,5:D}) {prefix} {output}");
+            Logger.LogDebug(
+                $"[TextDump] {(DumpLevelCompleted+1)}/{DumpLevelMax} lines:{after.Lines,4:D} (new:{delta.Lines,4:D}) translations:{after.TranslatedLines,4:D} (new:{delta.TranslatedLines,4:D}) {prefix} {output}");
         }
 
         private TranslationCount DumpAssets()
@@ -377,6 +400,8 @@ namespace IllusionMods
 
         private IEnumerator WriteTranslations()
         {
+            if (_writeInProgress) yield break;
+            NotificationMessage = "Writing translation files, please wait.";
             _writeInProgress = true;
             LogWithMessage(BepInExLogLevel.Warning, $"[TextDump] Writing translation files to {DumpRoot}");
             yield return null;
@@ -386,11 +411,7 @@ namespace IllusionMods
             foreach (var entry in TranslationsDict.ToArray())
             {
                 count++;
-                if ((count % 100) == 0)
-                {
-                    if ((count % 1000) == 0) LogWithMessage(BepInExLogLevel.Warning, $"[TextDump] Writing translation files, please wait.");
-                    yield return null;
-                }
+                if ((count % 100) == 0) yield return null;
                 var filePath = entry.Key;
                 var translations = entry.Value;
                 if (translations.Count <= 0) continue;
@@ -407,11 +428,11 @@ namespace IllusionMods
 
                 if (lines.Count > 0) DumpToFile(filePath, lines);
             }
-
+            NotificationMessage = $"Moving translation files to {DumpDestination}, please wait.";
             if (ReleaseOnWrite) TranslationsDict.Clear();
             LogWithMessage(BepInExLogLevel.Info,
                 $"[TextDump] Completed writing translation files, moving to {DumpDestination}");
-
+            
             var retryCount = 0;
             var moveSuccess = false;
             while (retryCount < 10)
@@ -427,7 +448,7 @@ namespace IllusionMods
                 catch (Exception err)
                 {
                     Logger.LogWarning(
-                        $"[TextDump Unable to move {DumpRoot} to {DumpDestination}, will attempt to retry: {err}");
+                        $"[TextDump] Unable to move {DumpRoot} to {DumpDestination}, will attempt to retry: {err}");
                 }
             }
 
@@ -443,6 +464,7 @@ namespace IllusionMods
             }
 
             _writeInProgress = false;
+            NotificationMessage = string.Empty;
         }
 
         private static void CopyDirectory(string sourceDirectory, string destinationDirectory)
@@ -519,13 +541,12 @@ namespace IllusionMods
 
                 if (!key.StartsWith("r:") && !key.StartsWith("sr:"))
                 {
-                    key = key.Replace("=", "%3D").Replace("\n", "\\n");
-                    value = (value?.Replace("=", "%3D").Replace("\n", "\\n") ?? string.Empty)
+                    key = key.Replace("=", "%3D");
+                    value = (value?.Replace("=", "%3D") ?? string.Empty)
                         .TrimEnd(TextResourceHelper.WhitespaceCharacters);
 
                     var isFormat = formatStringRegex.IsMatch(key);
-                    var regex = isFormat; // || keyHasNewline;
-
+                    var regex = isFormat;
                     if (isFormat)
                     {
                         for (var count = 1; formatStringRegex.IsMatch(key); count++)
@@ -568,18 +589,6 @@ namespace IllusionMods
                 var value = localization.Value.Trim();
 
                 AssetDumpHelper.PrepareLineForDump(ref key, ref value);
-
-                if (key.Contains("\n"))
-                {
-                    key = $"\"{key.Replace("\n", "\\n").Trim()}\"";
-                }
-
-                if (value.Contains("\n"))
-                {
-                    value = $"\"{value.Replace("\n", "\\n").Trim()}\"";
-                }
-
-                value = value.Replace(";", ",");
 
                 if (value.IsNullOrEmpty() && !key.StartsWith("//"))
                 {

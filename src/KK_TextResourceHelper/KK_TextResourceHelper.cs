@@ -1,5 +1,7 @@
 ﻿using ADV;
 using System.Collections.Generic;
+using System.Linq;
+using static IllusionMods.TextResourceHelper.Helpers;
 
 namespace IllusionMods
 {
@@ -20,6 +22,32 @@ namespace IllusionMods
         {
             // only Party has ADV.Command.ReplaceLanguage
             return (int) param.Command == 223;
+        }
+
+        private static readonly Dictionary<string, IEnumerable<string>> ExcelListPathColumnMapping =
+            new Dictionary<string, IEnumerable<string>>
+            {
+                {
+                    CombinePaths(string.Empty, "list", "characustom", string.Empty),
+                    new [] {"Name"}
+                },
+                {
+                    CombinePaths(string.Empty, "studio", "info", string.Empty),
+                    new [] { "表示名", "名称" }
+                }
+            };
+
+        public override IEnumerable<int> GetSupportedExcelColumns(string calculatedModificationPath, ExcelData asset)
+        {
+            foreach (var mapping in ExcelListPathColumnMapping)
+            {
+                if (!calculatedModificationPath.Contains(mapping.Key)) continue;
+
+                var headers = GetExcelHeaderRow(asset);
+                return mapping.Value.Select(h => headers.IndexOf(h)).Where(i => i != -1).Distinct().OrderBy(x=>x);
+            }
+
+            return base.GetSupportedExcelColumns(calculatedModificationPath, asset);
         }
     }
 }

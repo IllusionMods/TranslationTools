@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace IllusionMods
 {
@@ -44,16 +45,15 @@ namespace IllusionMods
 
             public static string NormalizePathSeparators(string path)
             {
-                return DirectorySeparatorsToReplace.Aggregate(path,
-                    (current, sep) => current.Replace(sep, Path.DirectorySeparatorChar));
+                //return path?.Split((char[])DirectorySeparatorsToReplace).Aggregate(Path.Combine);
+                var parts = path?.Split((char[]) DirectorySeparatorsToReplace);
+                return parts == null || parts.Length <= 1 ? path : parts.Aggregate(Path.Combine);
             }
-
 
             public static string CombinePaths(params string[] parts)
             {
-                var merged = parts.Aggregate(string.Empty,
-                    (current, part) => current.IsNullOrEmpty() ? part : Path.Combine(current, part));
-                return NormalizePathSeparators(merged);
+                var splitChars = (char[]) DirectorySeparatorsToReplace;
+                return parts?.SelectMany(i=>i.Split(splitChars)).Aggregate(Path.Combine);
             }
 
             /// <summary>Wrapper for <see cref="string.Join(string, string[])" /> to workaround lack of params usage in .NET 3.5.</summary>
@@ -93,11 +93,12 @@ namespace IllusionMods
 
                     if (found)
                     {
+                        Logger.LogFatal($"ArrayContains: match at {start}/{haystackLength}");
                         // loop completed without mismatch
                         return true;
                     }
                 }
-
+                Logger.LogFatal($"ArrayContains: gave up at {start}/{haystackLength}");
                 return false;
             }
 

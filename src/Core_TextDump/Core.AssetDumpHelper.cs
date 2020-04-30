@@ -4,12 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using ADV;
+using IllusionMods.Shared;
 using MessagePack;
 using UnityEngine;
 using UnityEngine.Assertions;
 using static IllusionMods.TextResourceHelper.Helpers;
 #if AI
 using AIChara;
+
 #endif
 
 namespace IllusionMods
@@ -33,9 +35,10 @@ namespace IllusionMods
                 {"Name", "EN_US"}
             });
 
-            StdStudioAssetCols = new AssetDumpColumnInfo(new Dictionary<string, string>
+            StdStudioAssetCols = new AssetDumpColumnInfo(null, null, true, new[]
             {
-                {" 表示名", string.Empty}
+                "名称",
+                "表示名"
             });
 
             AssetDumpGenerators = new List<TranslationGenerator>
@@ -144,6 +147,12 @@ namespace IllusionMods
 
         #endregion HText
 
+        public override void PrepareLineForDump(ref string key, ref string value)
+        {
+            base.PrepareLineForDump(ref key, ref value);
+            value = value.Replace(";", ",");
+        }
+
         #region CommunicationText
 
         protected virtual TranslationCollector MakeOptionDisplayItemsCollector(string assetBundleName, string assetName)
@@ -155,38 +164,40 @@ namespace IllusionMods
                 if (asset is null) return translations;
 
                 var mappings = new Dictionary<int, int>();
-                var headers = asset.GetRow(0);
+                var headers = ResourceHelper.GetExcelHeaderRow(asset, out var firstRow);
                 for (var i = 1; i < headers.Count; i++)
                 {
                     var header = headers[i];
-                    if (header.Contains("(英語)")) break;
+                    if (header.Contains("(") && header.EndsWith(")")) break;
                     mappings.Add(i, headers.IndexOf($"{header}(英語)"));
                 }
 
-                foreach (var param in asset.list)
+                for (var rowIndex = firstRow; rowIndex < asset.list.Count; rowIndex++)
                 {
+                    var row = asset.GetRow(rowIndex);
                     var value = string.Empty;
-                    if (param.list[0] == "no") continue;
+                    if (row[0] == "no") continue;
+
                     foreach (var mapping in mappings)
                     {
                         var i = mapping.Key;
-                        if (param.list.Count <= i) continue;
-                        if (param.list[i].IsNullOrWhiteSpace()) continue;
-                        if (param.list[i] == "・・・") continue;
+                        if (row.Count <= i) continue;
+                        if (row[i].IsNullOrWhiteSpace()) continue;
+                        if (row[i] == "・・・") continue;
 
-                        if (mapping.Value > -1 && param.list.Count > mapping.Value)
+                        var key = row[i];
+                        if (mapping.Value > -1 && row.Count > mapping.Value)
                         {
                             try
                             {
-                                value = param.list[mapping.Value];
+                                value = row[mapping.Value];
                             }
                             catch
                             {
                                 value = string.Empty;
                             }
                         }
-
-                        var key = param.list[i];
+                        
                         AddLocalizationToResults(translations, key, value);
                     }
                 }
@@ -352,7 +363,7 @@ namespace IllusionMods
 
                                         var speaker = param.Args[0];
                                         if (!speaker.IsNullOrEmpty() && !StringIsSingleReplacement(speaker) &&
-                                              !ResourceHelper.TextKeysBlacklist.Contains(speaker))
+                                            !ResourceHelper.TextKeysBlacklist.Contains(speaker))
                                         {
                                             // capture speaker name
                                             AddLocalizationToResults(translations, speaker,
@@ -571,7 +582,7 @@ namespace IllusionMods
                 var skipName = new Dictionary<int, string>();
                 assetDumpColumnInfo.NumericMappings.ToList().ForEach(x => mappings[x.Key] = x.Value);
 
-                var headers = excelAsset.GetRow(0);
+                var headers = ResourceHelper.GetExcelHeaderRow(excelAsset, out var firstRow);
                 foreach (var entry in assetDumpColumnInfo.NameMappings)
                 {
                     var src = headers.IndexOf(entry.Key);
@@ -594,7 +605,7 @@ namespace IllusionMods
 
                 foreach (var mapping in mappings.Where(m => m.Key > -1))
                 {
-                    for (var i = 1; i < excelAsset.list.Count; i++)
+                    for (var i = firstRow; i < excelAsset.list.Count; i++)
                     {
                         var row = excelAsset.GetRow(i);
                         Logger.LogFatal($"item lookup: row='{string.Join("', '", row.ToArray())}'");

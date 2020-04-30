@@ -1,5 +1,5 @@
 ﻿using System.Reflection;
-using IllusionMods;
+using IllusionMods.Shared;
 using static IllusionMods.TextDump;
 
 [assembly: AssemblyTitle(PluginNameInternal)]

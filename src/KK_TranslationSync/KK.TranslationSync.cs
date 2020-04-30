@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using XUnity.AutoTranslator.Plugin.Core;
+using IllusionMods.Shared;
 
 namespace IllusionMods
 {
@@ -21,7 +22,7 @@ namespace IllusionMods
         public const string GUID = "com.deathweasel.bepinex.translationsync";
         public const string PluginName = "Translation Sync";
         public const string PluginNameInternal = "KK_TranslationSync";
-        public const string Version = "1.3";
+        public const string Version = "1.3.1";
         public static ConfigEntry<string> Personality { get; private set; }
         public static ConfigEntry<KeyboardShortcut> TranslationSyncHotkey { get; private set; }
 

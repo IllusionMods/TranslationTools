@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace IllusionMods
+
+// Keep code .NET 3.5 friendly
+namespace IllusionMods.Shared
 {
     public class OrderedDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     {
@@ -101,3 +103,4 @@ namespace IllusionMods
         public ICollection<TValue> Values => _list.Select(e => e.Value).ToArray();
     }
 }
+

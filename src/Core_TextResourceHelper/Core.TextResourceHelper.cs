@@ -1,9 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using BepInEx.Logging;
+using System.Linq;
 #if !HS
 using ADV;
-using System.Collections.Generic;
-using System.Linq;
 
 #endif
 
@@ -25,6 +25,24 @@ namespace IllusionMods
             if (original == null) throw new ArgumentNullException(nameof(original));
             return !string.IsNullOrEmpty(localization) && localization != "0" && localization != original;
         }
+
+        public virtual IEnumerable<int> GetSupportedExcelColumns(string calculatedModificationPath, ExcelData asset) => new int[0];
+
+        public virtual List<string> GetExcelHeaderRow(ExcelData asset, out int firstRow)
+        {
+            firstRow = 0;
+            var headerRow = asset.GetRow(firstRow++);
+            if (headerRow.Count > 1 && (
+                (headerRow[0].StartsWith("Ｈ") && headerRow[1].IsNullOrWhiteSpace()) ||
+                (headerRow.Count == headerRow.Count(h => h.IsNullOrWhiteSpace()))))
+            {
+                headerRow = asset.GetRow(firstRow++);
+            }
+
+            return headerRow;
+        }
+
+        public List<string> GetExcelHeaderRow(ExcelData asset) => GetExcelHeaderRow(asset, out var _);
 
 #if !HS
 
@@ -48,6 +66,8 @@ namespace IllusionMods
         {
             return SupportedCommands.Contains(command);
         }
+
+
 
         public virtual string BuildSpecializedKey(ScenarioData.Param param, string toTranslate)
         {

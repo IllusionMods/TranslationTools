@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Text;
+using System.Text.RegularExpressions;
 using BepInEx.Logging;
 using UnityEngine;
 
@@ -6,6 +8,13 @@ namespace IllusionMods
 {
     public partial class BaseDumpHelper
     {
+       
+        protected const string NewlineReplaceValue = "\\n";
+
+        protected static readonly Regex NewlineReplaceRegex =
+            new Regex(Regex.Escape("\n"), 
+                Shared.Constants.DefaultRegexOptions);
+
         private ManualLogSource _logger;
 
         public BaseDumpHelper(TextDump plugin)
@@ -76,6 +85,11 @@ namespace IllusionMods
             return TextDump.Helpers.ManualLoadAsset<T>(assetBundleAddress);
         }
 
-        public virtual void PrepareLineForDump(ref string key, ref string value) { }
+        public virtual void PrepareLineForDump(ref string key, ref string value)
+        {
+            var origValue = value;
+            key = NewlineReplaceRegex.Replace(key, NewlineReplaceValue);
+            value = NewlineReplaceRegex.Replace(value, NewlineReplaceValue);
+        }
     }
 }

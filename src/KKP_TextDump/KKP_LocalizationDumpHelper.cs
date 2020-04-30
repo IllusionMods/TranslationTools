@@ -101,9 +101,24 @@ namespace IllusionMods
                 }
             }
 
-            return results;
+            // stray one in another location
+            var wakeUpWordsProp = AccessTools.Field(typeof(ActionGame.Point.ActionPoint), "_wakeUpWords");
 
+            var wakeUpWords = (string[])wakeUpWordsProp?.GetValue(cycle);
+
+            if (wakeUpWords != null)
+            {
+                var wakeUpTranslations = Singleton<Game>.Instance.actScene.uiTranslater.Get(6).Values.ToArray("Sleep", false);
+
+                for (var i = 0; i < wakeUpWords.Length; i++)
+                {
+                    AddLocalizationToResults(results, wakeUpWords[i],
+                        wakeUpTranslations != null && wakeUpTranslations.Length > i ? wakeUpTranslations[i] : string.Empty);
+                }
+            }
+            return results;
         }
+
         private Dictionary<string, string> CollectClubNameLocalizations()
         {
             var results = new Dictionary<string, string>();

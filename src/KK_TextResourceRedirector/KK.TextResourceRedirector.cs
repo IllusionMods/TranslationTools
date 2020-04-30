@@ -26,10 +26,18 @@ namespace IllusionMods
         private void ConfigureHandlersForKK(TextResourceRedirector sender, EventArgs eventArgs)
         {
             // limit what handlers will attempt to handle to speed things up
-            sender.ScenarioDataHandler.WhiteListPaths.Add("abdata/adv");
-            //sender.ExcelDataHandler.WhiteListPaths.Add("abdata/communication"); // faster without path limiting
-            if (sender.TextAssetTableHandler is IPathListBoundHandler pthHandler) pthHandler.WhiteListPaths.Add("abdata/h/list");
-            sender.ChaListDataHandler.WhiteListPaths.Add("abdata/list/characustom");
+            if (sender.ScenarioDataHandler is IPathListBoundHandler scenarioHandler)
+            {
+                scenarioHandler.WhiteListPaths.Add("abdata/adv");
+            }
+
+            //if (sender.TextAssetTableHandler is IPathListBoundHandler tableHandler)
+            //    tableHandler.WhiteListPaths.Add("abdata/h/list");
+
+            if (sender.ChaListDataHandler is IPathListBoundHandler chaListHandler)
+            {
+                chaListHandler.WhiteListPaths.Add("abdata/list/characustom");
+            }
         }
     }
 }

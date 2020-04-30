@@ -2,9 +2,12 @@
 using System.Collections;
 using AIProject.Player;
 using BepInEx;
+using HarmonyLib;
+using IllusionMods.Shared;
 using Manager;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UploaderSystem;
 using Resources = Manager.Resources;
 using Scene = UnityEngine.SceneManagement.Scene;
 
@@ -25,7 +28,7 @@ namespace IllusionMods
 
         static TextDump()
         {
-            if (typeof(UploaderSystem.DownloadScene).GetProperty("isSteam", HarmonyLib.AccessTools.all) != null)
+            if (typeof(DownloadScene).GetProperty("isSteam", AccessTools.all) != null)
             {
                 CurrentExecutionMode = ExecutionMode.Startup;
                 DumpLevelMax = 4;
@@ -43,8 +46,10 @@ namespace IllusionMods
             {
                 InitPluginSettings();
                 Enabled.Value = false;
-                Logger.LogFatal("[TextDump] Incorrect plugin for this application. Remove AI_INT_TextDump and use AI_TextDump.");
+                Logger.LogFatal(
+                    "[TextDump] Incorrect plugin for this application. Remove AI_INT_TextDump and use AI_TextDump.");
             }
+
             TextResourceHelper = new AI_TextResourceHelper();
             LocalizationDumpHelper = new AI_INT_LocalizationDumpHelper(this);
             AssetDumpHelper = new AI_INT_AssetDumpHelper(this);
@@ -52,17 +57,22 @@ namespace IllusionMods
             CheckReadyToDumpChecker = AI_INT_CheckReadyToDump;
 
             TextDumpAwake += AI_INT_TextDumpAwake;
-            TextDumpUpdate += AI_INT_TextDumpUpdate;
+            TextDumpLevelComplete += AI_INT_TextDumpLevelComplete;
         }
 
-        private void AI_INT_TextDumpUpdate(TextDump sender, EventArgs eventArgs)
+        private void AI_INT_TextDumpLevelComplete(TextDump sender, EventArgs eventArgs)
         {
-            if (DumpLevelCompleted > 0)
+            if (DumpLevelCompleted >= DumpLevelMax)
             {
-                CheckReadyNotificationMessage =
+                NotificationMessage = string.Empty;
+            }
+            else if (DumpLevelCompleted > 0)
+            {
+                NotificationMessage =
                     "Localizations not loaded. Start/Load game and play until you have control of the player";
             }
         }
+
 
         private void AI_INT_TextDumpAwake(TextDump sender, EventArgs eventArgs)
         {

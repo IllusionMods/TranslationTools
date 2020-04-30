@@ -1,5 +1,5 @@
 ﻿using BepInEx;
-
+using IllusionMods.Shared;
 namespace IllusionMods
 {
     /// <remarks>

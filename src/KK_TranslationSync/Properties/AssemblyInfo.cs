@@ -1,4 +1,4 @@
-﻿using IllusionMods;
+﻿using IllusionMods.Shared;
 using System.Reflection;
 using static IllusionMods.TranslationSync;
 

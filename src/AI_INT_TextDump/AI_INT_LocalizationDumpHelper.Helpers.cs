@@ -327,12 +327,12 @@ namespace IllusionMods
         {
             if (excelData.MaxCell > 1)
             {
-                var headers = excelData.GetRow(0);
+                var headers = ResourceHelper.GetExcelHeaderRow(excelData, out var firstRow);
                 startIdx = headers.IndexOf("AssetBundleName");
                 //Logger.LogFatal($"IsAssetTable: {startIdx}");
                 if (startIdx != -1)
                 {
-                    var row = excelData.GetRow(1);
+                    var row = excelData.GetRow(firstRow);
                     //Logger.LogFatal($"IsAssetTable: {startIdx}: '{string.Join("', '", row.ToArray())}'");
                     if (GetAssetInfo(string.Empty, row, ref startIdx, out _))
                     {
@@ -383,8 +383,7 @@ namespace IllusionMods
 
         private IEnumerable<AssetBundleInfo> GetAssetTables(AssetBundleInfo assetBundleInfo)
         {
-            ExcelData excelData;
-            if (IsAssetTable(assetBundleInfo, out excelData, out _))
+            if (IsAssetTable(assetBundleInfo, out var excelData, out _))
             {
                 yield return assetBundleInfo;
             }
@@ -394,16 +393,13 @@ namespace IllusionMods
                 {
                     var row = entry.list;
                     var idx = 0;
-                    if (int.TryParse(row.GetElement(idx++) ?? string.Empty, out var _))
+                    if (!int.TryParse(row.GetElement(idx++) ?? string.Empty, out var _)) continue;
+                    if (!GetAssetInfo(row, ref idx, out var nestedAssetBundleInfo)) continue;
+
+                    nestedAssetBundleInfo.ClearManifest();
+                    foreach (var subEntry in GetAssetTables(nestedAssetBundleInfo))
                     {
-                        if (GetAssetInfo(row, ref idx, out var nestedAssetBundleInfo))
-                        {
-                            nestedAssetBundleInfo.ClearManifest();
-                            foreach (var subentry in GetAssetTables(nestedAssetBundleInfo))
-                            {
-                                yield return subentry;
-                            }
-                        }
+                        yield return subEntry;
                     }
                 }
             }

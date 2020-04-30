@@ -13,7 +13,7 @@ namespace IllusionMods
 
         public ChaListDataHandler() : base(ChaListData.ChaListDataMark)
         {
-            SearchLength = ObjectMark.Count() * 3;
+            SearchLength = ObjectMark.Count() + 10;
         }
         public override bool TranslateObject(ref ChaListData obj, SimpleTextTranslationCache cache, string calculatedModificationPath)
         {

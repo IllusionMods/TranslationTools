@@ -1,7 +1,7 @@
 ﻿using System;
 using BepInEx.Configuration;
 
-namespace IllusionMods
+namespace IllusionMods.Shared.Plugin
 {
     /// <summary>
     ///     Class that specifies how a setting should be displayed inside the ConfigurationManager settings window.

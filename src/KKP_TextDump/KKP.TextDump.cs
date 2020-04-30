@@ -4,6 +4,7 @@ using BepInEx;
 using Manager;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using IllusionMods.Shared;
 using Scene = UnityEngine.SceneManagement.Scene;
 
 namespace IllusionMods
@@ -35,30 +36,28 @@ namespace IllusionMods
             CheckReadyToDumpChecker = KKP_CheckReadyToDump;
 
             TextDumpAwake += KKP_TextDumpAwake;
-            TextDumpUpdate += KKP_TextDumpUpdate;
+            TextDumpLevelComplete += KKP_TextDumpLevelComplete;
         }
 
+        private void KKP_TextDumpLevelComplete(TextDump sender, EventArgs eventArgs)
+        {
+            if (DumpLevelCompleted >= DumpLevelMax)
+            {
+                NotificationMessage = string.Empty;
+            }
+            else if (DumpLevelCompleted > 0)
+            {
+                NotificationMessage =
+                    "Localizations not loaded. Start/Load game and play until you have control of the player";
+            }
+        }
 
         private void KKP_TextDumpAwake(TextDump sender, EventArgs eventArgs)
         {
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
         }
 
-        private void KKP_TextDumpUpdate(TextDump sender, EventArgs eventArgs)
-        {
-            switch (DumpLevelCompleted)
-            {
-                case 1:
-                case 2:
-                    CheckReadyNotificationMessage =
-                        "Localizations not loaded. Start/Load game and play until you have control of the player";
-                    break;
-
-                default:
-                    CheckReadyNotificationMessage = string.Empty;
-                    break;
-            }
-        }
+        private void KKP_TextDumpUpdate(TextDump sender, EventArgs eventArgs) { }
 
 
         private static IEnumerator KKP_CheckReadyToDump()
@@ -89,7 +88,6 @@ namespace IllusionMods
 
             Logger.LogDebug($"CheckReadyToDump: waiting until {DumpLevelMax - 1} completes");
             while (DumpLevelCompleted < DumpLevelMax - 1) yield return new WaitForSeconds(1);
-
 
 
             Logger.LogDebug("CheckReadyToDump: ready!");

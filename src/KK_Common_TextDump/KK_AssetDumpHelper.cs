@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using IllusionMods.Shared;
 using static IllusionMods.TextResourceHelper.Helpers;
 
 namespace IllusionMods
@@ -11,11 +12,6 @@ namespace IllusionMods
             new HashSet<char> {Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar}.ToArray();
         public KK_AssetDumpHelper(TextDump plugin) : base(plugin)
         {
-
-            var current = StdTextAssetCols;
-
-            StdStudioAssetCols = new AssetDumpColumnInfo(current.NumericMappings, current.NameMappings, true, current.NameMappings.Select((m) => m.Key));
-
             AssetDumpGenerators.Add(GetScenarioTextMergers);
             AssetDumpGenerators.Add(GetCommunicationTextMergers);
 

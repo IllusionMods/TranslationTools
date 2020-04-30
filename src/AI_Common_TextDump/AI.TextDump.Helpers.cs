@@ -17,8 +17,13 @@ namespace IllusionMods
                 }
                 catch (Exception err)
                 {
+#if DEBUG
                     Logger.LogError(
                         $"ManualLoadAsset<{typeof(T).Name}>({assetBundleInfo.assetbundle} {assetBundleInfo.asset}): {err.Message}\n{err.StackTrace}");
+#else
+                    Logger.LogError(
+                        $"ManualLoadAsset<{typeof(T).Name}>({assetBundleInfo.assetbundle} {assetBundleInfo.asset}): {err.Message}");
+#endif
                     return null;
                 }
             }

@@ -1,5 +1,5 @@
-﻿using BepInEx;
-using System;
+﻿using System;
+using BepInEx;
 
 namespace IllusionMods
 {
@@ -10,13 +10,19 @@ namespace IllusionMods
 
         internal TitleSkillNameHandler TitleSkillNameHandler;
 
-        private TextResourceHelper GetTextResourceHelper() => new AI_TextResourceHelper();
-
-        private TextAssetTableHelper GetTextAssetTableHelper() => new TextAssetTableHelper(new [] { "\r\n", "\r", "\n" }, new [] { "\t" });
-
         public TextResourceRedirector()
         {
             TextResourceRedirectorAwake += ConfigureHandlersForAI;
+        }
+
+        private TextResourceHelper GetTextResourceHelper()
+        {
+            return new AI_TextResourceHelper();
+        }
+
+        private TextAssetTableHelper GetTextAssetTableHelper()
+        {
+            return new TextAssetTableHelper(new[] {"\r\n", "\r", "\n"}, new[] {"\t"});
         }
 
         private void ConfigureHandlersForAI(TextResourceRedirector sender, EventArgs eventArgs)
