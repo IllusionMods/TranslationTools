@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using BepInEx.Logging;
 using ADV;
 
 namespace IllusionMods
@@ -9,16 +8,30 @@ namespace IllusionMods
     {
         public AI_TextResourceHelper()
         {
-            CalcKeys = new HashSet<string>(new string[] { "want" });
-            FormatKeys = new HashSet<string>(new string[] { "パターン", "セリフ" });
+            CalcKeys = new HashSet<string>(new[] {"want"});
+            FormatKeys = new HashSet<string>(new[] {"パターン", "セリフ"});
             TextKeysBlacklist = new HashSet<string>(CalcKeys.Concat(FormatKeys).ToArray());
 
-            SupportedCommands[ADV.Command.Calc] = true;
-            SupportedCommands[ADV.Command.Format] = true;
-            SupportedCommands[ADV.Command.Choice] = true;
-            SupportedCommands[ADV.Command.Switch] = true;
+            SupportedCommands.Add(Command.Calc);
+            SupportedCommands.Add(Command.Format);
+            SupportedCommands.Add(Command.Choice);
+            SupportedCommands.Add(Command.Switch);
+            SupportedCommands.Add((Command) 242);
         }
 
-        override public bool IsReplacement(ScenarioData.Param param) => param.Command == Command.ReplaceLanguage;
+        public override bool IsReplacement(ScenarioData.Param param)
+        {
+            return param.Command == Command.ReplaceLanguage;
+        }
+
+        public override IEnumerable<string> GetScenarioDirs()
+        {
+            foreach (var dir in base.GetScenarioDirs())
+            {
+                yield return dir;
+            }
+
+            yield return "adv/message";
+        }
     }
 }

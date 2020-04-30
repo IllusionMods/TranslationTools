@@ -11,3 +11,4 @@ set EC_DIR=C:\Illusion\EmotionCreators
 set HS_DIR=C:\Illusion\HoneySelect
 set PH_DIR=C:\Illusion\PlayHome
 set AI_DIR=C:\Illusion\AI-Syoujyo
+set AI_INT_DIR=C:\Steam\steamapps\common\AI-Shoujo

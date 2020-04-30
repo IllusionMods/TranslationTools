@@ -1,15 +1,34 @@
-﻿using BepInEx;
+﻿using System;
+using BepInEx;
 
 namespace IllusionMods
 {
-    [BepInDependency(XUnity.ResourceRedirector.Constants.PluginData.Identifier)]
-    [BepInDependency(XUnity.AutoTranslator.Plugin.Core.Constants.PluginData.Identifier)]
     [BepInPlugin(GUID, PluginName, Version)]
-    public partial class TextResourceRedirector : BaseUnityPlugin
+    public partial class TextResourceRedirector
     {
         public const string PluginNameInternal = "AI_TextResourceRedirector";
 
-        private TextResourceHelper GetTextResourceHelper() => new AI_TextResourceHelper();
-        private TextAssetHelper GetTextAssetHelper() => null;
+        internal TitleSkillNameHandler TitleSkillNameHandler;
+
+        public TextResourceRedirector()
+        {
+            TextResourceRedirectorAwake += ConfigureHandlersForAI;
+        }
+
+        private TextResourceHelper GetTextResourceHelper()
+        {
+            return new AI_TextResourceHelper();
+        }
+
+        private TextAssetTableHelper GetTextAssetTableHelper()
+        {
+            return new TextAssetTableHelper(new[] {"\r\n", "\r", "\n"}, new[] {"\t"});
+        }
+
+        private void ConfigureHandlersForAI(TextResourceRedirector sender, EventArgs eventArgs)
+        {
+            sender.TitleSkillNameHandler = new TitleSkillNameHandler();
+            sender.ChaListDataHandler.WhiteListPaths.Add("abdata/list/characustom");
+        }
     }
 }

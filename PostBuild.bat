@@ -1,4 +1,4 @@
-REM @echo off
+@echo off
 
 set POSTBUILD_CONFIG=%~dp0\PostBuild_Config.bat
 
@@ -30,17 +30,48 @@ IF "%2" == "KK" (
     goto END
     )
 
+IF "%2" == "KK_ONLY" IF NOT "%KK_DIR%" == "" (
+    set TARGET=%KK_DIR%\%TARGET_SUBDIR%
+    call :COPY_TARGET "%1" "%TARGET%" 
+    goto END
+    )
+
+IF "%2" == "KK_PARTY" IF NOT "%KK_PARTY_DIR%" == "" (
+    set TARGET=%KK_PARTY_DIR%\%TARGET_SUBDIR%
+    call :COPY_TARGET "%1" "%TARGET%" 
+    goto END
+    )
+
 IF "%2" == "EC" IF NOT "%EC_DIR%" == "" (
     set TARGET=%EC_DIR%\%TARGET_SUBDIR%
     call :COPY_TARGET "%1" "%TARGET%" 
     goto END
     )
     
-IF "%2" == "AI" IF NOT "%AI_DIR%" == "" (
+IF "%2" == "AI" (
+    IF NOT "%AI_DIR%" == "" (
+        set TARGET=%AI_DIR%\%TARGET_SUBDIR%
+        call :COPY_TARGET "%1" "%TARGET%" 
+        )
+    IF NOT "%AI_ALT_DIR%" == "" (
+        set TARGET=%AI_ALT_DIR%\%TARGET_SUBDIR%
+        call :COPY_TARGET "%1" "%TARGET%" 
+        )
+    goto END
+)
+
+IF "%2" == "AI_ONLY" IF NOT "%AI_DIR%" == "" (
     set TARGET=%AI_DIR%\%TARGET_SUBDIR%
     call :COPY_TARGET "%1" "%TARGET%" 
     goto END
     )
+
+IF "%2" == "AI_INT" IF NOT "%AI_ALT_DIR%" == "" (
+    set TARGET=%AI_ALT_DIR%\%TARGET_SUBDIR%
+    call :COPY_TARGET "%1" "%TARGET%" 
+    goto END
+    )
+
     
 IF "%2" == "HS" IF NOT "%HS_DIR%" == "" (
     set TARGET=%HS_DIR%\%TARGET_SUBDIR%
@@ -66,6 +97,7 @@ IF EXIST "%TARGET%\" (
 
 :TARGET_NOT_EXIST
 echo Target dir %TARGET% does not exist and can not create
+exit 2
 
 :NO_TARGET
 echo Skipping postbuild: %2 is not a valid target ID or %2_DIR is not set in %POSTBUILD_CONFIG%

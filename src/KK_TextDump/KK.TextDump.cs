@@ -1,16 +1,21 @@
 ﻿using BepInEx;
+using IllusionMods.Shared;
 
 namespace IllusionMods
 {
-    /// <summary>
-    /// Dumps untranslated text to .txt files
-    /// </summary>
+    /// <remarks>
+    ///     Uses studio executable for single stage dump.
+    /// </remarks>
     [BepInProcess(Constants.StudioProcessName)]
     [BepInPlugin(GUID, PluginName, Version)]
     public partial class TextDump : BaseUnityPlugin
     {
         public const string PluginNameInternal = "KK_TextDump";
 
-        private readonly TextResourceHelper textResourceHelper = new KK_TextResourceHelper();
+        public TextDump()
+        {
+            TextResourceHelper = new KK_TextResourceHelper();
+            AssetDumpHelper = new KK_AssetDumpHelper(this);
+        }
     }
 }

@@ -6,14 +6,17 @@
     <SharedGUID>dcfde35b-c56b-48aa-8244-248ef1c805c3</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>Core_TextResourceRedirector</Import_RootNamespace>
+    <Import_RootNamespace>IllusionMods</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextAssetMessagePackHandlerBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AssemblyInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.ExcelData.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.ScenarioData.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.TextAssetResourceRedirector.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.TextAssetPatcher.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.ExcelDataHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.ScenarioDataHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextAssetTableHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.PathList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.IPathListBoundHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.ChaListDataHandler.cs" />
   </ItemGroup>
 </Project>

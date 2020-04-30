@@ -6,10 +6,18 @@
     <SharedGUID>dda0a733-3e5d-4f70-a91c-dc4fbf88e410</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>Core_TextDump</Import_RootNamespace>
+    <Import_RootNamespace>IllusionMods</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)AssemblyInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.AssetBundleAddress.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.AssetDumpHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.BaseDumpHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextDump.Enums.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextDump.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.LocalizationDumpHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TranslationCount.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextDump.InitialDumpHook.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextDump.Helpers.cs" />
   </ItemGroup>
 </Project>

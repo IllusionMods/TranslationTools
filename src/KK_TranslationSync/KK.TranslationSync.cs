@@ -7,24 +7,29 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using XUnity.AutoTranslator.Plugin.Core;
+using IllusionMods.Shared;
 
 namespace IllusionMods
 {
     /// <summary>
     /// Copies translations from one .txt file to another for the same personality
     /// </summary>
+    [BepInDependency(XUnity.AutoTranslator.Plugin.Core.Constants.PluginData.Identifier)]
     [BepInPlugin(GUID, PluginName, Version)]
     public class TranslationSync : BaseUnityPlugin
     {
         public const string GUID = "com.deathweasel.bepinex.translationsync";
         public const string PluginName = "Translation Sync";
         public const string PluginNameInternal = "KK_TranslationSync";
-        public const string Version = "1.2";
+        public const string Version = "1.3.1";
         public static ConfigEntry<string> Personality { get; private set; }
         public static ConfigEntry<KeyboardShortcut> TranslationSyncHotkey { get; private set; }
 
+        public static string TranslationsRoot { get; private set; }
         internal void Main()
         {
+            TranslationsRoot = Path.Combine(AutoTranslatorSettings.DefaultRedirectedResourcePath, @"assets\abdata");
             Personality = Config.Bind("Config", "Personality", "c00", "Personality to sync");
             TranslationSyncHotkey = Config.Bind("Keyboard Shortcuts", "Sync Translation Hotkey", new KeyboardShortcut(KeyCode.Alpha0), "Press to sync translations for the specified personality. Hold alt to force overwrite all translations if different (dangerous, make backups first). Hold ctrl to sync all translations for all personalities (may take a while).");
         }
@@ -40,21 +45,7 @@ namespace IllusionMods
             }
             else if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) && Input.GetKey(TranslationSyncHotkey.Value.MainKey))
             {
-                for (int i = 0; i <= 37; i++)
-                {
-                    Personality.Value = "c" + i.ToString("00");
-                    SyncTLs(TLType.Scenario);
-                    SyncTLs(TLType.Communication);
-                    SyncTLs(TLType.H);
-                }
-                for (int i = 0; i <= 10; i++)
-                {
-                    Personality.Value = "c-" + i.ToString("00");
-                    SyncTLs(TLType.Scenario);
-                    SyncTLs(TLType.Communication);
-                    SyncTLs(TLType.H);
-                }
-                Logger.Log(LogLevel.Info, "Sync complete.");
+                DumpAll();
             }
             else if (TranslationSyncHotkey.Value.IsDown())
             {
@@ -64,7 +55,25 @@ namespace IllusionMods
                 SyncTLs(TLType.H);
                 Logger.Log(LogLevel.Info, "Sync complete.");
             }
+        }
 
+        public void DumpAll()
+        {
+            for (int i = 0; i <= 37; i++)
+            {
+                Personality.Value = "c" + i.ToString("00");
+                SyncTLs(TLType.Scenario);
+                SyncTLs(TLType.Communication);
+                SyncTLs(TLType.H);
+            }
+            for (int i = 0; i <= 10; i++)
+            {
+                Personality.Value = "c-" + i.ToString("00");
+                SyncTLs(TLType.Scenario);
+                SyncTLs(TLType.Communication);
+                SyncTLs(TLType.H);
+            }
+            Logger.Log(LogLevel.Info, "Sync complete.");
         }
 
         internal void CountText()
@@ -95,16 +104,16 @@ namespace IllusionMods
                 }
             }
 
-            string FolderPath = Paths.PluginPath;
-            FolderPath = Path.Combine(FolderPath, @"translation\adv");
+            string FolderPath = Path.Combine(Paths.PluginPath, TranslationsRoot);
+            FolderPath = Path.Combine(FolderPath, "adv");
             CountJPText(FolderPath);
 
-            FolderPath = Paths.PluginPath;
-            FolderPath = Path.Combine(FolderPath, @"translation\communication");
+            FolderPath = Path.Combine(Paths.PluginPath, TranslationsRoot);
+            FolderPath = Path.Combine(FolderPath, "communication");
             CountJPText(FolderPath);
 
-            FolderPath = Paths.PluginPath;
-            FolderPath = Path.Combine(FolderPath, @"translation\h");
+            FolderPath = Path.Combine(Paths.PluginPath, TranslationsRoot);
+            FolderPath = Path.Combine(FolderPath, "h");
             CountJPText(FolderPath);
 
             Logger.Log(LogLevel.Info, $"Total Japanese lines: {AllJPText.Count}");
@@ -113,12 +122,12 @@ namespace IllusionMods
         private void SyncTLs(TLType translationType, bool ForceOverwrite = false)
         {
             string PersonalityNumber = Personality.Value.Replace("c", "");
-            string FolderPath = Paths.PluginPath;
+            string FolderPath = Path.Combine(Paths.PluginPath, TranslationsRoot);
             switch (translationType)
             {
                 case TLType.Scenario:
                     Logger.Log(LogLevel.Info, $"Syncing Scenario translations for personality {Personality.Value}...");
-                    FolderPath = Path.Combine(FolderPath, @"translation\adv\scenario");
+                    FolderPath = Path.Combine(FolderPath, @"adv\scenario");
                     FolderPath = Path.Combine(FolderPath, Personality.Value);
                     break;
                 case TLType.Communication:
@@ -128,11 +137,11 @@ namespace IllusionMods
                         Logger.Log(LogLevel.Info, $"Scenario characters have no Communication files, skipping.");
                         return;
                     }
-                    FolderPath = Path.Combine(FolderPath, @"translation\communication");
+                    FolderPath = Path.Combine(FolderPath, "communication");
                     break;
                 case TLType.H:
                     Logger.Log(LogLevel.Info, $"Syncing H translations for personality {Personality.Value}...");
-                    FolderPath = Path.Combine(FolderPath, @"translation\h\list");
+                    FolderPath = Path.Combine(FolderPath, @"h\list");
                     break;
                 default:
                     return;
@@ -141,8 +150,8 @@ namespace IllusionMods
             if (!Directory.Exists(FolderPath))
                 return;
 
-            var FilePaths = Directory.GetFiles(FolderPath, "*.txt", SearchOption.AllDirectories).Reverse();
-            if (FilePaths.Count() == 0)
+            var FilePaths = Directory.GetFiles(FolderPath, "*.txt", SearchOption.AllDirectories).Reverse().ToArray();
+            if (FilePaths.Length == 0)
                 return;
 
             foreach (string File1 in FilePaths)
@@ -159,11 +168,11 @@ namespace IllusionMods
                         break;
                     case TLType.Communication:
                         if (Ending.Contains($"communication_{PersonalityNumber}"))
-                            Ending = Ending.Remove(0, Ending.IndexOf("communication_"));
+                            Ending = Ending.Remove(0, Ending.IndexOf("communication_", StringComparison.Ordinal));
                         else if (Ending.Contains($"communication_off_{PersonalityNumber}"))
-                            Ending = Ending.Remove(0, Ending.IndexOf("communication_off_"));
+                            Ending = Ending.Remove(0, Ending.IndexOf("communication_off_", StringComparison.Ordinal));
                         else if (Ending.Contains($"optiondisplayitems_{PersonalityNumber}"))
-                            Ending = Ending.Remove(0, Ending.IndexOf("optiondisplayitems_"));
+                            Ending = Ending.Remove(0, Ending.IndexOf("optiondisplayitems_", StringComparison.Ordinal));
                         else
                             continue;
                         break;
@@ -177,7 +186,7 @@ namespace IllusionMods
                 //Logger.Log(LogLevel.Info, $"+{Ending}");
 
                 string[] Lines1 = File.ReadAllLines(File1);
-                Dictionary<string, string> TLLines = new Dictionary<string, string>();
+                Dictionary<string, string> TLLines = new Dictionary<string, string>(new TrimmedStringComparer());
 
                 for (int i = 0; i < Lines1.Count(); i++)
                 {

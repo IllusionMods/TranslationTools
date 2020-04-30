@@ -6,10 +6,15 @@
     <SharedGUID>94670af2-2a1f-49af-a66f-03fa381a9f02</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>Core_TextResourceHelper</Import_RootNamespace>
+    <Import_RootNamespace>IllusionMods</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Core.AssetDumpColumnInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceHelper.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core.TextAssetHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextAssetTableHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TranslationDumper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextAssetTableResult.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceHelper.Helpers.cs" />
   </ItemGroup>
 </Project>
