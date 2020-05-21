@@ -35,9 +35,9 @@ namespace IllusionMods
 
         static TextDump()
         {
-            DumpLevelMax = (int) DumpLevels.Manual;
+            DumpLevelMax = (int) DumpLevels.Main;
             CurrentExecutionMode = ExecutionMode.BeforeFirstLoad;
-            CurrentAssetDumpMode = AssetDumpMode.FirstAndLastOnly;
+            //CurrentAssetDumpMode = AssetDumpMode.FirstAndLastOnly;
         }
 
         public TextDump()

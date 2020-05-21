@@ -45,9 +45,9 @@ namespace IllusionMods
             AssetDumpGenerators = new List<TranslationGenerator>
             {
                 GetCommunicationTextDumpers,
+                GetListTextDumpers,
                 GetScenarioTextDumpers,
-                GetHTextDumpers,
-                GetListTextDumpers
+                GetHTextDumpers
             };
 
             //RawAssetDumpGenerators = new List<RawTranslationGenerator> { };
