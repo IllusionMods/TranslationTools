@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)AssemblyInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Shared.Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Shared.OrderedDictionary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Shared.Constants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Shared.TrimmedStringComparer.cs" />

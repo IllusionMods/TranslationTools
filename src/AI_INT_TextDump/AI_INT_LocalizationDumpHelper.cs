@@ -13,6 +13,7 @@ using ConfigScene;
 using GameLoadCharaFileSystem;
 using HarmonyLib;
 using Housing;
+using Illusion.Extensions;
 using IllusionUtility.GetUtility;
 using Localize.Translate;
 using Manager;
@@ -28,7 +29,45 @@ namespace IllusionMods
         private readonly Dictionary<string, HashSet<string>> _tutorialCategoryMap =
             new Dictionary<string, HashSet<string>>();
 
-        public AI_INT_LocalizationDumpHelper(TextDump plugin) : base(plugin) { }
+        public AI_INT_LocalizationDumpHelper(TextDump plugin) : base(plugin)
+        {
+            OtherDataByTag[100] = new Dictionary<string, string>
+            {
+                {"DeleteScene", "データを消去しますか？"},
+                {
+                    "DeleteWarning",
+                    string.Concat("本当に削除しますか？\n", "このキャラにはパラメータが含まれています。".Coloring("#DE4529FF").Size(24))
+                },
+                {"Delete", "本当に削除しますか？"},
+                {"EndHousing", "ハウジングを終了しますか？"},
+                {"EndHScene", "Hシーンを終了しますか"},
+                {
+                    "LoadScene",
+                    string.Concat("データを読込みますか？\n", "セットされたアイテムは削除されます。".Coloring("#DE4529FF").Size(24))
+                },
+                {"Migration", "{0}に移動しますか？"},
+                {
+                    "OverwriteWarn",
+                    string.Concat("本当に上書きしますか？\n", "上書きするとパラメータは初期化されます。".Coloring("#DE4529FF").Size(24))
+                },
+                {"Overwrite", "本当に上書きしますか？"},
+                {"ReleaseHousingItem", "作成しますか"},
+                {
+                    "RestoreScene",
+                    string.Concat("初期化しますか？\n", "セットされたアイテムは削除されます。".Coloring("#DE4529FF").Size(24))
+                },
+                {"Save", "セーブしますか？"},
+                {"SleepTogether", "一緒に寝た場合2人で行動状態が解除されます。"},
+                {"Sleep", "一日を終了しますか？"},
+                {"Teleport", "このポイントに移動しますか"},
+                {"Warp", "移動しますか"},
+                {
+                    "ReleasePet",
+                    string.Concat("{0}を逃しますか？\n", "逃がすとアイテムとして戻ってきません。".Coloring("#DE4529FF").Size(24))
+                }
+            };
+        }
+
 
         public override string LocalizationFileRemap(string outputFile)
         {
@@ -56,7 +95,7 @@ namespace IllusionMods
             return base.LocalizationFileRemap(outputFile);
         }
 
-        private IEnumerable<TranslationDumper> GetUILocalizers(DefinePack definePack, string topLevelName)
+        private IEnumerable<ITranslationDumper> GetUILocalizers(DefinePack definePack, string topLevelName)
         {
             //Logger.LogWarning($"GetUILocalizers({topLevelName})");
             var finished = new HashSet<string>();
@@ -103,14 +142,14 @@ namespace IllusionMods
                                 return results;
                             }
 
-                            yield return new TranslationDumper(outputName, Localizer);
+                            yield return new StringTranslationDumper(outputName, Localizer);
                         }
                     }
                 }
             }
         }
 
-        private IEnumerable<TranslationDumper> LocalizationMappingLocalizers()
+        private IEnumerable<ITranslationDumper> LocalizationMappingLocalizers()
         {
             foreach (var path in new[] {"characustom", "downloader", "entryhandlename", "networkcheck", "uploader"})
             {
@@ -166,7 +205,7 @@ namespace IllusionMods
                         return results;
                     }
 
-                    yield return new TranslationDumper($"Mapping/{path}", Localizer);
+                    yield return new StringTranslationDumper($"Mapping/{path}", Localizer);
                 }
             }
         }
@@ -182,7 +221,7 @@ namespace IllusionMods
             return results;
         }
 
-        private IEnumerable<TranslationDumper> GetTutorialPrefabLocalizers()
+        private IEnumerable<ITranslationDumper> GetTutorialPrefabLocalizers()
         {
             var nameLookup = new Dictionary<string, string>();
             foreach (var title in Singleton<Resources>.Instance.Localize.TutorialTitleTable)
@@ -235,13 +274,13 @@ namespace IllusionMods
                     }
 
                     _tutorialCategoryMap[mapName].Add(gameObject.name);
-                    yield return new TranslationDumper(
+                    yield return new StringTranslationDumper(
                         $"Tutorials/{mapName}/{gameObject.name}", Localizer);
                 }
             }
         }
 
-        private IEnumerable<TranslationDumper> MakeManagerResourceLocalizers()
+        private IEnumerable<ITranslationDumper> MakeManagerResourceLocalizers()
         {
             foreach (var resource in _managerResources)
             {
@@ -269,11 +308,11 @@ namespace IllusionMods
                     return results;
                 }
 
-                yield return new TranslationDumper($"Manager/Resources/{resource.Key}", Localizer);
+                yield return new StringTranslationDumper($"Manager/Resources/{resource.Key}", Localizer);
             }
         }
 
-        private IEnumerable<TranslationDumper> MakeCharacterCategoryLocalizers()
+        private IEnumerable<ITranslationDumper> MakeCharacterCategoryLocalizers()
         {
             var instance = Singleton<Character>.Instance.chaListCtrl;
 
@@ -294,11 +333,11 @@ namespace IllusionMods
                     return results;
                 }
 
-                yield return new TranslationDumper($"Character/Category/{category}", Localizer);
+                yield return new StringTranslationDumper($"Character/Category/{category}", Localizer);
             }
         }
 
-        public override IEnumerable<TranslationDumper> GetInstanceLocalizers()
+        public override IEnumerable<ITranslationDumper> GetInstanceLocalizers()
         {
             foreach (var localizer in base.GetInstanceLocalizers())
             {
@@ -319,7 +358,7 @@ namespace IllusionMods
             yield return MakeStandardInstanceLocalizer<HSceneSpriteAccessoryCondition>("_slotText");
         }
 
-        public override IEnumerable<TranslationDumper> GetStaticLocalizers()
+        public override IEnumerable<ITranslationDumper> GetStaticLocalizers()
         {
             foreach (var localizer in base.GetStaticLocalizers())
             {
@@ -398,17 +437,17 @@ namespace IllusionMods
                 "msgNetFailedGetAllHN");
         }
 
-        private IEnumerable<TranslationDumper> GetPopupLocalizers()
+        private IEnumerable<ITranslationDumper> GetPopupLocalizers()
         {
-            yield return new TranslationDumper("Popups/Warning", MakePopupLocalizer(
+            yield return new StringTranslationDumper("Popups/Warning", MakePopupLocalizer(
                 Singleton<Resources>.Instance.PopupInfo.WarningTable,
                 x => new List<string[]> {x}));
 
-            yield return new TranslationDumper("Popups/StorySupport", MakePopupLocalizer(
+            yield return new StringTranslationDumper("Popups/StorySupport", MakePopupLocalizer(
                 Singleton<Resources>.Instance.PopupInfo.StorySupportTable,
                 x => new List<string[]> {x}));
 
-            yield return new TranslationDumper("Popups/Request", MakePopupLocalizer(
+            yield return new StringTranslationDumper("Popups/Request", MakePopupLocalizer(
                 Singleton<Resources>.Instance.PopupInfo.RequestTable,
                 x =>
                 {
@@ -482,82 +521,30 @@ namespace IllusionMods
             return results;
         }
 
-        private IEnumerable<TranslationDumper> GetRecipeLocalizers()
+        private IEnumerable<ITranslationDumper> GetRecipeLocalizers()
         {
-            yield return new TranslationDumper(
+            yield return new StringTranslationDumper(
                 $"GameInfoTables/Recipie/{nameof(Singleton<Resources>.Instance.GameInfo.recipe.cookTable)}",
                 MakeRecipeLocalizer(Singleton<Resources>.Instance.GameInfo.recipe.cookTable));
 
-            yield return new TranslationDumper(
+            yield return new StringTranslationDumper(
                 $"GameInfoTables/Recipie/{nameof(Singleton<Resources>.Instance.GameInfo.recipe.equipmentTable)}",
                 MakeRecipeLocalizer(Singleton<Resources>.Instance.GameInfo.recipe.equipmentTable));
 
-            yield return new TranslationDumper(
+            yield return new StringTranslationDumper(
                 $"GameInfoTables/Recipie/{nameof(Singleton<Resources>.Instance.GameInfo.recipe.materialTable)}",
                 MakeRecipeLocalizer(Singleton<Resources>.Instance.GameInfo.recipe.materialTable));
 
-            yield return new TranslationDumper(
+            yield return new StringTranslationDumper(
                 $"GameInfoTables/Recipie/{nameof(Singleton<Resources>.Instance.GameInfo.recipe.medicineTable)}",
                 MakeRecipeLocalizer(Singleton<Resources>.Instance.GameInfo.recipe.medicineTable));
 
-            yield return new TranslationDumper(
+            yield return new StringTranslationDumper(
                 $"GameInfoTables/Recipie/{nameof(Singleton<Resources>.Instance.GameInfo.recipe.petTable)}",
                 MakeRecipeLocalizer(Singleton<Resources>.Instance.GameInfo.recipe.petTable));
         }
 
-        private IEnumerable<TranslationDumper> GetOtherDataLocalizers()
-        {
-            var categories = Enum.GetValues(typeof(Localize.Translate.Manager.SCENE_ID))
-                .Cast<Localize.Translate.Manager.SCENE_ID>();
-
-            foreach (var cat in categories)
-            {
-                var category = cat;
-
-                Dictionary<string, string> Localizer()
-                {
-                    var tagsSeen = new Dictionary<int, HashSet<string>>();
-                    var results = new Dictionary<string, string>();
-                    var otherData = Localize.Translate.Manager.LoadScene(category, null);
-                    foreach (var dataset in _otherDataByTag)
-                    {
-                        tagsSeen[dataset.Key] = new HashSet<string>();
-                        foreach (var entry in dataset.Value)
-                        {
-                            if (otherData.ContainsKey(dataset.Key))
-                            {
-                                var localization = otherData.Get(dataset.Key).Values.FindTagText(entry.Key);
-                                AddLocalizationToResults(results, entry.Value, localization);
-                                if (!string.IsNullOrEmpty(localization))
-                                {
-                                    tagsSeen[dataset.Key].Add(BuildSeenKey(dataset.Key, entry.Key));
-                                }
-                            }
-                        }
-                    }
-
-                    foreach (var dataSet in otherData)
-                    {
-                        var seen = tagsSeen.ContainsKey(dataSet.Key) ? tagsSeen[dataSet.Key] : new HashSet<string>();
-                        foreach (var entry in dataSet.Value)
-                        {
-                            var param = entry.Value;
-                            var key = BuildSeenKey(dataSet.Key, param);
-                            if (!seen.Contains(key) && !string.IsNullOrEmpty(param.text))
-                            {
-                                AddLocalizationToResults(results, $"//__NOTFOUND__{key}", param.text);
-                            }
-                        }
-                    }
-
-                    return results;
-                }
-
-                yield return new TranslationDumper($"OtherData/{category}", Localizer);
-            }
-        }
-
-        private IEnumerable<TranslationDumper> GetHousingItemLocalizers()
+        private IEnumerable<ITranslationDumper> GetHousingItemLocalizers()
         {
             foreach (var level1 in Singleton<Manager.Housing>.Instance.dicCategoryInfo)
             {
@@ -595,11 +582,11 @@ namespace IllusionMods
                 }
 
                 var fileName = string.IsNullOrEmpty(catNameLocalization) ? $"{categoryId}" : catNameLocalization;
-                yield return new TranslationDumper($"GameInfoTables/HousingItems/{fileName}", Localizer);
+                yield return new StringTranslationDumper($"GameInfoTables/HousingItems/{fileName}", Localizer);
             }
         }
 
-        private IEnumerable<TranslationDumper> GetItemLocalizers()
+        private IEnumerable<ITranslationDumper> GetItemLocalizers()
         {
             foreach (var id in Singleton<Resources>.Instance.GameInfo.GetItemCategories())
             {
@@ -630,7 +617,7 @@ namespace IllusionMods
                 }
 
                 var fileName = string.IsNullOrEmpty(catNameLocalization) ? $"{categoryId}" : catNameLocalization;
-                yield return new TranslationDumper($"GameInfoTables/Items/{fileName}", Localizer);
+                yield return new StringTranslationDumper($"GameInfoTables/Items/{fileName}", Localizer);
             }
         }
 
@@ -648,19 +635,12 @@ namespace IllusionMods
             return results;
         }
 
-        private Dictionary<string, string> PersonalityLocalizer()
+        protected override string GetPersonalityNameLocalization(VoiceInfo.Param voiceInfo)
         {
-            var results = new Dictionary<string, string>();
-            foreach (var voiceInfo in Singleton<Voice>.Instance.voiceInfoList)
-            {
-                AddLocalizationToResults(results, voiceInfo.Personality,
-                    voiceInfo.Get(Localize.Translate.Manager.Language));
-            }
-
-            return results;
+            return voiceInfo.Get(Localize.Translate.Manager.Language);
         }
 
-        private Dictionary<string, string> FallbackPersonalityLinesLocalizer()
+        protected Dictionary<string, string> FallbackPersonalityLinesLocalizer()
         {
             var results = new Dictionary<string, string>();
             var subdirs = new[] {"2", "2_0"};
@@ -673,8 +653,9 @@ namespace IllusionMods
                         var fileKey = CombinePaths(TextDump.AssetsRoot,
                             "adv", "scenario", $"c{voiceInfo.No:00}", "00", $"{i:00}", subdir1, "translation.txt");
 
-                        if (TextDump.TranslationsDict.TryGetValue(fileKey, out var dict))
+                        if (TextDump.GetTranslationPaths().Contains(fileKey))
                         {
+                            var dict = TextDump.GetTranslationsForPath(fileKey);
                             foreach (var entry in dict.Where(e =>
                                 e.Key.Contains("{0}") && !string.IsNullOrEmpty(e.Value)))
                             {
@@ -780,7 +761,7 @@ namespace IllusionMods
             return results;
         }
 
-        private IEnumerable<TranslationDumper> GetHAnimationLocalizers()
+        private IEnumerable<ITranslationDumper> GetHAnimationLocalizers()
         {
             var hSceneTable = Traverse.Create(Singleton<Resources>.Instance.HSceneTable);
             var assetNames = hSceneTable.Field("assetNames").GetValue<string[]>();
@@ -805,7 +786,7 @@ namespace IllusionMods
                     return results;
                 }
 
-                yield return new TranslationDumper($"Manager/Resources/HName/{animListName}", Localizer);
+                yield return new StringTranslationDumper($"Manager/Resources/HName/{animListName}", Localizer);
             }
         }
 
@@ -835,7 +816,6 @@ namespace IllusionMods
             yield return GetTutorialPrefabLocalizers;
             yield return GetStaticLocalizers;
             yield return GetPopupLocalizers;
-            yield return GetOtherDataLocalizers;
 
             yield return GetHousingItemLocalizers;
             yield return GetItemLocalizers;
@@ -846,7 +826,6 @@ namespace IllusionMods
             if (!readyToDump) yield break;
 
             yield return MakeCharacterCategoryLocalizers;
-            yield return WrapTranslationCollector("Personalities", PersonalityLocalizer);
             yield return WrapTranslationCollector("GameInfoTables/AgentLifeStyle", AgentLifeStyleLocalizer);
             yield return GetRecipeLocalizers;
 
@@ -856,7 +835,7 @@ namespace IllusionMods
             yield return WrapTranslationCollector("Manager/Resources/ActionName", ActionNameLocalizer);
             yield return WrapTranslationCollector("Manager/Resources/SickName", SickNameLocalizer);
             yield return () => new[]
-                {MapLabelPostProcessor(new TranslationDumper("Manager/Resources/BaseName", BaseNameLocalizer))};
+                {MapLabelPostProcessor(new StringTranslationDumper("Manager/Resources/BaseName", BaseNameLocalizer))};
             yield return WrapTranslationCollector("Manager/Resources/MiniMapIconName", MiniMapIconNameLocalizer);
             yield return GetHAnimationLocalizers;
 

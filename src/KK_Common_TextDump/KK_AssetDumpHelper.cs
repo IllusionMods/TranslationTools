@@ -1,7 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
+using ActionGame;
+using Illusion.Game.Extensions;
 using IllusionMods.Shared;
+using Sirenix.OdinInspector.Demos;
+using UnityEngine;
 using static IllusionMods.TextResourceHelper.Helpers;
 
 namespace IllusionMods
@@ -12,14 +18,60 @@ namespace IllusionMods
             new HashSet<char> {Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar}.ToArray();
         public KK_AssetDumpHelper(TextDump plugin) : base(plugin)
         {
+            AssetDumpGenerators.Add(GetCustomListDumpers);
+            AssetDumpGenerators.Add(GetAnimationInfoDumpers);
+            AssetDumpGenerators.Add(GetHPointToggleDumpers);
+            AssetDumpGenerators.Add(GetSpecialNickNameDumpers);
+            AssetDumpGenerators.Add(GetMapInfoDumpers);
+            AssetDumpGenerators.Add(GetEventInfoDumpers);
+
             AssetDumpGenerators.Add(GetScenarioTextMergers);
             AssetDumpGenerators.Add(GetCommunicationTextMergers);
 
+            TextDump.TranslationPostProcessors.Add(OptionDisplayItemsPostProcessor);
+        }
+
+        private bool OptionDisplayItemsPostProcessor(string path, IDictionary<string, string> translations)
+        {
+            if (!path.StartsWith(TextDump.AssetsRoot)) return true;
+            if (!ResourceHelper.IsOptionDisplayItemPath(path)) return true;
+            if (!(translations is OrderedDictionary<string, string>)) return true;
+            var prefixedTranslations = new OrderedDictionary<string, string>();
+            var standardTranslations = new OrderedDictionary<string, string>();
+
+            foreach (var entry in translations)
+            {
+                AddLocalizationToResults(entry.Key.StartsWith("OPTION[") ? prefixedTranslations : standardTranslations,
+                    entry);
+            }
+
+            // nothing to do if there's only one type 
+            if (prefixedTranslations.Count == 0 || standardTranslations.Count == 0)
+            {
+                return true;
+            }
+
+            // nothing to do if already sorted
+            var origKeys = translations.Keys.ToList();
+            var newKeys = new List<string>();
+            newKeys.AddRange(prefixedTranslations.Keys);
+            newKeys.AddRange(standardTranslations.Keys);
+            if (origKeys.SequenceEqual(newKeys))
+            {
+                return true;
+            }
+
+            translations.Clear();
+
+            foreach (var entry in prefixedTranslations) AddLocalizationToResults(translations, entry);
+            foreach (var entry in standardTranslations) AddLocalizationToResults(translations, entry);
+
+            return false;
         }
 
 #if false
         // TODO: finish this and see if it works without breaking things
-        protected virtual IEnumerable<TranslationDumper> GetClubInfoDumpers()
+        protected virtual IEnumerable<ITranslationDumper> GetClubInfoDumpers()
         {
             var assetBundleNames = GetAssetBundleNameListFromPath("action/list/clubinfo/", true);
             assetBundleNames.Sort();
@@ -38,11 +90,402 @@ namespace IllusionMods
         }
 #endif
 
-        protected IEnumerable<TranslationDumper> GetCommunicationTextMergers()
+        public int GetAssetLocalizationIndex(string assetName)
+        {
+            if (string.IsNullOrEmpty(assetName)) return -1;
+            var parts = Path.GetFileNameWithoutExtension(assetName).Split('_');
+            if (parts.Length < 2) return -1;
+            return int.TryParse(parts.Last(), out var result) ? result : -1;
+        }
+
+        protected virtual Func<List<string>, IEnumerable<KeyValuePair<string, string>>> GetTranslateManagerRowProcessor(
+            int sceneId, string assetName, int colToDump,
+            Func<List<string>, string> idGetter = null)
+        {
+            return GetTranslateManagerRowProcessor(sceneId, GetAssetLocalizationIndex(assetName), colToDump, idGetter);
+        }
+
+        protected virtual Func<List<string>, IEnumerable<KeyValuePair<string, string>>> GetTranslateManagerRowProcessor(
+            int sceneId, int mapIdx, int colToDump, Func<List<string>, string> idGetter = null)
+        {
+            IEnumerable<KeyValuePair<string, string>> TranslateManagerRowProcessor(List<string> row)
+            {
+                if (row.Count > colToDump && !string.IsNullOrEmpty(row[colToDump]))
+                {
+                    yield return new KeyValuePair<string, string>(row[colToDump], string.Empty);
+                }
+            }
+
+            return TranslateManagerRowProcessor;
+        }
+
+        protected virtual bool TryEventInfoTranslationLookup(string assetName, EventInfo.Param param, out string result)
+        {
+            result = null;
+            return false;
+        }
+        protected IEnumerable<ITranslationDumper> GetEventInfoDumpers()
+        {
+            var assetBundleNames = GetAssetBundleNameListFromPath("action/list/event/", true);
+            foreach (var assetBundleName in assetBundleNames)
+            {
+                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
+                {
+
+                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
+
+                    IDictionary<string, string> Dumper()
+                    {
+                        var results = new OrderedDictionary<string, string>();
+                        var asset = ManualLoadAsset<EventInfo>(assetBundleName, assetName, null);
+                        if (asset == null || asset.param.Count == 0) return results;
+
+                        foreach (var entry in asset.param)
+                        {
+                            if (!TryEventInfoTranslationLookup(asset.name, entry, out var value))
+                            {
+                                value = string.Empty;
+                            }
+
+                            AddLocalizationToResults(results, ResourceHelper.GetSpecializedKey(entry, entry.Name), value);
+                        }
+
+                        return results;
+                    }
+
+                    yield return new StringTranslationDumper(filePath, Dumper);
+                }
+            }
+
+        }
+        protected virtual bool TryMapInfoTranslationLookup(MapInfo.Param param, out string result)
+        {
+            result = null;
+            return false;
+        }
+        protected IEnumerable<ITranslationDumper> GetMapInfoDumpers()
+        {
+            var assetBundleNames = GetAssetBundleNameListFromPath("map/list/mapinfo/", true);
+            foreach (var assetBundleName in assetBundleNames)
+            {
+                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
+                {
+                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
+
+                    IDictionary<string, string> Dumper()
+                    {
+                        var results = new OrderedDictionary<string, string>();
+                        var asset = ManualLoadAsset<MapInfo>(assetBundleName, assetName, null);
+                        if (asset == null || asset.param.Count == 0) return results;
+
+                        foreach (var entry in asset.param)
+                        {
+                            if (!TryMapInfoTranslationLookup(entry, out var value))
+                            {
+                                value = string.Empty;
+                            }
+
+                            AddLocalizationToResults(results, ResourceHelper.GetSpecializedKey(entry, entry.MapName), value);
+                        }
+
+                        return results;
+                    }
+
+                    yield return new StringTranslationDumper(filePath, Dumper);
+                }
+            }
+
+        }
+        protected virtual bool TryNickNameTranslationLookup(NickName.Param param, out string result)
+        {
+            result = null;
+            return false;
+        }
+        protected virtual IEnumerable<ITranslationDumper> GetSpecialNickNameDumpers()
+        {
+            var assetBundleNames = GetAssetBundleNameListFromPath("etcetra/list/nickname/", true);
+            foreach (var assetBundleName in assetBundleNames)
+            {
+                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
+                {
+                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
+
+                    IDictionary<string, string> Dumper()
+                    {
+                        var results = new OrderedDictionary<string, string>();
+                        var asset = ManualLoadAsset<NickName>(assetBundleName, assetName, null);
+                        if (asset == null || asset.param.Count == 0) return results;
+                        foreach (var entry in asset.param.Where(e => e.isSpecial))
+                        {
+                            if (!TryNickNameTranslationLookup(entry, out var value))
+                            {
+                                value = string.Empty;
+                            }
+
+                            AddLocalizationToResults(results, ResourceHelper.GetSpecializedKey(entry, entry.Name), value);
+                        }
+
+                        return results;
+                    }
+                    yield return new StringTranslationDumper(filePath, Dumper);
+                }
+            }
+        }
+
+
+        protected IEnumerable<ITranslationDumper> GetHPointToggleDumpers()
+        {
+            var assetBundleNames = GetAssetBundleNameListFromPath("h/list/", true);
+            foreach (var assetBundleName in assetBundleNames)
+            {
+                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName)
+                    .Where(n => n.StartsWith("HPointToggle", StringComparison.OrdinalIgnoreCase)))
+                {
+                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
+
+                    // H_POINT_LIST = 6
+                    var processor = GetTranslateManagerRowProcessor(6, 1, 1);
+
+                    IDictionary<string, string> Dumper()
+                    {
+                        var results = new OrderedDictionary<string, string>();
+                        var asset = ManualLoadAsset<TextAsset>(assetBundleName, assetName, null);
+                        if (asset == null || !TableHelper.IsTable(asset)) return results;
+
+                        foreach (var rowString in TableHelper.SplitTableToRows(asset.text))
+                        {
+                            var row = TableHelper.SplitRowToCells(rowString).ToList();
+                            foreach (var entry in processor(row))
+                            {
+                                AddLocalizationToResults(results, entry);
+                            }
+                        }
+
+                        return results;
+                    }
+
+                    yield return new StringTranslationDumper(filePath, Dumper);
+
+                }
+
+
+            }
+        }
+
+
+        protected IEnumerable<ITranslationDumper> GetAnimationInfoDumpers()
+        {
+            var assetBundleNames = GetAssetBundleNameListFromPath("h/list/", true);
+            foreach (var assetBundleName in assetBundleNames)
+            {
+                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName)
+                    .Where(n => n.StartsWith("AnimationInfo", StringComparison.OrdinalIgnoreCase)))
+                {
+                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
+
+                    // H_POSTURE = 5
+                    var processor = GetTranslateManagerRowProcessor(5, assetName, 0,
+                        (row) => row.Count > 1 ? row[1] : string.Empty);
+
+                    IDictionary<string, string> Dumper()
+                    {
+                        var results = new OrderedDictionary<string, string>();
+                        var asset = ManualLoadAsset<TextAsset>(assetBundleName, assetName, null);
+                        if (asset == null || !TableHelper.IsTable(asset)) return results;
+
+                        foreach (var rowString in TableHelper.SplitTableToRows(asset.text))
+                        {
+                            var row = TableHelper.SplitRowToCells(rowString).ToList();
+                            foreach (var entry in processor(row))
+                            {
+                                AddLocalizationToResults(results, entry);
+                            }
+                        }
+
+                        return results;
+                    }
+
+                    yield return new StringTranslationDumper(filePath, Dumper);
+
+                }
+
+
+            }
+        }
+
+        protected IEnumerable<ITranslationDumper> GetCustomListDumpers()
+        {
+            var assetBundleNames = GetAssetBundleNameListFromPath("custom/", true);
+            foreach (var assetBundleName in assetBundleNames)
+            {
+                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName).Where(n => n.StartsWith("cus_")))
+                {
+                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
+
+                    IDictionary<string, string> Dumper()
+                    {
+                        var results = new OrderedDictionary<string, string>();
+                        var asset = ManualLoadAsset<ExcelData>(assetBundleName, assetName, null);
+                        if (asset == null) return results;
+                        var firstRow = 0;
+                        var colToDump = -1;
+                        if (asset.list[0].list.Count == 0 || asset.list[0].list[0].IsNullOrEmpty())
+                        {
+                            var i = 0;
+                            while (i < asset.list.Count && asset.list[i].list.Count == 0) i++;
+                            if (i < asset.list.Count)
+                            {
+                                firstRow = i;
+                                var row = asset.GetRow(i);
+
+                                if (asset.name.Contains("_pose") && row.Count >= 7) colToDump = 3;
+                                else if (row.Count >= 9) colToDump = 2;
+                                else if (row.Count > 2) colToDump = 1;
+                            }
+
+                        }
+                        else
+                        {
+                            var header = ResourceHelper.GetExcelHeaderRow(asset, out firstRow);
+                            colToDump = header.IndexOf("デフォルト");
+                        }
+
+                        if (colToDump == -1) return results;
+
+                        var mapIdx = -1;
+
+                        if (asset.name.StartsWith("cus_eb_ptn")) mapIdx = 0;
+                        else if (asset.name.StartsWith("cus_e_ptn")) mapIdx = 1;
+                        else if (asset.name.StartsWith("cus_m_ptn")) mapIdx = 2;
+                        else if (asset.name.StartsWith("cus_eyeslook")) mapIdx = 3;
+                        else if (asset.name.StartsWith("cus_necklook")) mapIdx = 4;
+                        else if (asset.name.StartsWith("cus_pose")) mapIdx = 5;
+                        else if (asset.name.StartsWith("cus_filelist")) mapIdx = 6;
+                        else if (asset.name.StartsWith("cus_selectlist")) mapIdx = 7;
+
+
+                        // CUSTOM_LIST2 = 3
+                        var processor = GetTranslateManagerRowProcessor(3, mapIdx, colToDump);
+
+                        for (var i = firstRow; i < asset.list.Count; i++)
+                        {
+                            try
+                            {
+                                foreach (var entry in processor(asset.GetRow(i)))
+                                {
+                                    if (entry.Key.Contains("unity3d")) continue;
+                                    AddLocalizationToResults(results, entry);
+                                }
+                            }
+                            catch (Exception err)
+                            {
+                                Logger.LogFatal($"GetCustomListDumpers: {err}\n{err.StackTrace}");
+                                throw;
+                            }
+                        }
+
+                        return results;
+                    }
+
+                    yield return new StringTranslationDumper(filePath, Dumper);
+                }
+            }
+        }
+
+#if false
+        protected IEnumerable<ITranslationDumper> GetCustomListDumpers()
+        {
+            var assetBundleNames = GetAssetBundleNameListFromPath("custom/", true);
+            foreach (var assetBundleName in assetBundleNames)
+            {
+                Logger.LogFatal($"GetCustomListDumpers: {assetBundleName}");
+                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName).Where(n => n.StartsWith("cus_")))
+                {
+                    Logger.LogFatal($"GetCustomListDumpers: {assetBundleName}/{assetName}");
+
+                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
+
+                    IDictionary<string, string> Dumper()
+                    {
+                        var results = new OrderedDictionary<string, string>();
+                        var asset = ManualLoadAsset<ExcelData>(assetBundleName, assetName, null);
+                        if (asset == null) return results;
+                        var firstRow = 0;
+                        var colToDump = -1;
+                        if (asset.list[0].list.Count == 0 || asset.list[0].list[0].IsNullOrEmpty())
+                        {
+                            var i = 0;
+                            while (i < asset.list.Count && asset.list[i].list.Count == 0) i++;
+                            if (i < asset.list.Count)
+                            {
+                                firstRow = i;
+                                var row = asset.GetRow(i);
+
+                                if (asset.name.Contains("_pose") && row.Count >= 7) colToDump = 3;
+                                else if (row.Count >= 9) colToDump = 2;
+                                else if (row.Count > 2) colToDump = 1;
+                            }
+
+                        }
+                        else
+                        {
+                            var header = ResourceHelper.GetExcelHeaderRow(asset, out firstRow);
+                            colToDump = header.IndexOf("デフォルト");
+                        }
+
+                        Logger.LogFatal($"GetCustomListDumpers: {assetBundleName}/{assetName} colToDump={colToDump}, firstRow={firstRow}");
+
+                        if (colToDump == -1) return results;
+
+                        List<ExcelData.Param> lookup = null;
+                        var customBase = Singleton<ChaCustom.CustomBase>.Instance;
+                        if (asset.name.StartsWith("cus_eyeslook")) lookup = customBase?.lstEyesLook;
+                        else if (asset.name.StartsWith("cus_necklook")) lookup = customBase?.lstNeckLook;
+                        else if (asset.name.StartsWith("cus_filelist")) lookup = customBase?.lstFileList;
+                        else if (asset.name.StartsWith("cus_selectlist")) lookup = customBase?.lstSelectList;
+                        else if (asset.name.StartsWith("cus_eb_ptn")) lookup = customBase?.lstEyebrow;
+                        else if (asset.name.StartsWith("cus_e_ptn")) lookup = customBase?.lstEye;
+                        else if (asset.name.StartsWith("cus_m_ptn")) lookup = customBase?.lstMouth;
+                        else if (asset.name.StartsWith("cus_pose")) lookup = customBase?.lstPose;
+
+                        for (var i = firstRow; i < asset.list.Count; i++)
+                        {
+                            var row = asset.GetRow(i);
+                            if (row.Count <= colToDump) continue;
+                            var key = row[colToDump];
+                            if (key.Contains("unity3d")) continue;
+                            var value = string.Empty;
+                            if (lookup != null)
+                            {
+                                var match = lookup.Where(e => e.list.Count > colToDump && e.list[0] == row[0])
+                                    .Select(e => e.list[colToDump]).FirstOrDefault();
+   
+                               /*
+                                    .Where(e => e.list.Count > colToDump &&
+                                                check.SequenceEqual(e.list.GetRange(0, colToDump - 1)))
+                                    .Select(e => e.list[colToDump]).FirstOrDefault();*/
+
+                                if (!string.IsNullOrEmpty(match) && match != key) value = match;
+                            }
+
+                            AddLocalizationToResults(results, key, value);
+                        }
+
+                        return results;
+                    }
+
+                    yield return new StringTranslationDumper(filePath, Dumper);
+
+
+                }
+            }
+        }
+#endif
+        protected IEnumerable<ITranslationDumper> GetCommunicationTextMergers()
         {
             if (!TextDump.IsReadyForFinalDump()) yield break;
             var needle = CombinePaths("", "abdata", "communication", "");
-            var paths = TextDump.TranslationsDict.Keys.Where((k) => k.Contains(needle)).ToList();
+            var paths = TextDump.GetTranslationPaths().Where((k) => k.Contains(needle)).ToList();
             paths.Sort();
             paths.Reverse();
 
@@ -67,7 +510,7 @@ namespace IllusionMods
 
                 personalityFiles.Add(path);
 
-                foreach (var entry in TextDump.TranslationsDict[path].Where(entry => !entry.Value.IsNullOrEmpty()))
+                foreach (var entry in TextDump.GetTranslationsForPath(path).Where(entry => !entry.Value.IsNullOrEmpty()))
                 {
                     AddLocalizationToResults(personalityMap, entry);
                 }
@@ -77,11 +520,11 @@ namespace IllusionMods
 
         }
 
-        protected IEnumerable<TranslationDumper> GetScenarioTextMergers()
+        protected IEnumerable<ITranslationDumper> GetScenarioTextMergers()
         {
             if (!TextDump.IsReadyForFinalDump()) yield break;
             var needle = CombinePaths("", "abdata", "adv", "scenario", "");
-            var paths = TextDump.TranslationsDict.Keys.Where((k) => k.Contains(needle)).ToList();
+            var paths = TextDump.GetTranslationPaths().Where((k) => k.Contains(needle)).ToList();
             paths.Sort();
             paths.Reverse();
             var personalityCheckChars = "01234567890-".ToCharArray();
@@ -108,7 +551,7 @@ namespace IllusionMods
                 }
                 personalityFiles.Add(path);
 
-                foreach (var entry in TextDump.TranslationsDict[path].Where(entry => !entry.Value.IsNullOrEmpty()))
+                foreach (var entry in TextDump.GetTranslationsForPath(path).Where(entry => !entry.Value.IsNullOrEmpty()))
                 {
                     AddLocalizationToResults(personalityMap, entry);
                 }
@@ -117,7 +560,7 @@ namespace IllusionMods
             foreach (var translationDumper in BuildTranslationMergers(fileMaps, mappings)) yield return translationDumper;
         }
 
-        protected IEnumerable<TranslationDumper> BuildTranslationMergers(Dictionary<string, List<string>> fileMaps, Dictionary<string, Dictionary<string, string>> mappings)
+        protected IEnumerable<ITranslationDumper> BuildTranslationMergers(Dictionary<string, List<string>> fileMaps, Dictionary<string, Dictionary<string, string>> mappings)
         {
             foreach (var personalityFileMap in fileMaps)
             {
@@ -130,7 +573,7 @@ namespace IllusionMods
                     var mapPath = path.Substring(TextDump.AssetsRoot.Length).TrimStart(PathSplitter);
                     mapPath = CombinePaths(Path.GetDirectoryName(mapPath), Path.GetFileNameWithoutExtension(mapPath));
 
-                    var toUpdate = new HashSet<string>(TextDump.TranslationsDict[path]
+                    var toUpdate = new HashSet<string>(TextDump.GetTranslationsForPath(path)
                         .Where((e) => e.Value.IsNullOrWhiteSpace()).Select((e) => e.Key));
 
                     if (toUpdate.Count == 0) continue;
@@ -150,7 +593,7 @@ namespace IllusionMods
                         return result;
                     }
 
-                    yield return new TranslationDumper(mapPath, Dumper);
+                    yield return new StringTranslationDumper(mapPath, Dumper);
                 }
             }
         }

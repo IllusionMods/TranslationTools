@@ -70,6 +70,7 @@
     <Compile Include="KKP.TextDump.cs" />
     <Compile Include="KKP_AssetDumpHelper.cs" />
     <Compile Include="KKP_LocalizationDumpHelper.cs" />
+    <Compile Include="TranslationHookState.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

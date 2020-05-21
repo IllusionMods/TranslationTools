@@ -8,7 +8,6 @@ using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
 using XUnity.ResourceRedirector;
 using static IllusionMods.TextResourceHelper.Helpers;
-using BepinLogLevel = BepInEx.Logging.LogLevel;
 
 namespace IllusionMods
 {
@@ -91,7 +90,7 @@ namespace IllusionMods
                     for (int i
  = 1; i < param.Args.Length; i += 1)
                     {
-                        cache.AddTranslationToCache(param.Args[i], param.Args[i]);
+                        cache.AddTokenTranslationToCache(param.Args[i], param.Args[i]);
                     }
                 }
 #endif
@@ -101,7 +100,7 @@ namespace IllusionMods
                     for (int i
  = 1; i < param.Args.Length; i += 1)
                     {
-                        cache.AddTranslationToCache(param.Args[i], param.Args[i]);
+                        cache.AddTokenTranslationToCache(param.Args[i], param.Args[i]);
                     }
                 }
 #endif
@@ -111,7 +110,7 @@ namespace IllusionMods
                     // TODO: detect if should be dumped
                     if (param.Args.Length >= 1)
                     {
-                       cache.AddTranslationToCache(param.Args[0], param.Args[0]);
+                       cache.AddTokenTranslationToCache(param.Args[0], param.Args[0]);
                     }
                 }
 #endif

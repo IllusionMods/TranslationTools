@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using AIProject;
 using HarmonyLib;
-using Illusion.Extensions;
 using Localize.Translate;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,7 +19,7 @@ namespace IllusionMods
         private static readonly string[] AssetBundleForbidden = {"<", ">", ":"};
         private static readonly string[] AssetForbidden = {"/"};
 
-        private IEnumerable<KeyValuePair<GameObject, Text>> EnumerateTexts(GameObject gameObject,
+        protected IEnumerable<KeyValuePair<GameObject, Text>> EnumerateTexts(GameObject gameObject,
             MonoBehaviour component, HashSet<object> handled = null, List<UIBinder> binders = null)
         {
             var _ = binders;
@@ -118,11 +117,13 @@ namespace IllusionMods
                 }
             }
 
-            foreach (var childText in gameObject.Children().SelectMany(child => EnumerateTexts(child, handled, binders)))
+            foreach (var childText in GetChildrenFromGameObject(gameObject)
+                .SelectMany(child => EnumerateTexts(child, handled, binders)))
             {
                 yield return childText;
             }
         }
+
         private bool GetAssetInfo(List<string> address, ref int idx, out AssetBundleInfo assetBundleInfo)
         {
             var startIdx = idx;
@@ -355,7 +356,7 @@ namespace IllusionMods
                 {
                     var row = entry.list;
                     var idx = 0;
-                    if (int.TryParse(row.GetElement(idx++) ?? string.Empty, out var _))
+                    if (int.TryParse(row.GetElement(idx++) ?? string.Empty, out _))
                     {
                         if (GetAssetInfo(row, ref idx, out var nestedAssetBundleInfo))
                         {
@@ -393,7 +394,7 @@ namespace IllusionMods
                 {
                     var row = entry.list;
                     var idx = 0;
-                    if (!int.TryParse(row.GetElement(idx++) ?? string.Empty, out var _)) continue;
+                    if (!int.TryParse(row.GetElement(idx++) ?? string.Empty, out _)) continue;
                     if (!GetAssetInfo(row, ref idx, out var nestedAssetBundleInfo)) continue;
 
                     nestedAssetBundleInfo.ClearManifest();
@@ -459,7 +460,7 @@ namespace IllusionMods
             return LoadGameObjects(infos);
         }
 
-        private IEnumerable<TranslationDumper> GetBindLocalizers(string assetPath)
+        private IEnumerable<ITranslationDumper> GetBindLocalizers(string assetPath)
         {
             var handled = new HashSet<object>();
             foreach (var entry in GetAssetBundleInfos(assetPath))
@@ -496,11 +497,13 @@ namespace IllusionMods
                         return results;
                     }
 
-                    yield return new TranslationDumper(outputName, Localizer);
+                    yield return new StringTranslationDumper(outputName, Localizer);
                 }
             }
         }
-        private TranslationCollector MakePopupLocalizer<TValue>(IEnumerable<KeyValuePair<int, TValue>> dict,
+
+        private TranslationDumper<IDictionary<string, string>>.TranslationCollector MakePopupLocalizer<TValue>(
+            IEnumerable<KeyValuePair<int, TValue>> dict,
             Func<TValue, IEnumerable<string[]>> converter)
         {
             //Logger.LogError(dict);
@@ -531,21 +534,8 @@ namespace IllusionMods
             return Collector;
         }
 
-        private static string BuildSeenKey(int topLevel, string tag)
-        {
-            return string.Join("_", topLevel.ToString(), tag);
-        }
-
-        private static string BuildSeenKey(int topLevel, Data.Param param)
-        {
-            var parts = new List<string> {topLevel.ToString()};
-
-            parts.Add(!string.IsNullOrEmpty(param.tag) ? param.tag : param.ID.ToString());
-
-            return string.Join("_", parts.ToArray());
-        }
-
-        private TranslationCollector MakeRecipeLocalizer(IEnumerable<KeyValuePair<int, RecipeDataInfo[]>> table)
+        private TranslationDumper<IDictionary<string, string>>.TranslationCollector MakeRecipeLocalizer(
+            IEnumerable<KeyValuePair<int, RecipeDataInfo[]>> table)
         {
             Dictionary<string, string> Collector()
             {
@@ -572,7 +562,7 @@ namespace IllusionMods
             return Collector;
         }
 
-        private TranslationDumper MapLabelPostProcessor(TranslationDumper localizer)
+        private StringTranslationDumper MapLabelPostProcessor(StringTranslationDumper localizer)
         {
             IDictionary<string, string> PostLocalizer()
             {
@@ -592,12 +582,13 @@ namespace IllusionMods
                 return results;
             }
 
-            return new TranslationDumper(localizer.Path, PostLocalizer);
+            return new StringTranslationDumper(localizer.Path, PostLocalizer);
         }
 
-#region extracted data
+        #region extracted data
 
-        private readonly Dictionary<int, Dictionary<string, string>> _otherDataByTag =
+#if false
+        protected readonly Dictionary<int, Dictionary<string, string>> OtherDataByTag =
             new Dictionary<int, Dictionary<string, string>>
             {
                 {
@@ -639,6 +630,7 @@ namespace IllusionMods
                     }
                 }
             };
+#endif
 
         private readonly Dictionary<string, Dictionary<int, string>> _managerResources =
             new Dictionary<string, Dictionary<int, string>>
@@ -784,6 +776,6 @@ namespace IllusionMods
                 //{"SickName", new Dictionary<int, string> { } } // handled
             };
 
-#endregion extracted data
+        #endregion extracted data
     }
 }

@@ -22,6 +22,7 @@ namespace IllusionMods
             AssetDumpColumnInfo assetDumpColumnInfo, IDictionary<string, string> translations);
 
         protected readonly List<TranslationGenerator> AssetDumpGenerators;
+        protected readonly List<TranslationGenerator> RawAssetDumpGenerators;
 
         protected AssetDumpColumnInfo StdExcelAssetCols;
         protected AssetDumpColumnInfo StdStudioAssetCols;
@@ -44,10 +45,12 @@ namespace IllusionMods
             AssetDumpGenerators = new List<TranslationGenerator>
             {
                 GetCommunicationTextDumpers,
+                GetListTextDumpers,
                 GetScenarioTextDumpers,
-                GetHTextDumpers,
-                GetListTextDumpers
+                GetHTextDumpers
             };
+
+            //RawAssetDumpGenerators = new List<RawTranslationGenerator> { };
 
             StdExcelAssetCols = new AssetDumpColumnInfo(new Dictionary<string, string>
             {
@@ -86,7 +89,7 @@ namespace IllusionMods
                 fileName);
         }
 
-        public virtual IEnumerable<TranslationDumper> GetAssetDumpers()
+        public virtual IEnumerable<ITranslationDumper> GetAssetDumpers()
         {
             Assert.IsNotNull(AssetDumpGenerators);
             var dumpers = AssetDumpGenerators.ToList();
@@ -94,7 +97,7 @@ namespace IllusionMods
             while (dumpers.Count > 0)
             {
                 var assetDumpGenerator = dumpers.PopFront();
-                var entries = new List<TranslationDumper>();
+                var entries = new List<ITranslationDumper>();
                 try
                 {
                     foreach (var entry in assetDumpGenerator()) entries.Add(entry);
@@ -108,11 +111,22 @@ namespace IllusionMods
             }
         }
 
+
+        /*
+        public virtual IEnumerable<ITranslationDumper> GetRawAssetDumpers()
+        {
+            Assert.IsNotNull(RawAssetDumpGenerators);
+            var dumpers = RawAssetDumpGenerators.ToList();
+
+        }
+        */
+
         #region HText
 
-        protected virtual IEnumerable<TranslationDumper> GetHTextDumpers()
+        protected virtual IEnumerable<ITranslationDumper> GetHTextDumpers()
         {
-            int[] cellsToDump = {4, 27, 50, 73};
+            var cellsToDump = TableHelper.HTextColumns;
+            if (cellsToDump.Count == 0) yield break;
             foreach (var assetBundleName in GetAssetBundleNameListFromPath("h/list/"))
             {
                 foreach (var assetName in GetAssetNamesFromBundle(assetBundleName)
@@ -140,7 +154,7 @@ namespace IllusionMods
                         return translations;
                     }
 
-                    yield return new TranslationDumper(filePath, AssetDumper);
+                    yield return new StringTranslationDumper(filePath, AssetDumper);
                 }
             }
         }
@@ -155,7 +169,8 @@ namespace IllusionMods
 
         #region CommunicationText
 
-        protected virtual TranslationCollector MakeOptionDisplayItemsCollector(string assetBundleName, string assetName)
+        protected virtual TranslationDumper<IDictionary<string, string>>.TranslationCollector
+            MakeOptionDisplayItemsCollector(string assetBundleName, string assetName)
         {
             IDictionary<string, string> AssetDumper()
             {
@@ -185,7 +200,6 @@ namespace IllusionMods
                         if (row[i].IsNullOrWhiteSpace()) continue;
                         if (row[i] == "・・・") continue;
 
-                        var key = row[i];
                         if (mapping.Value > -1 && row.Count > mapping.Value)
                         {
                             try
@@ -197,8 +211,11 @@ namespace IllusionMods
                                 value = string.Empty;
                             }
                         }
-                        
-                        AddLocalizationToResults(translations, key, value);
+
+                        foreach (var key in ResourceHelper.GetExcelRowTranslationKeys(asset.name, row, i))
+                        {
+                            AddLocalizationToResults(translations, key, value);
+                        }
                     }
                 }
 
@@ -208,8 +225,9 @@ namespace IllusionMods
             return AssetDumper;
         }
 
-        protected virtual TranslationCollector MakeStandardCommunicationTextCollector(string assetBundleName,
-            string assetName)
+        protected virtual TranslationDumper<IDictionary<string, string>>.TranslationCollector
+            MakeStandardCommunicationTextCollector(string assetBundleName,
+                string assetName)
         {
             IDictionary<string, string> AssetDumper()
             {
@@ -233,7 +251,7 @@ namespace IllusionMods
             return AssetDumper;
         }
 
-        protected virtual IEnumerable<TranslationDumper> GetCommunicationTextDumpers()
+        protected virtual IEnumerable<ITranslationDumper> GetCommunicationTextDumpers()
         {
             foreach (var assetBundleName in CommonLib.GetAssetBundleNameListFromPath("communication"))
             {
@@ -247,21 +265,21 @@ namespace IllusionMods
 
                     var filePath = BuildAssetFilePath(assetBundleName, assetName);
 
-                    if (assetName.StartsWith("optiondisplayitems"))
+                    if (ResourceHelper.IsOptionDisplayItemAsset(assetName))
                     {
-                        yield return new TranslationDumper(filePath,
+                        yield return new StringTranslationDumper(filePath,
                             MakeOptionDisplayItemsCollector(assetBundleName, assetName));
                     }
                     else
                     {
-                        yield return new TranslationDumper(filePath,
+                        yield return new StringTranslationDumper(filePath,
                             MakeStandardCommunicationTextCollector(assetBundleName, assetName));
                     }
                 }
 
                 if (!string.IsNullOrEmpty(assetBundleName))
                 {
-                    yield return new TranslationDumper($"_{nameof(GetCommunicationTextDumpers)}Cleanup", () =>
+                    yield return new StringTranslationDumper($"_{nameof(GetCommunicationTextDumpers)}Cleanup", () =>
                     {
                         AssetBundleManager.UnloadAssetBundle(assetBundleName, false);
                         return new Dictionary<string, string>();
@@ -320,7 +338,7 @@ namespace IllusionMods
             return result;
         }
 
-        protected virtual IEnumerable<TranslationDumper> GetScenarioTextDumpers()
+        protected virtual IEnumerable<ITranslationDumper> GetScenarioTextDumpers()
         {
             var allJpText = new HashSet<string>();
             foreach (var scenarioRoot in ResourceHelper.GetScenarioDirs())
@@ -481,7 +499,7 @@ namespace IllusionMods
                             return translations;
                         }
 
-                        yield return new TranslationDumper(filePath, AssetDumper);
+                        yield return new StringTranslationDumper(filePath, AssetDumper);
                     }
                 }
             }
@@ -501,7 +519,7 @@ namespace IllusionMods
             yield return new KeyValuePair<string, AssetDumpColumnInfo>("characustom", StdTextAssetCols);
         }
 
-        protected virtual IEnumerable<TranslationDumper> GetListTextDumpers()
+        protected virtual IEnumerable<ITranslationDumper> GetListTextDumpers()
         {
             foreach (var list in GetLists())
             foreach (var listDumper in MakeListTextCollectors(list.Key, list.Value))
@@ -521,7 +539,7 @@ namespace IllusionMods
             yield return new KeyValuePair<string, AssetDumpColumnInfo>("info", StdStudioAssetCols);
         }
 
-        protected virtual IEnumerable<TranslationDumper> MakeListTextCollectors(string path,
+        protected virtual IEnumerable<ITranslationDumper> MakeListTextCollectors(string path,
             AssetDumpColumnInfo assetDumpColumnInfo, string baseDir = "list")
         {
             var rootPath = baseDir.IsNullOrEmpty() ? path : CombinePaths(baseDir, path);
@@ -548,7 +566,7 @@ namespace IllusionMods
                         return translations;
                     }
 
-                    yield return new TranslationDumper(filePath, AssetDumper);
+                    yield return new StringTranslationDumper(filePath, AssetDumper);
 
                     if (!assetDumpColumnInfo.CombineWithParentBundle) continue;
 
@@ -565,7 +583,7 @@ namespace IllusionMods
 
                     var parentFile = BuildAssetFilePath(Path.GetDirectoryName(assetBundleName), parentAssetName);
 
-                    yield return new TranslationDumper(parentFile, () => translations);
+                    yield return new StringTranslationDumper(parentFile, () => translations);
                 }
             }
         }
@@ -608,7 +626,7 @@ namespace IllusionMods
                     for (var i = firstRow; i < excelAsset.list.Count; i++)
                     {
                         var row = excelAsset.GetRow(i);
-                        
+
                         if (row.Count == 0 || row[0] == "no" || row.Count <= mapping.Key) continue;
 
                         var key = row[mapping.Key];

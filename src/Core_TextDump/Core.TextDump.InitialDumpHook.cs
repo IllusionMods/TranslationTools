@@ -6,7 +6,7 @@ namespace IllusionMods
 {
     public partial class TextDump
     {
-        public static class InitialDumpHook
+        internal static class InitialDumpHook
         {
             private static readonly string HarmonyId = "TextDump.InitialDumpHook.HarmonyID";
             private static TextDump _pluginInstance;

@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using UnityEngine;
+using static IllusionMods.TextResourceHelper.Helpers;
 using Object = UnityEngine.Object;
 #if AI
 using AIProject;
-
+using UnityEx;
 #endif
 
 namespace IllusionMods
@@ -26,7 +26,7 @@ namespace IllusionMods
 
             public static List<string> GetAssetBundleNameListFromPath(string path, bool subdirCheck = false)
             {
-                return CommonLib.GetAssetBundleNameListFromPath(path, subdirCheck);
+                return CommonLib.GetAssetBundleNameListFromPath(NormalizePathSeparators(path), subdirCheck);
             }
 
             public static void UnloadBundles()
@@ -44,16 +44,19 @@ namespace IllusionMods
 #else
             public static string[] GetAssetNamesFromBundle(string assetBundleName)
             {
+                string[] ret;
                 try
                 {
-                    return AssetBundleCheck.GetAllAssetName(assetBundleName);
+                    ret = AssetBundleCheck.GetAllAssetName(assetBundleName);
+                    if (ret?.Length > 0) return ret;
                 }
                 catch { }
 
 
                 try
                 {
-                    return AssetBundleCheck.GetAllAssetName(assetBundleName, isAllCheck: true);
+                    ret = AssetBundleCheck.GetAllAssetName(assetBundleName, isAllCheck: true);
+                    if (ret?.Length > 0) return ret;
                 }
                 catch { }
 
@@ -71,8 +74,9 @@ namespace IllusionMods
                                     out var loadedAssetBundle)
                                 )
                                 {
-                                    return loadedAssetBundle.m_AssetBundle.GetAllAssetNames().Select(Path.GetFileName)
+                                    ret = loadedAssetBundle.m_AssetBundle.GetAllAssetNames().Select(Path.GetFileName)
                                         .ToArray();
+                                    if (ret?.Length > 0) return ret;
                                 }
                             }
                         }
@@ -94,20 +98,13 @@ namespace IllusionMods
                     assetBundle = loadedAssetBundle1.m_AssetBundle;
                 }
 
+
                 try
                 {
                     if (!(assetBundle is null))
                     {
-                        return assetBundle.GetAllAssetNames().Select(Path.GetFileName).ToArray();
-                    }
-
-                    if (err.IsNullOrEmpty())
-                    {
-                        throw new NullReferenceException($"Unable to load assetBundle {assetBundleName}");
-                    }
-                    else
-                    {
-                        throw new NullReferenceException($"Unable to load assetBundle {assetBundleName}: {err}");
+                        ret = assetBundle.GetAllAssetNames().Select(Path.GetFileName).ToArray();
+                        if (ret?.Length > 0) return ret;
                     }
                 }
                 finally
@@ -117,6 +114,9 @@ namespace IllusionMods
                         AssetBundleManager.UnloadAssetBundle(assetBundle.name, false);
                     }
                 }
+
+
+                return new string[0];
             }
 #endif
 
@@ -124,11 +124,33 @@ namespace IllusionMods
             {
 #if AI
                 LoadedBundles.Add(assetBundleAddress.AssetBundle);
-                return AssetUtility.LoadAsset<T>((UnityEx.AssetBundleInfo)assetBundleAddress);
+                return AssetUtility.LoadAsset<T>((AssetBundleInfo) assetBundleAddress);
 #else
                 return ManualLoadAsset<T>(assetBundleAddress.AssetBundle, assetBundleAddress.Asset,
                     assetBundleAddress.Manifest);
 #endif
+            }
+
+            public static Type FindType(string name)
+            {
+                var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+                foreach (var assembly in assemblies)
+                {
+                    try
+                    {
+                        var type = assembly.GetType(name, false);
+                        if (type != null)
+                        {
+                            return type;
+                        }
+                    }
+                    catch
+                    {
+                        // don't care!
+                    }
+                }
+
+                return null;
             }
 
             public static T ManualLoadAsset<T>(string bundle, string asset, string manifest) where T : Object
@@ -143,6 +165,7 @@ namespace IllusionMods
             return null;
 #else
                 manifest = manifest.IsNullOrEmpty() ? null : manifest;
+                Logger.DebugLogDebug($"ManualLoadAsset: {bundle}, {asset}, {manifest}");
                 try
                 {
                     var result = CommonLib.LoadAsset<T>(bundle, asset, false, manifest);
