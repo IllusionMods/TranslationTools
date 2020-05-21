@@ -4,35 +4,80 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using HarmonyLib;
+using IllusionMods.Shared;
+using Manager;
 using static IllusionMods.TextResourceHelper.Helpers;
 
 namespace IllusionMods
 {
-    public partial class LocalizationDumpHelper : BaseDumpHelper
+    public class LocalizationDumpHelper : BaseDumpHelper
     {
+        protected static LocalizationDumpHelper _instance;
+
         protected readonly Dictionary<string, Dictionary<string, string>> AutoLocalizers =
             new Dictionary<string, Dictionary<string, string>>();
 
-        public LocalizationDumpHelper(TextDump plugin) : base(plugin) { }
+        public LocalizationDumpHelper(TextDump plugin) : base(plugin)
+        {
+            _instance = this;
+        }
 
         public static Regex FormatStringRegex { get; protected set; } = new Regex(@"\{[0-9]\}");
+
+        protected static IList<ITranslationDumper> HookedTextLocalizationGenerators { get; } =
+            new List<ITranslationDumper>();
 
         public virtual string LocalizationFileRemap(string outputFile)
         {
             return outputFile;
         }
 
+        protected virtual string GetPersonalityName(VoiceInfo.Param voiceInfo)
+        {
+            return voiceInfo.Personality;
+        }
+
+        protected virtual string GetPersonalityNameLocalization(VoiceInfo.Param voiceInfo)
+        {
+            return voiceInfo.Personality;
+        }
+
+        protected Dictionary<string, string> PersonalityLocalizer()
+        {
+            var results = new Dictionary<string, string>();
+            foreach (var voiceInfo in Singleton<Voice>.Instance.voiceInfoList)
+            {
+                var key = GetPersonalityName(voiceInfo);
+                var value = GetPersonalityNameLocalization(voiceInfo);
+                AddLocalizationToResults(results, key, value);
+                AddLocalizationToResults(ResourceHelper.GlobalMappings, key, value);
+            }
+
+            return results;
+        }
+
+
+        private IEnumerable<ITranslationDumper> GetHookedTextLocalizationGenerators()
+        {
+            return HookedTextLocalizationGenerators;
+        }
+
         protected virtual IEnumerable<TranslationGenerator> GetLocalizationGenerators()
         {
+            yield return GetHookedTextLocalizationGenerators;
             yield return GetAutoLocalizerDumpers;
             yield return GetStaticLocalizers;
+            yield return WrapTranslationCollector("Personalities", PersonalityLocalizer);
+#if LOCALIZE
+            yield return GetOtherDataLocalizers;
+#endif
             if (TextDump.IsReadyForFinalDump())
             {
                 yield return GetInstanceLocalizers;
             }
         }
 
-        public virtual IEnumerable<TranslationDumper> GetLocalizations()
+        public virtual IEnumerable<ITranslationDumper> GetLocalizations()
         {
             var localizers = GetLocalizationGenerators().ToList();
 
@@ -45,7 +90,7 @@ namespace IllusionMods
                 while (localizers.Count > 0)
                 {
                     var localizerGenerator = localizers.PopFront();
-                    var entries = new List<TranslationDumper>();
+                    var entries = new List<ITranslationDumper>();
                     try
                     {
                         foreach (var entry in localizerGenerator())
@@ -56,7 +101,7 @@ namespace IllusionMods
                     }
                     catch (Exception err)
                     {
-                        Logger.LogError($"Re-adding localizer to end: {nameof(localizerGenerator)} : {err}");
+                        Logger.LogWarning($"Re-adding localizer to end: {nameof(localizerGenerator)} : {err}");
                         retryLocalizers.Add(localizerGenerator);
                     }
 
@@ -84,11 +129,11 @@ namespace IllusionMods
             }
         }
 
-        public virtual IEnumerable<TranslationDumper> GetAutoLocalizerDumpers()
+        public virtual IEnumerable<ITranslationDumper> GetAutoLocalizerDumpers()
         {
             foreach (var entry in AutoLocalizers)
             {
-                yield return new TranslationDumper(
+                yield return new StringTranslationDumper(
                     CombinePaths("AutoLocalizers", entry.Key),
                     () => entry.Value);
             }
@@ -133,7 +178,7 @@ namespace IllusionMods
             }
         }
 
-        protected TranslationDumper MakeStandardInstanceLocalizer<T>(params string[] fieldNames) where T : new()
+        protected StringTranslationDumper MakeStandardInstanceLocalizer<T>(params string[] fieldNames) where T : new()
         {
             Dictionary<string, string> Localizer()
             {
@@ -157,10 +202,10 @@ namespace IllusionMods
                 return results;
             }
 
-            return new TranslationDumper($"Instance/{GetPathForType(typeof(T))}", Localizer);
+            return new StringTranslationDumper($"Instance/{GetPathForType(typeof(T))}", Localizer);
         }
 
-        protected TranslationDumper MakeStandardStaticLocalizer(Type type, params string[] fieldNames)
+        protected StringTranslationDumper MakeStandardStaticLocalizer(Type type, params string[] fieldNames)
         {
             Dictionary<string, string> Localizer()
             {
@@ -171,7 +216,8 @@ namespace IllusionMods
                     var field = AccessTools.Field(type, fieldName);
                     if (field is null)
                     {
-                        Logger.LogWarning($"MakeStandardStaicLocalizer: Unable to find field: {type.Name}.{fieldName}");
+                        Logger.LogWarning(
+                            $"MakeStandardStaticLocalizer: Unable to find field: {type.Name}.{fieldName}");
                         continue;
                     }
 
@@ -181,8 +227,9 @@ namespace IllusionMods
                 return results;
             }
 
-            return new TranslationDumper($"Static/{GetPathForType(type)}", Localizer);
+            return new StringTranslationDumper($"Static/{GetPathForType(type)}", Localizer);
         }
+
 
         private static string GetPathForType(Type type)
         {
@@ -191,14 +238,74 @@ namespace IllusionMods
                 : type.Name ?? "Unknown";
         }
 
-        public virtual IEnumerable<TranslationDumper> GetStaticLocalizers()
+        public virtual IEnumerable<ITranslationDumper> GetStaticLocalizers()
         {
-            return new TranslationDumper[0];
+            return new ITranslationDumper[0];
         }
 
-        public virtual IEnumerable<TranslationDumper> GetInstanceLocalizers()
+        public virtual IEnumerable<ITranslationDumper> GetInstanceLocalizers()
         {
-            return new TranslationDumper[0];
+            return new ITranslationDumper[0];
         }
+//                    voiceInfo.Get(Localize.Translate.Manager.Language)
+
+
+#if LOCALIZE
+        protected readonly Dictionary<int, Dictionary<string, string>> OtherDataByTag =
+            new Dictionary<int, Dictionary<string, string>>();
+
+        protected IEnumerable<ITranslationDumper> GetOtherDataLocalizers()
+        {
+            var categories = Enum.GetValues(typeof(Localize.Translate.Manager.SCENE_ID))
+                .Cast<Localize.Translate.Manager.SCENE_ID>();
+
+            foreach (var cat in categories)
+            {
+                var category = cat;
+
+                Dictionary<string, string> Localizer()
+                {
+                    var tagsSeen = new Dictionary<int, HashSet<string>>();
+                    var results = new Dictionary<string, string>();
+                    var otherData = Localize.Translate.Manager.LoadScene(category, null);
+                    foreach (var dataset in OtherDataByTag)
+                    {
+                        tagsSeen[dataset.Key] = new HashSet<string>();
+                        foreach (var entry in dataset.Value)
+                        {
+                            if (!otherData.ContainsKey(dataset.Key)) continue;
+
+                            var localization = otherData.Get(dataset.Key).Values.FindTagText(entry.Key);
+                            if (string.IsNullOrEmpty(localization)) continue;
+
+                            AddLocalizationToResults(results, entry.Value, localization);
+                            if (!string.IsNullOrEmpty(localization))
+                            {
+                                tagsSeen[dataset.Key].Add(BuildSeenKey(dataset.Key, entry.Key));
+                            }
+                        }
+                    }
+
+                    foreach (var dataSet in otherData)
+                    {
+                        var seen = tagsSeen.ContainsKey(dataSet.Key) ? tagsSeen[dataSet.Key] : new HashSet<string>();
+                        foreach (var entry in dataSet.Value)
+                        {
+                            var param = entry.Value;
+                            var key = BuildSeenKey(dataSet.Key, param);
+                            if (!seen.Contains(key) && !string.IsNullOrEmpty(param.text))
+                            {
+                                AddLocalizationToResults(results, $"//__NOTFOUND__{key}", param.text);
+                            }
+                        }
+                    }
+
+                    return results;
+                }
+
+                yield return new StringTranslationDumper($"OtherData/{category}", Localizer);
+            }
+        }
+#endif
     }
 }

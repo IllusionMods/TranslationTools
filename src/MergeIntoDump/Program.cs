@@ -53,7 +53,7 @@ namespace IllusionMods.TranslationTools.Tools.MergeIntoDump
                     var destLines = ReadLines(job.DestFileInfo, out var destTranslations);
                     var sourceLines = ReadLines(job.SourceFileInfo, out var srcTranslations);
 
-                    var newLines = sourceLines.Where(l => !destLines.Contains(l)).ToArray();
+                    var newLines = sourceLines.Where(((Predicate<string>)destLines.Contains).Not).ToArray();
 
                     if (newLines.Length == 0) continue;
 

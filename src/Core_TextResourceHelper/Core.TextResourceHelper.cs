@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using BepInEx.Logging;
+using System.IO;
 using System.Linq;
+using BepInEx.Logging;
 #if !HS
 using ADV;
 
@@ -16,8 +17,12 @@ namespace IllusionMods
         protected static readonly string SpecializedKeyDelimiter = ":";
         public readonly char[] WhitespaceCharacters = {' ', '\t'};
 
+        private TextAssetTableHelper _tableHelper;
+
         protected static ManualLogSource Logger =>
             _logger = _logger ?? BepInEx.Logging.Logger.CreateLogSource(nameof(TextResourceHelper));
+
+        public TextAssetTableHelper TableHelper => _tableHelper ?? (_tableHelper = GetTableHelper());
 
 
         public virtual bool IsValidLocalization(string original, string localization)
@@ -26,15 +31,18 @@ namespace IllusionMods
             return !string.IsNullOrEmpty(localization) && localization != "0" && localization != original;
         }
 
-        public virtual IEnumerable<int> GetSupportedExcelColumns(string calculatedModificationPath, ExcelData asset) => new int[0];
+        public virtual IEnumerable<int> GetSupportedExcelColumns(string calculatedModificationPath, ExcelData asset)
+        {
+            return new int[0];
+        }
 
         public virtual List<string> GetExcelHeaderRow(ExcelData asset, out int firstRow)
         {
             firstRow = 0;
             var headerRow = asset.GetRow(firstRow++);
             if (headerRow.Count > 1 && (
-                (headerRow[0].StartsWith("Ｈ") && headerRow[1].IsNullOrWhiteSpace()) ||
-                (headerRow.Count == headerRow.Count(h => h.IsNullOrWhiteSpace()))))
+                headerRow[0].StartsWith("Ｈ") && headerRow[1].IsNullOrWhiteSpace() ||
+                headerRow.Count == headerRow.Count(h => h.IsNullOrWhiteSpace())))
             {
                 headerRow = asset.GetRow(firstRow++);
             }
@@ -42,7 +50,35 @@ namespace IllusionMods
             return headerRow;
         }
 
-        public List<string> GetExcelHeaderRow(ExcelData asset) => GetExcelHeaderRow(asset, out var _);
+        public List<string> GetExcelHeaderRow(ExcelData asset)
+        {
+            return GetExcelHeaderRow(asset, out _);
+        }
+
+        protected virtual TextAssetTableHelper GetTableHelper()
+        {
+            return new TextAssetTableHelper(new[] {"\r\n", "\r", "\n"}, new[] {"\t"});
+        }
+
+        public virtual IEnumerable<string> GetExcelRowTranslationKeys(string assetName, List<string> row, int i)
+        {
+            if (row == null || row.Count <= i) yield break;
+            yield return row[i];
+        }
+
+        public virtual bool IsOptionDisplayItemAsset(string assetName)
+        {
+            return assetName.StartsWith("optiondisplayitems", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public virtual bool IsOptionDisplayItemPath(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+
+            var parts = Helpers.SplitPath(Path.GetDirectoryName(path));
+            return parts?.LastOrDefault()?.StartsWith("optiondisplayitems", StringComparison.OrdinalIgnoreCase) ??
+                   false;
+        }
 
 #if !HS
 
@@ -66,7 +102,6 @@ namespace IllusionMods
         {
             return SupportedCommands.Contains(command);
         }
-
 
 
         public virtual string BuildSpecializedKey(ScenarioData.Param param, string toTranslate)
@@ -103,6 +138,11 @@ namespace IllusionMods
             }
 
             return BuildSpecializedKey(param, toTranslate);
+        }
+
+        public virtual string GetSpecializedKey(object obj, string defaultValue)
+        {
+            return defaultValue;
         }
 
         public string GetSpecializedKey(ScenarioData.Param param, int i)

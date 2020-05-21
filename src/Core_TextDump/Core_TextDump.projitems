@@ -19,5 +19,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core.TranslationCount.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextDump.InitialDumpHook.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextDump.Helpers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TranslationDictionary.cs" />
   </ItemGroup>
 </Project>

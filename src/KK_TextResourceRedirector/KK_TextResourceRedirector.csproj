@@ -80,7 +80,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="KK.MapInfoHandler.cs" />
+    <Compile Include="KK.EventInfoHandler.cs" />
     <Compile Include="KK.TextResourceRedirector.cs" />
+    <Compile Include="KK.NickNameHandler.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

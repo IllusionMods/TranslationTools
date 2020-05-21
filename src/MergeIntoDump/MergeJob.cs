@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace IllusionMods.TranslationTools.Tools.MergeIntoDump
 {
-    class MergeJob
+    internal class MergeJob
     {
         private FileInfo _sourceFileInfo = null;
         private string _destFilePath = null;

@@ -1,4 +1,5 @@
 ﻿using UnityEx;
+
 namespace IllusionMods
 {
     public partial class AssetBundleAddress

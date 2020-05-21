@@ -1,30 +1,38 @@
-﻿using System;
+﻿using System.Collections;
 using System.Collections.Generic;
 
 namespace IllusionMods
 {
-    public delegate IDictionary<string, string> TranslationCollector();
-
-    public delegate IEnumerable<TranslationDumper> TranslationGenerator();
-
-    public class TranslationDumper
+    public class TranslationDumper<T> : ITranslationDumper<T>
     {
+        public delegate T TranslationCollector();
+
         public TranslationDumper(string path, TranslationCollector collector)
         {
             Path = path;
             Collector = collector;
         }
 
-        [Obsolete("Use Path")] public string Key => Path;
-
-        [Obsolete("Use Collector")] public TranslationCollector Value => Collector;
-
-        public string Path { get; }
         public TranslationCollector Collector { get; }
+        public string Path { get; }
+
+        TranslationCollector<T> ITranslationDumper<T>.Collector => TypedCollector;
+
+        BaseTranslationCollector ITranslationDumper.Collector => BaseCollector;
+
+        private IEnumerable BaseCollector()
+        {
+            return (IEnumerable) Collector();
+        }
+
+        private IEnumerable<T> TypedCollector()
+        {
+            return (IEnumerable<T>) Collector();
+        }
 
         public override string ToString()
         {
-            return $"TranslationDumper<{Path}, {Collector}>";
+            return $"{GetType()}<{Path}, {Collector}>";
         }
     }
 }

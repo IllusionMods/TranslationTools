@@ -18,5 +18,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core.PathList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.IPathListBoundHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.ChaListDataHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextAssetRawBytesHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.Extensions.cs" />
   </ItemGroup>
 </Project>

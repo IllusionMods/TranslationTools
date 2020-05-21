@@ -59,6 +59,7 @@ namespace IllusionMods
 
             if (cache.IsEmpty) return false;
 
+            var result = false;
             foreach (var entry in asset.param)
             {
                 var key = entry.name0;
@@ -66,6 +67,8 @@ namespace IllusionMods
                 if (cache.TryGetTranslation(key, true, out var translated))
                 {
                     entry.name0 = translated;
+                    TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
+                    result = true;
                 }
                 else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
                          LanguageHelper.IsTranslatable(key))
@@ -74,7 +77,7 @@ namespace IllusionMods
                 }
             }
 
-            return true;
+            return result;
         }
 
         protected override bool ShouldHandleAsset(TitleSkillName asset, IAssetOrResourceLoadedContext context)

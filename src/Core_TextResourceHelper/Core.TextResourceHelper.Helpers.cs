@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 
 namespace IllusionMods
 {
@@ -55,6 +54,8 @@ namespace IllusionMods
                 var splitChars = (char[]) DirectorySeparatorsToReplace;
                 return parts?.SelectMany(i=>i.Split(splitChars)).Aggregate(Path.Combine);
             }
+
+            public static string[] SplitPath(string path) => path?.Split(Path.DirectorySeparatorChar,Path.AltDirectorySeparatorChar);
 
             /// <summary>Wrapper for <see cref="string.Join(string, string[])" /> to workaround lack of params usage in .NET 3.5.</summary>
             public static string JoinStrings(string separator, params string[] value)

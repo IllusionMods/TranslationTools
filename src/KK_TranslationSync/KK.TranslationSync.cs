@@ -23,6 +23,8 @@ namespace IllusionMods
         public const string PluginName = "Translation Sync";
         public const string PluginNameInternal = "KK_TranslationSync";
         public const string Version = "1.3.1";
+
+        public static ConfigEntry<bool> Enabled { get; private set; }
         public static ConfigEntry<string> Personality { get; private set; }
         public static ConfigEntry<KeyboardShortcut> TranslationSyncHotkey { get; private set; }
 
@@ -30,12 +32,15 @@ namespace IllusionMods
         internal void Main()
         {
             TranslationsRoot = Path.Combine(AutoTranslatorSettings.DefaultRedirectedResourcePath, @"assets\abdata");
+            Enabled = Config.Bind("Settings", "Enabled", true, "Whether the plugin is enabled");
             Personality = Config.Bind("Config", "Personality", "c00", "Personality to sync");
             TranslationSyncHotkey = Config.Bind("Keyboard Shortcuts", "Sync Translation Hotkey", new KeyboardShortcut(KeyCode.Alpha0), "Press to sync translations for the specified personality. Hold alt to force overwrite all translations if different (dangerous, make backups first). Hold ctrl to sync all translations for all personalities (may take a while).");
         }
 
         internal void Update()
         {
+            if (!Enabled.Value) return;
+
             if ((Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt)) && Input.GetKey(TranslationSyncHotkey.Value.MainKey))
             {
                 SyncTLs(TLType.Scenario, true);

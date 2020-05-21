@@ -94,21 +94,26 @@ namespace IllusionMods
                 for (var i = 0; i < param.list.Count; i++)
                 {
                     if (filter && !columnsToTranslate.Contains(i)) continue;
-                    var key = param.list[i];
-                    if (string.IsNullOrEmpty(key)) continue;
-                    if (cache.TryGetTranslation(key, true, out var translated))
+
+                    foreach (var key in _textResourceHelper.GetExcelRowTranslationKeys(asset.name, param.list, i))
                     {
-                        result = true;
-                        TranslationHelper.RegisterRedirectedResourceTextToPath(translated,
-                            calculatedModificationPath);
-                        param.list[i] = translated;
-                    }
-                    else if (LanguageHelper.IsTranslatable(key))
-                    {
-                        TranslationHelper.RegisterRedirectedResourceTextToPath(key, calculatedModificationPath);
-                        if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled)
+
+                        if (string.IsNullOrEmpty(key)) continue;
+                        if (cache.TryGetTranslation(key, true, out var translated))
                         {
-                            cache.AddTranslationToCache(key, key);
+                            result = true;
+                            TranslationHelper.RegisterRedirectedResourceTextToPath(translated,
+                                calculatedModificationPath);
+                            param.list[i] = translated;
+                            break;
+                        }
+                        else if (LanguageHelper.IsTranslatable(key))
+                        {
+                            TranslationHelper.RegisterRedirectedResourceTextToPath(key, calculatedModificationPath);
+                            if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled)
+                            {
+                                cache.AddTranslationToCache(key, key);
+                            }
                         }
                     }
                 }

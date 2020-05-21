@@ -1,19 +1,24 @@
 ﻿using System.Collections.Generic;
-using System.Text;
 using System.Text.RegularExpressions;
 using BepInEx.Logging;
+using Illusion.Extensions;
+using IllusionMods.Shared;
 using UnityEngine;
+using static IllusionMods.TextResourceHelper.Helpers;
+
+#if LOCALIZE
+using Localize.Translate;
+#endif
 
 namespace IllusionMods
 {
     public partial class BaseDumpHelper
     {
-       
         protected const string NewlineReplaceValue = "\\n";
 
         protected static readonly Regex NewlineReplaceRegex =
-            new Regex(Regex.Escape("\n"), 
-                Shared.Constants.DefaultRegexOptions);
+            new Regex(Regex.Escape("\n"),
+                Constants.DefaultRegexOptions);
 
         private ManualLogSource _logger;
 
@@ -27,7 +32,21 @@ namespace IllusionMods
         protected TextDump Plugin { get; }
 
         protected TextResourceHelper ResourceHelper => Plugin?.TextResourceHelper;
-        protected TextAssetTableHelper TableHelper => Plugin?.TextAssetTableHelper;
+        protected TextAssetTableHelper TableHelper => Plugin?.TextResourceHelper?.TableHelper;
+
+        protected static string BuildSeenKey(int topLevel, string tag)
+        {
+            return JoinStrings("_", topLevel.ToString(), tag);
+        }
+
+#if LOCALIZE
+        protected static string BuildSeenKey(int topLevel, Data.Param param)
+        {
+            return JoinStrings("_",
+                topLevel.ToString(),
+                !string.IsNullOrEmpty(param.tag) ? param.tag : param.ID.ToString());
+        }
+#endif
 
         public void AddLocalizationToResults(IDictionary<string, string> results, string origText, string transText)
         {
@@ -45,11 +64,11 @@ namespace IllusionMods
         }
 
         public static TranslationGenerator WrapTranslationCollector(string path,
-            TranslationCollector translationCollector)
+            TranslationDumper<IDictionary<string, string>>.TranslationCollector translationCollector)
         {
-            IEnumerable<TranslationDumper> Generator()
+            IEnumerable<ITranslationDumper> Generator()
             {
-                yield return new TranslationDumper(path, translationCollector);
+                yield return new StringTranslationDumper(path, translationCollector);
             }
 
             return Generator;
@@ -87,9 +106,22 @@ namespace IllusionMods
 
         public virtual void PrepareLineForDump(ref string key, ref string value)
         {
-            var origValue = value;
             key = NewlineReplaceRegex.Replace(key, NewlineReplaceValue);
             value = NewlineReplaceRegex.Replace(value, NewlineReplaceValue);
+        }
+
+        protected static List<GameObject> GetChildrenFromGameObject(GameObject parent)
+        {
+#if AI
+            return parent.Children();
+#else
+            var gameObjects = new List<GameObject>();
+            for (var i = 0; i < parent.transform.childCount; i++)
+            {
+                gameObjects.Add(parent.transform.GetChild(i).gameObject);
+            }
+            return gameObjects;
+#endif
         }
     }
 }
