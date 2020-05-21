@@ -7,7 +7,7 @@ Translation tools for Illusion games
 
 - **v1.2.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r4/AI_TextResourceRedirector.v1.2.1.zip)** - For AI Girl
 - **v1.1.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r2/HS_TextResourceRedirector.v1.1.1.zip)** - For Honey Select
-- **v1.2.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r4/KK_TextResourceRedirector.v1.2.1.zip)** - For Koikatsu
+- **v1.2.3 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r5/KK_TextResourceRedirector.v1.2.3.zip)** - For Koikatsu
 
 
 Allows translations to override individual assets. Required for some translations to function correctly. Requires [XUnity.AutoTranslator](https://github.com/bbepis/XUnity.AutoTranslator) v4.11 or greater.
