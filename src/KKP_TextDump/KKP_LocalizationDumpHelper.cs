@@ -20,7 +20,10 @@ namespace IllusionMods
             "UnityEngine.UI.Text",
             "UnityEngine.TextMesh",
             "TMPro.TMP_Text",
-            "UILabel"
+            "TMPro.TextMeshProUGUI",
+            "TMPro.TextMeshPro",
+            "UILabel",
+            "FairyGUI.TextField"
         };
 
         private static readonly Type[] SupportedEnumerationTypes;
