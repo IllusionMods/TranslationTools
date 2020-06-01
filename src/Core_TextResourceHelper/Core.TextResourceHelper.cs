@@ -17,6 +17,8 @@ namespace IllusionMods
         protected static readonly string SpecializedKeyDelimiter = ":";
         public readonly char[] WhitespaceCharacters = {' ', '\t'};
 
+        public const char OptionSafeComma = '\u201a';
+
         private TextAssetTableHelper _tableHelper;
 
         protected static ManualLogSource Logger =>
@@ -60,10 +62,15 @@ namespace IllusionMods
             return new TextAssetTableHelper(new[] {"\r\n", "\r", "\n"}, new[] {"\t"});
         }
 
+        protected virtual bool IsValidExcelRowTranslationKey(string key)
+        {
+            return key != "0";
+        }
         public virtual IEnumerable<string> GetExcelRowTranslationKeys(string assetName, List<string> row, int i)
         {
             if (row == null || row.Count <= i) yield break;
-            yield return row[i];
+            var key = row[i];
+            if (IsValidExcelRowTranslationKey(key)) yield return key;
         }
 
         public virtual bool IsOptionDisplayItemAsset(string assetName)
@@ -271,5 +278,15 @@ namespace IllusionMods
         }
 
 #endif
+        public string PrepareTranslationForReplacement(ExcelData asset, string translated)
+        {
+            if (IsOptionDisplayItemAsset(asset.name))
+            {
+                // use alternate comma because option display items are stored/split on comma
+                return translated.Replace(',', OptionSafeComma);
+            }
+
+            return translated;
+        }
     }
 }

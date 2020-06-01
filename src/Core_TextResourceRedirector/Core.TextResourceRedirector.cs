@@ -25,7 +25,7 @@ namespace IllusionMods
 
         public const string PluginName = "Text Resource Redirector";
         public const string GUID = "com.deathweasel.bepinex.textresourceredirector";
-        public const string Version = "1.2.3";
+        public const string Version = "1.2.4";
         internal new static ManualLogSource Logger;
 #if !HS
         internal ChaListDataHandler ChaListDataHandler;
@@ -130,14 +130,12 @@ namespace IllusionMods
                 {
                     AddTranslationDelegate = (AddTranslation) Delegate.CreateDelegate(
                         typeof(AddTranslation), defaultCache, method);
-                    Logger.LogDebug("InitXUA: Primary success");
                 }
                 catch (ArgumentException)
                 {
                     //  mono versions fallback to this
                     AddTranslationDelegate = (key, value, scope) =>
                         method.Invoke(defaultCache, new object[] {key, value, scope});
-                    Logger.LogDebug("InitXUA: Secondary success");
                 }
             }
 

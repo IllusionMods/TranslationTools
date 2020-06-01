@@ -47,12 +47,13 @@ namespace IllusionMods
 
         public override IEnumerable<string> GetExcelRowTranslationKeys(string assetName, List<string> row, int i)
         {
-            if (row != null && row.Count > i && IsOptionDisplayItemAsset(assetName))
+            var isOptionDisplay = IsOptionDisplayItemAsset(assetName);
+            foreach (var key in base.GetExcelRowTranslationKeys(assetName, row, i))
             {
-                yield return $"OPTION[{row[0]}]:{row[i]}";
+                // specialized match much come first
+                if (isOptionDisplay) yield return $"OPTION[{row[0]}]:{key}";
+                yield return key;
             }
-
-            foreach (var key in base.GetExcelRowTranslationKeys(assetName, row, i)) yield return key;
         }
 
         public override string GetSpecializedKey(object obj, string defaultValue)
