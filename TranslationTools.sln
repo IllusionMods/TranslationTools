@@ -58,6 +58,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MergeIntoDump", "src\MergeI
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Shared.Plugin", "src\Shared.Plugin\Shared.Plugin.shproj", "{A1BE9306-265D-45F8-BC45-A505FC0E2150}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HS2_TextDump", "src\HS2_TextDump\HS2_TextDump.csproj", "{ECD8601A-DFC8-4C19-86BC-3017DD3951F2}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{0c56dbc3-848c-42fd-b4f2-ab31863261f8}*SharedItemsImports = 4
@@ -110,6 +112,10 @@ Global
 		src\Core_TextResourceRedirector\Core_TextResourceRedirector.projitems*{e0b39dba-571c-4b01-8479-63b59aa86b88}*SharedItemsImports = 4
 		src\Shared\Shared.projitems*{e0b39dba-571c-4b01-8479-63b59aa86b88}*SharedItemsImports = 4
 		src\KK_Common_TextDump\KK_Common_TextDump.projitems*{e22f76cc-c761-43da-a2de-ab282c0846e1}*SharedItemsImports = 13
+		src\AI_Common_TextDump\AI_Common_TextDump.projitems*{ecd8601a-dfc8-4c19-86bc-3017dd3951f2}*SharedItemsImports = 4
+		src\AI_TextResourceHelper\AI_TextResourceHelper.projitems*{ecd8601a-dfc8-4c19-86bc-3017dd3951f2}*SharedItemsImports = 4
+		src\Core_TextDump\Core_TextDump.projitems*{ecd8601a-dfc8-4c19-86bc-3017dd3951f2}*SharedItemsImports = 4
+		src\Shared.Plugin\Shared.Plugin.projitems*{ecd8601a-dfc8-4c19-86bc-3017dd3951f2}*SharedItemsImports = 4
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -156,6 +162,10 @@ Global
 		{C65AE0BF-9D71-4420-8FA0-81F77CE303A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C65AE0BF-9D71-4420-8FA0-81F77CE303A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C65AE0BF-9D71-4420-8FA0-81F77CE303A5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ECD8601A-DFC8-4C19-86BC-3017DD3951F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ECD8601A-DFC8-4C19-86BC-3017DD3951F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ECD8601A-DFC8-4C19-86BC-3017DD3951F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ECD8601A-DFC8-4C19-86BC-3017DD3951F2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -178,6 +188,7 @@ Global
 		{49D20240-7621-4D4E-871C-9DD569668C96} = {C09C475A-6755-4E09-8D60-36B8FA2ADE63}
 		{E22F76CC-C761-43DA-A2DE-AB282C0846E1} = {C09C475A-6755-4E09-8D60-36B8FA2ADE63}
 		{C65AE0BF-9D71-4420-8FA0-81F77CE303A5} = {AF74661D-12F5-440F-980A-11AC18974B48}
+		{ECD8601A-DFC8-4C19-86BC-3017DD3951F2} = {C09C475A-6755-4E09-8D60-36B8FA2ADE63}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D0F79985-4CB7-46CB-BEC2-FF89C476ED20}

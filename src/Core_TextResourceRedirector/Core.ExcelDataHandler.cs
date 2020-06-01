@@ -89,21 +89,28 @@ namespace IllusionMods
             var filter = columnsToTranslate.Count > 0;
 
 
+            var row = -1;
             foreach (var param in asset.list)
             {
+                row++;
+                if (param.list == null || param.list.Count < 1 || param.list[0] == "no") continue;
+
                 for (var i = 0; i < param.list.Count; i++)
                 {
                     if (filter && !columnsToTranslate.Contains(i)) continue;
 
                     foreach (var key in _textResourceHelper.GetExcelRowTranslationKeys(asset.name, param.list, i))
                     {
-
+                        Logger.DebugLogDebug($"Attempting excel replacement [{row}, {i}]: Searching for replacement key={key}");
                         if (string.IsNullOrEmpty(key)) continue;
                         if (cache.TryGetTranslation(key, true, out var translated))
                         {
                             result = true;
+                            translated = _textResourceHelper.PrepareTranslationForReplacement(asset, translated);
                             TranslationHelper.RegisterRedirectedResourceTextToPath(translated,
                                 calculatedModificationPath);
+                            Logger.DebugLogDebug($"Replacing [{row}, {i}]: key={key}: {param.list[i]} => {translated}");
+
                             param.list[i] = translated;
                             break;
                         }
