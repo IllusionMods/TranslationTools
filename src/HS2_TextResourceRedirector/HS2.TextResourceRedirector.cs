@@ -10,7 +10,7 @@ namespace IllusionMods
 
         public TextResourceRedirector()
         {
-            TextResourceExtensions.EnableTraces = true;
+            //TextResourceExtensions.EnableTraces = true;
             TextResourceRedirectorAwake += ConfigureHandlersForHS2;
         }
 
