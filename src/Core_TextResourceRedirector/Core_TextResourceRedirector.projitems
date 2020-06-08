@@ -9,6 +9,7 @@
     <Import_RootNamespace>IllusionMods</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Core.RedirectorAssetLoadedHandlerBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextAssetMessagePackHandlerBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AssemblyInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.cs" />
@@ -20,5 +21,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core.ChaListDataHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextAssetRawBytesHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.ParamAssetLoadedHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.StringArrayParamAssetLoadedHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.IRedirectorHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.RedirectorTextAssetLoadedHandlerBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.XuaHooks.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.MapInfoHandler.cs" />
   </ItemGroup>
 </Project>

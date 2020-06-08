@@ -22,12 +22,8 @@ namespace IllusionMods
 
         public readonly Dictionary<string, string> SpeakerLocalizations = new Dictionary<string, string>();
 
-        public KK_TextResourceHelper()
+        protected KK_TextResourceHelper()
         {
-            CalcKeys = new HashSet<string>();
-            FormatKeys = new HashSet<string>();
-            TextKeysBlacklist = new HashSet<string>();
-
             SupportedCommands.Add(Command.Choice);
             SupportedCommands.Add((Command) 242);
         }

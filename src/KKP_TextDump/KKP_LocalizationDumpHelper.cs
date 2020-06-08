@@ -10,6 +10,7 @@ using Localize.Translate;
 using Manager;
 using UnityEngine;
 using static IllusionMods.TextResourceHelper.Helpers;
+using Object = UnityEngine.Object;
 
 namespace IllusionMods
 {
@@ -28,16 +29,17 @@ namespace IllusionMods
 
         private static readonly Type[] SupportedEnumerationTypes;
 
+        private static readonly Dictionary<string, Type> SupportedEnumerationTypeMap;
+
         static KKP_LocalizationDumpHelper()
         {
             FormatStringRegex = new Regex(@"(\{[0-9]\}|\[[PH][^\]]*\])");
 
-            var types = new List<Type>();
+            var typeMap = SupportedEnumerationTypeMap = new Dictionary<string, Type>();
             foreach (var typeName in SupportedEnumerationTypeNames)
             {
                 Type type = null;
                 try
-
                 {
                     type = AccessTools.TypeByName(typeName);
                 }
@@ -50,16 +52,15 @@ namespace IllusionMods
                 {
                     TextDump.Logger.LogDebug(
                         $"SupportedEnumerationTypes: Unable to find type {typeName} {type}, skipping.");
-                    continue;
                 }
 
-                types.Add(type);
+                typeMap[typeName] = type;
             }
 
-            SupportedEnumerationTypes = types.ToArray();
+            SupportedEnumerationTypes = typeMap.Values.Where(o => o != null).ToArray();
         }
 
-        public KKP_LocalizationDumpHelper(TextDump plugin) : base(plugin)
+        protected KKP_LocalizationDumpHelper(TextDump plugin) : base(plugin)
         {
             OtherDataByTag[0] = new Dictionary<string, string>
             {
@@ -205,7 +206,6 @@ namespace IllusionMods
             }
         }
 
-
         private static IEnumerable<KeyValuePair<GameObject, Component>> EnumerateTextComponents(GameObject gameObject,
             HashSet<object> handled = null, List<UIBinder> binders = null)
         {
@@ -267,12 +267,16 @@ namespace IllusionMods
                 }
             }).ToList();
 
+
+
             __state = new TranslationHookState(path);
 
             __state.Context.Add(components);
             __state.Context.Add(scopes);
             var origValues = components.Select(GetTextFromSupportedComponent).ToList();
             __state.Context.Add(origValues);
+            var origResizers = components.Select(GetTextResizerFromComponent).ToList();
+            __state.Context.Add(origResizers);
         }
 
         [HarmonyPostfix]
@@ -285,6 +289,7 @@ namespace IllusionMods
             var components = (List<Component>) __state.Context[0];
             var scopes = (List<int>) __state.Context[1];
             var origValues = (List<string>) __state.Context[2];
+            var origResizers = (List<XuaResizerResult>) __state.Context[3];
 
             var items = EnumerateTextComponents(gameObject).ToList();
             if (items.Count != components.Count)
@@ -298,17 +303,103 @@ namespace IllusionMods
             }
 
             var results = new TranslationDictionary();
+            var resizers = new ResizerCollection();
 
             for (var i = 0; i < components.Count; i++)
             {
                 var key = origValues[i];
                 var val = GetTextFromSupportedComponent(components[i]);
+
                 var scope = scopes[i];
                 _instance.AddLocalizationToResults(results.GetScope(scope), key, val);
+
+                
+                var currentResizer = GetTextResizerFromComponent(components[i]);
+
+                var resizePath = components[i].GetXuaResizerPath();
+                if (!string.IsNullOrEmpty(resizePath))
+                {
+                    var delta = currentResizer.Delta(origResizers[i]);
+                    var scopedResizers = resizers.GetScope(scope);
+                    scopedResizers[resizePath] = delta.GetDirectives().ToList();
+                }
+                
             }
 
             var outputName = CombinePaths("Bind/UI", path);
             HookedTextLocalizationGenerators.Add(new StringTranslationDumper(outputName, () => results));
+            HookedTextLocalizationGenerators.Add(new ResizerDumper(outputName, () => resizers));
+        }
+
+        protected static XuaResizerResult GetTextResizerFromComponent(Component component)
+        {
+            var result = new XuaResizerResult();
+            var componentType = component.GetType();
+            Type matchType;
+            TextDump.Logger.LogFatal($"GetTextResizerFromComponent: {componentType}");
+            if (component is UnityEngine.UI.Text textComponent)
+            {
+                TextDump.Logger.LogFatal($"GetTextResizerFromComponent: {component}: is Text");
+                result.AutoResize = textComponent.resizeTextForBestFit;
+                result.FontSize = textComponent.fontSize;
+                result.LineSpacing = (decimal) textComponent.lineSpacing;
+                result.HorizontalOverflow = textComponent.horizontalOverflow == HorizontalWrapMode.Overflow
+                    ? XuaResizerResult.HorizontalOverflowValue.Overflow
+                    : XuaResizerResult.HorizontalOverflowValue.Wrap;
+                result.VerticalOverflow = textComponent.verticalOverflow == VerticalWrapMode.Overflow
+                    ? XuaResizerResult.VerticalOverflowValue.Overflow
+                    : XuaResizerResult.VerticalOverflowValue.Truncate;
+            }
+
+
+            // UILabel
+            /*
+            if (SupportedEnumerationTypeMap.TryGetValue("UILabel", out var uiLabelType) &&
+                uiLabelType.IsAssignableFrom(componentType))
+            {
+                // nothing to track here?
+                
+            }
+            */
+
+            else if ((SupportedEnumerationTypeMap.TryGetValue("TMPro.TextMeshPro", out matchType) &&
+                      matchType.IsAssignableFrom(componentType)) ||
+                     (SupportedEnumerationTypeMap.TryGetValue("TMPro.TextMeshProUGUI", out matchType) &&
+                      matchType.IsAssignableFrom(componentType)))
+            {
+                TextDump.Logger.LogFatal($"GetTextResizerFromComponent: {component}/{matchType}: is TMPro");
+                var nullArgs = new object[0];
+                T GetComponentPropertyValue<T>(string name)
+                {
+                    var propInfo = AccessTools.Property(matchType, name);
+                    if (propInfo != null)
+                    {
+                        return (T) propInfo.GetValue(component, nullArgs);
+                    }
+
+                    var fieldInfo = AccessTools.Field(matchType, name);
+                    if (fieldInfo != null)
+                    {
+                        return (T) fieldInfo.GetValue(component);
+                    }
+
+                    return default;
+                }
+
+                result.AutoResize = GetComponentPropertyValue<bool?>("enableAutoSizing");
+                result.FontSize = (decimal?) GetComponentPropertyValue<float?>("fontSize");
+                result.LineSpacing = (decimal?)GetComponentPropertyValue<float?>("lineSpacing");
+
+                /*
+                yield return new KeyValuePair<string, string>(path,
+                    $"UGUI_HorizontalOverflow({textComponent.horizontalOverflow.ToString()})");
+                yield return new KeyValuePair<string, string>(path,
+                    $"UGUI_VerticalOverflow({textComponent.verticalOverflow.ToString()})");
+                */
+            }
+
+            TextDump.Logger.LogFatal($"GetTextResizerFromComponent: {component}: {result}");
+            return result;
         }
 
         protected override IEnumerable<TranslationGenerator> GetLocalizationGenerators()
@@ -482,14 +573,22 @@ namespace IllusionMods
                     ? translatedHeroines[i]
                     : null;
 
-                AddLocalizationToResults(results, baseHeroine.param.chara.Name,
-                    translatedHeroine?.param.chara.Name ?? string.Empty);
+                var translatedFirst = translatedHeroine?.param.chara.firstname ?? string.Empty;
+                var translatedLast = translatedHeroine?.param.chara.lastname ?? string.Empty;
                 AddLocalizationToResults(results, baseHeroine.param.chara.firstname,
-                    translatedHeroine?.param.chara.firstname ?? string.Empty);
+                   translatedFirst);
                 AddLocalizationToResults(results, baseHeroine.param.chara.lastname,
-                    translatedHeroine?.param.chara.lastname ?? string.Empty);
+                   translatedLast);
                 AddLocalizationToResults(results, baseHeroine.param.chara.nickname,
                     translatedHeroine?.param.chara.nickname ?? string.Empty);
+
+                // Add names in both orders
+                AddLocalizationToResults(results, 
+                    JoinStrings(" ", baseHeroine.param.chara.firstname, baseHeroine.param.chara.lastname).Trim(),
+                    JoinStrings(" ", translatedFirst, translatedLast).Trim());
+                AddLocalizationToResults(results,
+                    JoinStrings(" ", baseHeroine.param.chara.lastname, baseHeroine.param.chara.firstname).Trim(),
+                    JoinStrings(" ", translatedLast, translatedFirst).Trim());
             }
 
             return results;
@@ -536,12 +635,9 @@ namespace IllusionMods
 
             var propInfo = AccessTools.Property(typeof(Localize.Translate.Manager), "ScenarioReplaceNameData");
 
-            var scenarioReplaceNameData =
-                propInfo?.GetValue(null, new object[0]) as
-                    Dictionary<string, List<ScenarioCharaName.Param>>;
 
-
-            if (scenarioReplaceNameData == null) return results;
+            if (!(propInfo?.GetValue(null, new object[0]) is Dictionary<string, List<ScenarioCharaName.Param>>
+                scenarioReplaceNameData)) return results;
 
             foreach (var name in scenarioReplaceNameData.Values.SelectMany(nameList => nameList))
             {

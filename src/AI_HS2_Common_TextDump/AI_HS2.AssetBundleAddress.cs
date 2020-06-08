@@ -1,4 +1,9 @@
-﻿using UnityEx;
+﻿#if AI
+using UnityEx;
+#endif
+#if HS2
+using Manager;
+#endif 
 
 namespace IllusionMods
 {

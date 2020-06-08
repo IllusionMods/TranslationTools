@@ -14,8 +14,8 @@ namespace IllusionMods
 
         public TextDump()
         {
-            TextResourceHelper = new KK_TextResourceHelper();
-            AssetDumpHelper = new KK_AssetDumpHelper(this);
+            TextResourceHelper = CreateHelper<KK_TextResourceHelper>();
+            AssetDumpHelper = CreatePluginHelper<KK_AssetDumpHelper>();
         }
     }
 }

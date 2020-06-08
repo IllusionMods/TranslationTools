@@ -17,7 +17,7 @@ namespace IllusionMods
 
         private TextResourceHelper GetTextResourceHelper()
         {
-            return new AI_TextResourceHelper();
+            return CreateHelper<AI_TextResourceHelper>();
         }
 
         private void ConfigureHandlersForAI(TextResourceRedirector sender, EventArgs eventArgs)

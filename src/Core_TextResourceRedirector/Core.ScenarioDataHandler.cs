@@ -11,26 +11,9 @@ using static IllusionMods.TextResourceHelper.Helpers;
 
 namespace IllusionMods
 {
-    
-
-    public class ScenarioDataHandler : AssetLoadedHandlerBaseV2<ScenarioData>, IPathListBoundHandler
+    public class ScenarioDataHandler : RedirectorAssetLoadedHandlerBase<ScenarioData>, IPathListBoundHandler
     {
-        private readonly TextResourceHelper _textResourceHelper;
-
-        public ScenarioDataHandler(TextResourceHelper helper)
-        {
-            CheckDirectory = true;
-            _textResourceHelper = helper;
-            Logger.LogInfo($"{GetType()} enabled");
-        }
-
-        private static ManualLogSource Logger => TextResourceRedirector.Logger;
-
-        protected override string CalculateModificationFilePath(ScenarioData asset,
-            IAssetOrResourceLoadedContext context)
-        {
-            return context.GetPreferredFilePathWithCustomFileName(asset, null).Replace(".unity3d", "");
-        }
+        public ScenarioDataHandler(TextResourceRedirector plugin) : base(plugin) { }
 
         protected override bool DumpAsset(string calculatedModificationPath, ScenarioData asset,
             IAssetOrResourceLoadedContext context)
@@ -42,7 +25,7 @@ namespace IllusionMods
 
             foreach (var param in asset.list)
             {
-                if (!_textResourceHelper.IsSupportedCommand(param.Command))
+                if (!TextResourceHelper.IsSupportedCommand(param.Command))
                 {
                     continue;
                 }
@@ -51,7 +34,7 @@ namespace IllusionMods
                 {
                     foreach (var key in param.Args)
                     {
-                        if (!string.IsNullOrEmpty(key) && !_textResourceHelper.TextKeysBlacklist.Contains(key) &&
+                        if (!string.IsNullOrEmpty(key) && !TextResourceHelper.TextKeysBlacklist.Contains(key) &&
                             LanguageHelper.IsTranslatable(key))
                         {
                             cache.AddTranslationToCache(key, key);
@@ -60,14 +43,14 @@ namespace IllusionMods
                 }
                 else if (param.Command == Command.Calc)
                 {
-                    if (param.Args.Length >= 3 && _textResourceHelper.CalcKeys.Contains(param.Args[0]))
+                    if (param.Args.Length >= 3 && TextResourceHelper.CalcKeys.Contains(param.Args[0]))
                     {
                         cache.AddTranslationToCache(param.Args[2], param.Args[2]);
                     }
                 }
                 else if (param.Command == Command.Format)
                 {
-                    if (param.Args.Length >= 2 && _textResourceHelper.FormatKeys.Contains(param.Args[0]))
+                    if (param.Args.Length >= 2 && TextResourceHelper.FormatKeys.Contains(param.Args[0]))
                     {
                         cache.AddTranslationToCache(param.Args[1], param.Args[1]);
                     }
@@ -76,7 +59,7 @@ namespace IllusionMods
                 {
                     for (var i = 0; i < param.Args.Length; i++)
                     {
-                        var key = _textResourceHelper.GetSpecializedKey(param, i, out var value);
+                        var key = TextResourceHelper.GetSpecializedKey(param, i, out var value);
 
                         if (!key.IsNullOrEmpty())
                         {
@@ -141,7 +124,7 @@ namespace IllusionMods
             var result = false;
             foreach (var param in asset.list)
             {
-                if (!_textResourceHelper.IsSupportedCommand(param.Command))
+                if (!TextResourceHelper.IsSupportedCommand(param.Command))
                 {
                     Logger.DebugLogDebug($"{GetType()} skipping unsupported command: {param.Command}");
                     continue;
@@ -155,7 +138,8 @@ namespace IllusionMods
                         for (var i = 0; i < param.Args.Length && i < 2; i++)
                         {
                             var key = param.Args[i];
-                            if (key.IsNullOrEmpty() || _textResourceHelper.TextKeysBlacklist.Contains(key) || StringIsSingleReplacement(key)) continue;
+                            if (key.IsNullOrEmpty() || TextResourceHelper.TextKeysBlacklist.Contains(key) ||
+                                StringIsSingleReplacement(key)) continue;
                             if (TryRegisterTranslation(cache, param, i, calculatedModificationPath)) result = true;
                         }
 
@@ -163,7 +147,7 @@ namespace IllusionMods
 
                     case Command.Calc:
                     {
-                        if (param.Args.Length >= 3 && _textResourceHelper.CalcKeys.Contains(param.Args[0]))
+                        if (param.Args.Length >= 3 && TextResourceHelper.CalcKeys.Contains(param.Args[0]))
                         {
                             if (TryRegisterTranslation(cache, param, 2, calculatedModificationPath)) result = true;
                         }
@@ -172,7 +156,7 @@ namespace IllusionMods
                     }
                     case Command.Format:
                     {
-                        if (param.Args.Length >= 2 && _textResourceHelper.FormatKeys.Contains(param.Args[0]))
+                        if (param.Args.Length >= 2 && TextResourceHelper.FormatKeys.Contains(param.Args[0]))
                         {
                             if (TryRegisterTranslation(cache, param, 1, calculatedModificationPath)) result = true;
                         }
@@ -209,7 +193,6 @@ namespace IllusionMods
                         break;
                     }
                 }
-
             }
 
             Logger.DebugLogDebug(result
@@ -219,15 +202,23 @@ namespace IllusionMods
             return result;
         }
 
+        protected override bool ShouldHandleAsset(ScenarioData asset, IAssetOrResourceLoadedContext context)
+        {
+            Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}])?");
+            var result = base.ShouldHandleAsset(asset, context) && this.IsPathAllowed(asset, context);
+            Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}]) => {result}");
+            return result;
+        }
+
         private bool TryRegisterTranslation(SimpleTextTranslationCache cache, ScenarioData.Param param, int i,
             string calculatedModificationPath)
         {
-            var key = _textResourceHelper.GetSpecializedKey(param, i, out var value);
+            var key = TextResourceHelper.GetSpecializedKey(param, i, out var value);
             if (!string.IsNullOrEmpty(key))
             {
                 if (cache.TryGetTranslation(key, true, out var translated))
                 {
-                    var result = _textResourceHelper.GetSpecializedTranslation(param, i, translated);
+                    var result = TextResourceHelper.GetSpecializedTranslation(param, i, translated);
                     TranslationHelper.RegisterRedirectedResourceTextToPath(result, calculatedModificationPath);
                     param.Args[i] = result;
                     Logger.DebugLogDebug($"{GetType()} handled {calculatedModificationPath}");
@@ -247,21 +238,13 @@ namespace IllusionMods
             return false;
         }
 
-        protected override bool ShouldHandleAsset(ScenarioData asset, IAssetOrResourceLoadedContext context)
-        {
-            Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}])?");
-            var result = !context.HasReferenceBeenRedirectedBefore(asset) && this.IsPathAllowed(asset, context);
-            Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}]) => {result}");
-            return result;
-        }
-
-                        #region IPathListBoundHandler
+        #region IPathListBoundHandler
 
         public PathList WhiteListPaths { get; } = new PathList();
 
         public PathList BlackListPaths { get; } = new PathList();
 
-                        #endregion IPathListBoundHandler
+        #endregion IPathListBoundHandler
     }
 }
 #else //Stub for HS which has no ScenarioData
@@ -269,7 +252,7 @@ namespace IllusionMods
 {
     public class ScenarioDataHandler
     {
-        public ScenarioDataHandler(TextResourceHelper _ = null) { }
+        public ScenarioDataHandler(TextResourceRedirector _ = null) { }
     }
 }
 #endif

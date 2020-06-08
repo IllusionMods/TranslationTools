@@ -4,7 +4,7 @@ namespace IllusionMods
 {
     public class AI_INT_AssetDumpHelper : AI_AssetDumpHelper
     {
-        public AI_INT_AssetDumpHelper(TextDump plugin) : base(plugin) { }
+        protected AI_INT_AssetDumpHelper(TextDump plugin) : base(plugin) { }
 
         protected override IEnumerable<KeyValuePair<string, AssetDumpColumnInfo>> GetLists()
         {

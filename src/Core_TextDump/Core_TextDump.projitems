@@ -10,6 +10,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)AssemblyInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.AssetLoader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BaseHelperFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.AssetBundleAddress.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.AssetDumpHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.BaseDumpHelper.cs" />
@@ -20,5 +22,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextDump.InitialDumpHook.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextDump.Helpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TranslationDictionary.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.XuaHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.IScopedTranslations.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.ResizerCollection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.ResizerDumper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.UIDumpHelper.cs" />
   </ItemGroup>
 </Project>

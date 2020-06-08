@@ -16,7 +16,7 @@ namespace IllusionMods
     {
         private static readonly char[] PathSplitter =
             new HashSet<char> {Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar}.ToArray();
-        public KK_AssetDumpHelper(TextDump plugin) : base(plugin)
+        protected KK_AssetDumpHelper(TextDump plugin) : base(plugin)
         {
             AssetDumpGenerators.Add(GetCustomListDumpers);
             AssetDumpGenerators.Add(GetAnimationInfoDumpers);
@@ -89,6 +89,44 @@ namespace IllusionMods
             }
         }
 #endif
+
+        protected override IEnumerable<ITranslationDumper> GetHTextDumpers()
+        {
+            foreach (var dumper in base.GetHTextDumpers()) yield return dumper;
+
+            var cellsToDump = TableHelper.HTextColumns;
+            if (cellsToDump.Count == 0) yield break;
+            foreach (var assetBundleName in GetAssetBundleNameListFromPath("h/list/"))
+            {
+                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName)
+                    .Where(x => x.StartsWith("personality_voice_")))
+                {
+                    if (!assetName.EndsWith(".txt")) continue;
+
+                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
+
+                    IDictionary<string, string> AssetDumper()
+                    {
+                        var translations = new OrderedDictionary<string, string>();
+
+                        var asset = ManualLoadAsset<TextAsset>(assetBundleName, assetName, "abdata");
+                        if (asset is null) return translations;
+
+                        bool CellHandler(int _, int j, string contents)
+                        {
+                            if (!cellsToDump.Contains(j)) return false;
+                            AddLocalizationToResults(translations, contents, string.Empty);
+                            return true;
+                        }
+
+                        TableHelper.ActOnCells(asset, CellHandler, out _);
+                        return translations;
+                    }
+
+                    yield return new StringTranslationDumper(filePath, AssetDumper);
+                }
+            }
+        }
 
         public int GetAssetLocalizationIndex(string assetName)
         {

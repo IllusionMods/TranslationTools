@@ -18,8 +18,9 @@ namespace IllusionMods
 
         public TextDump()
         {
-            TextResourceHelper = new AI_TextResourceHelper();
-            AssetDumpHelper = new AI_AssetDumpHelper(this);
+            TextResourceHelper = CreateHelper<AI_TextResourceHelper>();
+            AssetDumpHelper = CreatePluginHelper<AI_AssetDumpHelper>();
+            LocalizationDumpHelper = CreatePluginHelper<AI_LocalizationDumpHelper>();
         }
     }
 }

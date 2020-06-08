@@ -22,7 +22,7 @@ namespace IllusionMods
     /// </summary>
     /// <seealso cref="XUnity.AutoTranslator.Plugin.Core.AssetRedirection.AssetLoadedHandlerBaseV2{T}" />
     /// <seealso cref="NickName" />
-    public class NickNameHandler : AssetLoadedHandlerBaseV2<NickName>
+    public class NickNameHandler : RedirectorAssetLoadedHandlerBase<NickName>
     {
         internal static NickNameHandler Instance;
 
@@ -31,20 +31,14 @@ namespace IllusionMods
 
         private readonly Dictionary<string, Dictionary<string, string>> _replacements =
             new Dictionary<string, Dictionary<string, string>>();
-
-        private readonly TextResourceHelper _textResourceHelper;
-
-        public NickNameHandler(TextResourceHelper helper)
+        public NickNameHandler(TextResourceRedirector plugin) : base(plugin)
         {
             Instance = this;
-            CheckDirectory = true;
-            _textResourceHelper = helper;
+           
             // replacement fires INSIDE the function we need to postfix, so init hooks up front
             InitHooks();
-            Logger.LogDebug($"{GetType()} enabled");
         }
 
-        private static ManualLogSource Logger => TextResourceRedirector.Logger;
 
         /// <inheritdoc />
         /// <remarks>Always returns <c>true</c> to signal nothing else should handle these.</remarks>
@@ -84,7 +78,7 @@ namespace IllusionMods
             foreach (var entry in asset.param)
             {
                 if (!entry.isSpecial) continue;
-                var key = _textResourceHelper.GetSpecializedKey(entry, entry.Name);
+                var key = TextResourceHelper.GetSpecializedKey(entry, entry.Name);
                 if (string.IsNullOrEmpty(key)) continue;
                 if (cache.TryGetTranslation(key, true, out var translated))
                 {
@@ -112,7 +106,7 @@ namespace IllusionMods
             foreach (var entry in asset.param)
             {
                 if (!entry.isSpecial) continue;
-                var key = _textResourceHelper.GetSpecializedKey(entry, entry.Name);
+                var key = TextResourceHelper.GetSpecializedKey(entry, entry.Name);
                 if (!string.IsNullOrEmpty(key) && LanguageHelper.IsTranslatable(key))
                 {
                     cache.AddTranslationToCache(key, entry.Name);
@@ -121,17 +115,6 @@ namespace IllusionMods
 
             return true;
         }
-
-        protected override string CalculateModificationFilePath(NickName asset, IAssetOrResourceLoadedContext context)
-        {
-            return context.GetPreferredFilePathWithCustomFileName(asset, null).Replace(".unity3d", "");
-        }
-
-        protected override bool ShouldHandleAsset(NickName asset, IAssetOrResourceLoadedContext context)
-        {
-            return !context.HasReferenceBeenRedirectedBefore(asset);
-        }
-
         private void InitHooks()
         {
             if (_hooksInitialized) return;
@@ -156,7 +139,7 @@ namespace IllusionMods
                     foreach (var entry in nicks.Value)
                     {
                         if (!entry.isSpecial) continue;
-                        var key = Instance._textResourceHelper.GetSpecializedKey(entry, entry.Name);
+                        var key = Instance.TextResourceHelper.GetSpecializedKey(entry, entry.Name);
                         if (!replacements.TryGetValue(key, out var translated)) continue;
                         entry.Name = translated;
                     }

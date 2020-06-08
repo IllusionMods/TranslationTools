@@ -2,7 +2,7 @@
 using System.Linq;
 using XUnity.AutoTranslator.Plugin.Core;
 
-#if AI
+#if AI || HS2
 using AIChara;
 #endif
 
@@ -10,25 +10,26 @@ namespace IllusionMods
 {
     public class ChaListDataHandler : TextAssetMessagePackHandlerBase<ChaListData>
     {
-
-        public ChaListDataHandler() : base(ChaListData.ChaListDataMark)
+        public ChaListDataHandler(TextResourceRedirector plugin) : base(plugin, ChaListData.ChaListDataMark)
         {
             SearchLength = ObjectMark.Count() + 10;
         }
-        public override bool TranslateObject(ref ChaListData obj, SimpleTextTranslationCache cache, string calculatedModificationPath)
+
+        public override bool TranslateObject(ref ChaListData obj, SimpleTextTranslationCache cache,
+            string calculatedModificationPath)
         {
             var idx = obj.lstKey.IndexOf("Name");
             if (idx == -1) return false;
             var result = false;
             foreach (var entry in obj.dictList.Values)
             {
-                if (entry.Count > idx && cache.TryGetTranslation(entry[idx], true, out var translation))
-                {
-                    TranslationHelper.RegisterRedirectedResourceTextToPath(translation, calculatedModificationPath);
-                    result = true;
-                    entry[idx] = translation;
-                }
+                if (entry.Count <= idx || !cache.TryGetTranslation(entry[idx], true, out var translation)) continue;
+
+                TranslationHelper.RegisterRedirectedResourceTextToPath(translation, calculatedModificationPath);
+                result = true;
+                entry[idx] = translation;
             }
+
             return result;
         }
     }

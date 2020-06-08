@@ -29,7 +29,7 @@ namespace IllusionMods
         private readonly Dictionary<string, HashSet<string>> _tutorialCategoryMap =
             new Dictionary<string, HashSet<string>>();
 
-        public AI_INT_LocalizationDumpHelper(TextDump plugin) : base(plugin)
+        protected AI_INT_LocalizationDumpHelper(TextDump plugin) : base(plugin)
         {
             OtherDataByTag[100] = new Dictionary<string, string>
             {

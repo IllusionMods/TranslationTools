@@ -22,14 +22,14 @@ namespace IllusionMods
 
         private TextResourceHelper GetTextResourceHelper()
         {
-            return new KK_TextResourceHelper();
+            return CreateHelper<KK_TextResourceHelper>();
         }
 
         private void ConfigureHandlersForKK(TextResourceRedirector sender, EventArgs eventArgs)
         {
-            sender.NickNameHandler = new NickNameHandler(sender.TextResourceHelper);
+            sender.NickNameHandler = new NickNameHandler(sender);
             sender.MapInfoHandler = new MapInfoHandler(sender);
-            sender.EventInfoHandler = new EventInfoHandler(sender.TextResourceHelper);
+            sender.EventInfoHandler = new EventInfoHandler(sender);
             // limit what handlers will attempt to handle to speed things up
             if (sender.ScenarioDataHandler is IPathListBoundHandler scenarioHandler)
             {

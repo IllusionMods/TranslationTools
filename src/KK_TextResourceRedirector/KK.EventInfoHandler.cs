@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using ActionGame;
 using BepInEx.Logging;
@@ -9,83 +10,44 @@ using XUnity.ResourceRedirector;
 
 namespace IllusionMods
 {
-    public class EventInfoHandler : AssetLoadedHandlerBaseV2<EventInfo>
+    public class EventInfoHandler : ParamAssetLoadedHandler<EventInfo, EventInfo.Param>
     {
-        private readonly TextResourceHelper _textResourceHelper;
 
-        public EventInfoHandler(TextResourceHelper helper)
+        public EventInfoHandler(TextResourceRedirector plugin) : base(plugin) { }
+
+
+        public override IEnumerable<EventInfo.Param> GetParams(EventInfo asset)
         {
-            CheckDirectory = true;
-            _textResourceHelper = helper;
-            Logger.LogDebug($"{GetType()} enabled");
+            return asset.param;
         }
 
-        private static ManualLogSource Logger => TextResourceRedirector.Logger;
-
-        protected override bool ReplaceOrUpdateAsset(string calculatedModificationPath, ref EventInfo asset,
-            IAssetOrResourceLoadedContext context)
+        public override bool UpdateParam(string calculatedModificationPath, SimpleTextTranslationCache cache, EventInfo.Param param)
         {
-            var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-            var redirectedResources = RedirectedDirectory.GetFilesInDirectory(calculatedModificationPath, ".txt");
-            var streams = redirectedResources.Select(x => x.OpenStream());
-            var cache = new SimpleTextTranslationCache(
-                defaultTranslationFile,
-                streams,
-                false,
-                true);
-
-            if (cache.IsEmpty) return false;
-
+            var key = TextResourceHelper.GetSpecializedKey(param, param.Name);
+            if (string.IsNullOrEmpty(key)) return false;
             var result = false;
-            foreach (var entry in asset.param)
+            if (cache.TryGetTranslation(key, true, out var translated))
             {
-                var key = _textResourceHelper.GetSpecializedKey(entry, entry.Name);
-                if (string.IsNullOrEmpty(key)) continue;
-                if (cache.TryGetTranslation(key, true, out var translated))
-                {
-                    entry.Name = translated;
-                    TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
-                    result = true;
-                }
-                else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
-                         LanguageHelper.IsTranslatable(key))
-                {
-                    cache.AddTranslationToCache(key, !string.IsNullOrEmpty(entry.Name) ? entry.Name : string.Empty);
-                }
+                param.Name = translated;
+                TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
+                result = true;
+            }
+            else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
+                     LanguageHelper.IsTranslatable(key))
+            {
+                cache.AddTranslationToCache(key, !string.IsNullOrEmpty(param.Name) ? param.Name : string.Empty);
             }
 
             return result;
         }
 
-        protected override bool DumpAsset(string calculatedModificationPath, EventInfo asset,
-            IAssetOrResourceLoadedContext context)
+        public override bool DumpParam(SimpleTextTranslationCache cache, EventInfo.Param param)
         {
-            var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-            var cache = new SimpleTextTranslationCache(
-                defaultTranslationFile,
-                false);
-
-            foreach (var entry in asset.param)
-            {
-                var key = _textResourceHelper.GetSpecializedKey(entry, entry.Name);
-                var value = !string.IsNullOrEmpty(entry.Name) ? entry.Name : string.Empty;
-                if (!string.IsNullOrEmpty(key) && LanguageHelper.IsTranslatable(key))
-                {
-                    cache.AddTranslationToCache(key, value);
-                }
-            }
-
+            var key = TextResourceHelper.GetSpecializedKey(param, param.Name);
+            var value = !string.IsNullOrEmpty(key) ? key : string.Empty;
+            if (string.IsNullOrEmpty(key) || !LanguageHelper.IsTranslatable(key)) return false;
+            cache.AddTranslationToCache(key, value);
             return true;
-        }
-
-        protected override string CalculateModificationFilePath(EventInfo asset, IAssetOrResourceLoadedContext context)
-        {
-            return context.GetPreferredFilePathWithCustomFileName(asset, null).Replace(".unity3d", "");
-        }
-
-        protected override bool ShouldHandleAsset(EventInfo asset, IAssetOrResourceLoadedContext context)
-        {
-            return !context.HasReferenceBeenRedirectedBefore(asset);
         }
     }
 }

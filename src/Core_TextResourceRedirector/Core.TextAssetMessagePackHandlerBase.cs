@@ -12,33 +12,17 @@ using XUnity.ResourceRedirector;
 
 namespace IllusionMods
 {
-    public abstract class TextAssetMessagePackHandlerBase<T> : TextAssetLoadedHandlerBase, IPathListBoundHandler
+    public abstract class TextAssetMessagePackHandlerBase<T> : RedirectorTextAssetLoadedHandlerBase, IPathListBoundHandler
         where T : class
     {
-        private ManualLogSource _logger;
-
-        protected TextAssetMessagePackHandlerBase()
-        {
-            CheckDirectory = true;
-            Logger.LogInfo($"{GetType()} enabled");
-        }
-
-        protected TextAssetMessagePackHandlerBase(string mark) : this()
+        protected TextAssetMessagePackHandlerBase(TextResourceRedirector plugin, string mark) : base(plugin)
         {
             SetObjectMark(mark);
         }
 
-        protected ManualLogSource Logger => _logger = _logger ?? BepInEx.Logging.Logger.CreateLogSource(GetType().Name);
-
         public IEnumerable<byte> ObjectMark { get; private set; }
         public virtual Encoding Encoding => Encoding.UTF8;
         public int SearchLength { get; protected set; } = -1;
-
-
-        protected void SetObjectMark(string mark)
-        {
-            ObjectMark = Encoding.GetBytes(mark);
-        }
 
         public virtual bool CanHandleAsset(TextAsset textAsset, IAssetOrResourceLoadedContext context)
         {
@@ -102,8 +86,15 @@ namespace IllusionMods
                 Logger.DebugLogDebug($"{GetType()} handled {calculatedModificationPath}");
                 return StoreAsset(obj);
             }
+
             Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath}");
             return null;
+        }
+
+
+        protected void SetObjectMark(string mark)
+        {
+            ObjectMark = Encoding.GetBytes(mark);
         }
 
         protected override string CalculateModificationFilePath(TextAsset asset, IAssetOrResourceLoadedContext context)
@@ -120,15 +111,17 @@ namespace IllusionMods
         protected override bool ShouldHandleAsset(TextAsset asset, IAssetOrResourceLoadedContext context)
         {
             Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}])?");
-            var result = !context.HasReferenceBeenRedirectedBefore(asset) && CanHandleAsset(asset, context);
+            var result = base.ShouldHandleAsset(asset, context) && CanHandleAsset(asset, context);
             Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}]) => {result}");
             return result;
         }
 
 
         #region IPathListBoundHandler
+
         public PathList WhiteListPaths { get; } = new PathList();
         public PathList BlackListPaths { get; } = new PathList();
+
         #endregion IPathListBoundHandler;
     }
 }

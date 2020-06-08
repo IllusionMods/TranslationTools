@@ -9,30 +9,15 @@ using XUnity.ResourceRedirector;
 
 namespace IllusionMods
 {
-    public class ExcelDataHandler : AssetLoadedHandlerBaseV2<ExcelData>, IPathListBoundHandler
+    public class ExcelDataHandler : RedirectorAssetLoadedHandlerBase<ExcelData>, IPathListBoundHandler
     {
+        public ExcelDataHandler(TextResourceRedirector plugin) : base(plugin) { }
 
 
         /// <summary>
-        /// List of column names handler will replace. If empty attempts to replace any translatable column.
+        ///     List of column names handler will replace. If empty attempts to replace any translatable column.
         /// </summary>
-        public List<string> SupportedColumnNames { get; private set; } = new List<string>();
-
-        private readonly TextResourceHelper _textResourceHelper;
-
-        public ExcelDataHandler(TextResourceHelper helper)
-        {
-            CheckDirectory = true;
-            _textResourceHelper = helper;
-            Logger.LogInfo($"{GetType()} enabled");
-        }
-
-        private static ManualLogSource Logger => TextResourceRedirector.Logger;
-
-        protected override string CalculateModificationFilePath(ExcelData asset, IAssetOrResourceLoadedContext context)
-        {
-            return context.GetPreferredFilePathWithCustomFileName(asset, null).Replace(".unity3d", "");
-        }
+        public List<string> SupportedColumnNames { get; } = new List<string>();
 
         protected override bool DumpAsset(string calculatedModificationPath, ExcelData asset,
             IAssetOrResourceLoadedContext context)
@@ -42,8 +27,9 @@ namespace IllusionMods
                 defaultTranslationFile,
                 false);
 
-            var columnsToDump = new HashSet<int>(_textResourceHelper.GetSupportedExcelColumns(calculatedModificationPath, asset));
-           
+            var columnsToDump =
+                new HashSet<int>(TextResourceHelper.GetSupportedExcelColumns(calculatedModificationPath, asset));
+
             for (var i = 1; i < asset.list.Count; i++)
             {
                 var row = asset.GetRow(i);
@@ -52,8 +38,9 @@ namespace IllusionMods
                 {
                     rowColumns = rowColumns.Where(columnsToDump.Contains);
                 }
-                
-                foreach (var key in rowColumns.Select(j => row[j]).Where(k=>!k.IsNullOrEmpty() && LanguageHelper.IsTranslatable(k)))
+
+                foreach (var key in rowColumns.Select(j => row[j])
+                    .Where(k => !k.IsNullOrEmpty() && LanguageHelper.IsTranslatable(k)))
                 {
                     cache.AddTranslationToCache(key, key);
                 }
@@ -84,7 +71,7 @@ namespace IllusionMods
             }
 
             var columnsToTranslate =
-                new HashSet<int>(_textResourceHelper.GetSupportedExcelColumns(calculatedModificationPath, asset));
+                new HashSet<int>(TextResourceHelper.GetSupportedExcelColumns(calculatedModificationPath, asset));
 
             var filter = columnsToTranslate.Count > 0;
 
@@ -99,14 +86,15 @@ namespace IllusionMods
                 {
                     if (filter && !columnsToTranslate.Contains(i)) continue;
 
-                    foreach (var key in _textResourceHelper.GetExcelRowTranslationKeys(asset.name, param.list, i))
+                    foreach (var key in TextResourceHelper.GetExcelRowTranslationKeys(asset.name, param.list, i))
                     {
-                        Logger.DebugLogDebug($"Attempting excel replacement [{row}, {i}]: Searching for replacement key={key}");
+                        Logger.DebugLogDebug(
+                            $"Attempting excel replacement [{row}, {i}]: Searching for replacement key={key}");
                         if (string.IsNullOrEmpty(key)) continue;
                         if (cache.TryGetTranslation(key, true, out var translated))
                         {
                             result = true;
-                            translated = _textResourceHelper.PrepareTranslationForReplacement(asset, translated);
+                            translated = TextResourceHelper.PrepareTranslationForReplacement(asset, translated);
                             TranslationHelper.RegisterRedirectedResourceTextToPath(translated,
                                 calculatedModificationPath);
                             Logger.DebugLogDebug($"Replacing [{row}, {i}]: key={key}: {param.list[i]} => {translated}");
@@ -114,7 +102,8 @@ namespace IllusionMods
                             param.list[i] = translated;
                             break;
                         }
-                        else if (LanguageHelper.IsTranslatable(key))
+
+                        if (LanguageHelper.IsTranslatable(key))
                         {
                             TranslationHelper.RegisterRedirectedResourceTextToPath(key, calculatedModificationPath);
                             if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled)
@@ -135,7 +124,7 @@ namespace IllusionMods
         protected override bool ShouldHandleAsset(ExcelData asset, IAssetOrResourceLoadedContext context)
         {
             Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}])?");
-            var result = !context.HasReferenceBeenRedirectedBefore(asset) && this.IsPathAllowed(asset, context);
+            var result = base.ShouldHandleAsset(asset, context) && this.IsPathAllowed(asset, context);
             Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}]) => {result}");
             return result;
         }
@@ -147,5 +136,4 @@ namespace IllusionMods
 
         #endregion IPathListBoundHandler
     }
-
 }

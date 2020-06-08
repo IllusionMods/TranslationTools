@@ -1,5 +1,5 @@
-﻿using IllusionMods.Shared;
-using System.Reflection;
+﻿using System.Reflection;
+using IllusionMods.Shared;
 using static IllusionMods.TextResourceRedirector;
 
 [assembly: AssemblyTitle(PluginNameInternal)]

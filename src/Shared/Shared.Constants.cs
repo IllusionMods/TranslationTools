@@ -28,6 +28,11 @@ namespace IllusionMods.Shared
         internal const string VRProcessName = "KoikatuVR";
         internal const string VRProcessNameSteam = "Koikatsu Party VR";
         internal const RegexOptions DefaultRegexOptions = RegexOptions.None;
+#elif HS2
+        internal const string GameName = "Honey Select 2";
+        internal const string StudioProcessName = "StudioNEOV2";
+        internal const string MainGameProcessName = "HoneySelect2";
+        internal const RegexOptions DefaultRegexOptions = RegexOptions.Compiled;
 #endif
     }
 }

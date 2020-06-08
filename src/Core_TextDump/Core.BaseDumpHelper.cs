@@ -1,10 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using BepInEx.Logging;
-using Illusion.Extensions;
 using IllusionMods.Shared;
 using UnityEngine;
 using static IllusionMods.TextResourceHelper.Helpers;
+
+#if AI || HS2
+using Illusion.Extensions;
+#endif
 
 #if LOCALIZE
 using Localize.Translate;
@@ -12,7 +15,7 @@ using Localize.Translate;
 
 namespace IllusionMods
 {
-    public partial class BaseDumpHelper
+    public partial class BaseDumpHelper : BaseHelperFactory<BaseDumpHelper>, IHelper
     {
         protected const string NewlineReplaceValue = "\\n";
 
@@ -22,46 +25,28 @@ namespace IllusionMods
 
         private ManualLogSource _logger;
 
-        public BaseDumpHelper(TextDump plugin)
+        protected BaseDumpHelper(TextDump plugin)
         {
             Plugin = plugin;
         }
 
-        protected ManualLogSource Logger => _logger = _logger ?? BepInEx.Logging.Logger.CreateLogSource(GetType().Name);
 
-        protected TextDump Plugin { get; }
+        protected ManualLogSource Logger
+        {
+            get
+            {
+                if (_logger != null) return _logger;
+                return _logger = BepInEx.Logging.Logger.CreateLogSource(GetType().Name);
+            }
+        }
+
+        protected TextDump Plugin { get; set; }
 
         protected TextResourceHelper ResourceHelper => Plugin?.TextResourceHelper;
         protected TextAssetTableHelper TableHelper => Plugin?.TextResourceHelper?.TableHelper;
 
-        protected static string BuildSeenKey(int topLevel, string tag)
-        {
-            return JoinStrings("_", topLevel.ToString(), tag);
-        }
 
-#if LOCALIZE
-        protected static string BuildSeenKey(int topLevel, Data.Param param)
-        {
-            return JoinStrings("_",
-                topLevel.ToString(),
-                !string.IsNullOrEmpty(param.tag) ? param.tag : param.ID.ToString());
-        }
-#endif
-
-        public void AddLocalizationToResults(IDictionary<string, string> results, string origText, string transText)
-        {
-            ResourceHelper.AddLocalizationToResults(results, origText, transText);
-        }
-
-        public void AddLocalizationToResults(IDictionary<string, string> results, KeyValuePair<string, string> mapping)
-        {
-            ResourceHelper.AddLocalizationToResults(results, mapping);
-        }
-
-        public bool IsValidLocalization(string original, string localization)
-        {
-            return ResourceHelper.IsValidLocalization(original, localization);
-        }
+        public virtual void InitializeHelper() { }
 
         public static TranslationGenerator WrapTranslationCollector(string path,
             TranslationDumper<IDictionary<string, string>>.TranslationCollector translationCollector)
@@ -104,15 +89,44 @@ namespace IllusionMods
             return TextDump.Helpers.ManualLoadAsset<T>(assetBundleAddress);
         }
 
+        public void AddLocalizationToResults(IDictionary<string, string> results, string origText, string transText)
+        {
+            ResourceHelper.AddLocalizationToResults(results, origText, transText);
+        }
+
+        public void AddLocalizationToResults(IDictionary<string, string> results, KeyValuePair<string, string> mapping)
+        {
+            ResourceHelper.AddLocalizationToResults(results, mapping);
+        }
+
+        public bool IsValidLocalization(string original, string localization)
+        {
+            return ResourceHelper.IsValidLocalization(original, localization);
+        }
+
         public virtual void PrepareLineForDump(ref string key, ref string value)
         {
             key = NewlineReplaceRegex.Replace(key, NewlineReplaceValue);
             value = NewlineReplaceRegex.Replace(value, NewlineReplaceValue);
         }
 
+        protected static string BuildSeenKey(int topLevel, string tag)
+        {
+            return JoinStrings("_", topLevel.ToString(), tag);
+        }
+
+#if LOCALIZE
+        protected static string BuildSeenKey(int topLevel, Data.Param param)
+        {
+            return JoinStrings("_",
+                topLevel.ToString(),
+                !string.IsNullOrEmpty(param.tag) ? param.tag : param.ID.ToString());
+        }
+#endif
+
         protected static List<GameObject> GetChildrenFromGameObject(GameObject parent)
         {
-#if AI
+#if AI || HS2
             return parent.Children();
 #else
             var gameObjects = new List<GameObject>();
@@ -120,8 +134,15 @@ namespace IllusionMods
             {
                 gameObjects.Add(parent.transform.GetChild(i).gameObject);
             }
+
             return gameObjects;
 #endif
+        }
+
+        protected virtual bool IsValidExcelLocalization(string assetBundleName, string assetName, int firstRow, int row,
+            string origString, string possibleTranslation)
+        {
+            return true;
         }
     }
 }

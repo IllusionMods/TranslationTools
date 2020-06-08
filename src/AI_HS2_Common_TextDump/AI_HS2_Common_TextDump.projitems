@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>e304bc23-c0db-4f7a-b7bd-6ea53c3fcf8e</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>IllusionMods</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AI_HS2_AssetDumpHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AI_HS2.BaseDumpHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AI_HS2.AssetBundleAddress.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AI_HS2_LocalizationDumpHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AI_HS2.AssetLoader.cs" />
+  </ItemGroup>
+</Project>

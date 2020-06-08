@@ -1,32 +1,26 @@
 ﻿using System;
+#if AI 
 using AIProject;
 using UnityEx;
+#endif
+#if HS2
+using Manager;
+#endif
+
+
 using Object = UnityEngine.Object;
 
 namespace IllusionMods
 {
     public partial class TextDump
     {
-        public static partial class Helpers
+        internal static partial class Helpers
         {
-            public static T ManualLoadAsset<T>(AssetBundleInfo assetBundleInfo) where T : Object
+            internal static T ManualLoadAsset<T>(AssetBundleInfo assetBundleInfo) where T : Object
             {
-                try
-                {
-                    return AssetUtility.LoadAsset<T>(assetBundleInfo);
-                }
-                catch (Exception err)
-                {
-#if DEBUG
-                    Logger.LogError(
-                        $"ManualLoadAsset<{typeof(T).Name}>({assetBundleInfo.assetbundle} {assetBundleInfo.asset}): {err.Message}\n{err.StackTrace}");
-#else
-                    Logger.LogError(
-                        $"ManualLoadAsset<{typeof(T).Name}>({assetBundleInfo.assetbundle} {assetBundleInfo.asset}): {err.Message}");
-#endif
-                    return null;
-                }
+                return IllusionMods.AssetLoader.ManualLoadAsset<T>(assetBundleInfo);
             }
+
         }
     }
 }

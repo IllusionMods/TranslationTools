@@ -40,7 +40,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\IllusionLibs.AIGirl.Assembly-CSharp.2019.12.20\lib\net46\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\packages\IllusionLibs.AIGirl.Assembly-CSharp.2020.5.29\lib\net46\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="BepInEx, Version=5.0.1.0, Culture=neutral, processorArchitecture=MSIL">
@@ -52,7 +52,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="MessagePack, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\IllusionLibs.AIGirl.MessagePack.2019.12.20\lib\net46\MessagePack.dll</HintPath>
+      <HintPath>..\..\packages\IllusionLibs.AIGirl.MessagePack.2020.5.29\lib\net46\MessagePack.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -93,12 +93,14 @@
   <Import Project="..\Shared\Shared.projitems" Label="Shared" />
   <Import Project="..\AI_Common_TextDump\AI_Common_TextDump.projitems" Label="Shared" />
   <Import Project="..\Shared.Plugin\Shared.Plugin.projitems" Label="Shared" />
+  <Import Project="..\AI_HS2_Common_TextDump\AI_HS2_Common_TextDump.projitems" Label="Shared" />
+  <Import Project="..\AI_HS2_TextResourceHelper\AI_HS2_TextResourceHelper.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>IF EXIST $(SolutionDir)PostBuild.bat CALL "$(SolutionDir)PostBuild.bat" $(TargetPath) AI_ONLY</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>
-</PreBuildEvent>
+    </PreBuildEvent>
   </PropertyGroup>
 </Project>

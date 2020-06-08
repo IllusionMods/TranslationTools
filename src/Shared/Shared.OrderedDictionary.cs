@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -11,10 +12,27 @@ namespace IllusionMods.Shared
         private readonly Dictionary<TKey, TValue> _dictionary;
         private readonly List<KeyValuePair<TKey, TValue>> _list;
 
-        public OrderedDictionary()
+        public OrderedDictionary() : this(0, null) { }
+        public OrderedDictionary(int capacity) : this(capacity, null) { }
+        public OrderedDictionary(IEqualityComparer<TKey> comparer) : this(0, comparer) { }
+ 
+
+        public OrderedDictionary(int capacity, IEqualityComparer<TKey> comparer)
         {
+            _dictionary = new Dictionary<TKey, TValue>(capacity, comparer ?? EqualityComparer<TKey>.Default);
             _list = new List<KeyValuePair<TKey, TValue>>();
-            _dictionary = new Dictionary<TKey, TValue>();
+        }
+
+        public OrderedDictionary(IDictionary<TKey, TValue> dictionary) : this(dictionary, null) { }
+
+        public OrderedDictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey> comparer) : 
+            this(dictionary?.Count ?? 0, comparer)
+        {
+            if (dictionary == null) throw new ArgumentNullException(nameof(dictionary));
+            foreach (var entry in dictionary)
+            {
+                Add(entry.Key, entry.Value);
+            }
         }
 
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()

@@ -1,4 +1,4 @@
-@echo off
+REM @echo off
 
 set POSTBUILD_CONFIG=%~dp0\PostBuild_Config.bat
 
@@ -85,6 +85,11 @@ IF "%2" == "PH" IF NOT "%PH_DIR%" == "" (
     goto END
     )	
 
+IF "%2" == "HS2" IF NOT "%HS2_DIR%" == "" (
+    set TARGET=%HS2_DIR%\%TARGET_SUBDIR%
+    call :COPY_TARGET "%1" "%TARGET%"
+    goto END
+    )	
 goto NO_TARGET
 
 :COPY_TARGET

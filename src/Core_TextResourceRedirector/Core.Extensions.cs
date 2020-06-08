@@ -1,6 +1,9 @@
 ﻿using System.Collections.Generic;
+using BepInEx.Configuration;
 using HarmonyLib;
 using XUnity.AutoTranslator.Plugin.Core;
+using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
+using XUnity.ResourceRedirector;
 
 namespace IllusionMods
 {
@@ -14,6 +17,7 @@ namespace IllusionMods
             {
                 reverse[entry.Value] = entry.Key;
             }
+
             return reverse;
         }
 
@@ -21,6 +25,25 @@ namespace IllusionMods
             out string result)
         {
             return BuildReverseDictionary(cache).TryGetValue(translatedText, out result);
+        }
+
+        public static string DefaultCalculateModificationFilePath<TAsset>(this TAsset asset, IAssetOrResourceLoadedContext context)
+            where TAsset : UnityEngine.Object
+        {
+            return context.GetPreferredFilePathWithCustomFileName(asset, null).Replace(".unity3d", "");
+        }
+
+        internal static bool DefaultShouldHandleAsset<THandler, TAsset>(this THandler handler, TAsset asset,
+            IAssetOrResourceLoadedContext context) 
+            where TAsset: UnityEngine.Object
+            where THandler: IRedirectorHandler<TAsset>
+        {
+            return handler.Enabled && !context.HasReferenceBeenRedirectedBefore(asset);
+        }
+
+        public static ConfigEntry<TConf> ConfigEntryBind<TConf>(this IRedirectorHandler handler, string key, TConf defaultValue, string description)
+        {
+            return handler.Plugin.Config.Bind<TConf>(handler.ConfigSectionName, key, defaultValue, description);
         }
     }
 }

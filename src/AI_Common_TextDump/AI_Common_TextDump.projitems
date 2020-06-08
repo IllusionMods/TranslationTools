@@ -9,9 +9,9 @@
     <Import_RootNamespace>IllusionMods</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)AI.BaseDumpHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AI_AssetDumpHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AI.TextDump.Helpers.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)AI.AssetBundleAddress.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AI_LocalizationDumpHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AI.AssetLoader.cs" />
   </ItemGroup>
 </Project>

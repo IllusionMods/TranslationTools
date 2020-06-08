@@ -43,9 +43,9 @@ namespace IllusionMods
         public TextDump()
         {
             Logger = base.Logger;
-            TextResourceHelper = new KK_TextResourceHelper();
-            AssetDumpHelper = new KKP_AssetDumpHelper(this);
-            LocalizationDumpHelper = new KKP_LocalizationDumpHelper(this);
+            TextResourceHelper = CreateHelper<KK_TextResourceHelper>();
+            AssetDumpHelper = CreatePluginHelper<KKP_AssetDumpHelper>();
+            LocalizationDumpHelper = CreatePluginHelper<KKP_LocalizationDumpHelper>();
 
             CheckReadyToDumpChecker = KKP_CheckReadyToDump;
 

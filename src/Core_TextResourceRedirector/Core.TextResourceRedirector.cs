@@ -1,9 +1,7 @@
 ﻿using System;
 using BepInEx;
-using BepInEx.Harmony;
 using BepInEx.Logging;
-using HarmonyLib;
-using XUnity.AutoTranslator.Plugin.Core;
+using XUnity.ResourceRedirector.Constants;
 
 #if AI
 using AIChara;
@@ -12,8 +10,8 @@ using AIChara;
 //Adopted from gravydevsupreme's TextResourceRedirector
 namespace IllusionMods
 {
-    [BepInDependency(XUnity.ResourceRedirector.Constants.PluginData.Identifier,
-        XUnity.ResourceRedirector.Constants.PluginData.Version)]
+    [BepInDependency(PluginData.Identifier,
+        PluginData.Version)]
     [BepInDependency(XUnity.AutoTranslator.Plugin.Core.Constants.PluginData.Identifier,
         XUnity.AutoTranslator.Plugin.Core.Constants.PluginData.Version)]
     public partial class TextResourceRedirector : BaseUnityPlugin
@@ -25,7 +23,7 @@ namespace IllusionMods
 
         public const string PluginName = "Text Resource Redirector";
         public const string GUID = "com.deathweasel.bepinex.textresourceredirector";
-        public const string Version = "1.2.4";
+        public const string Version = "1.3";
         internal new static ManualLogSource Logger;
 #if !HS
         internal ChaListDataHandler ChaListDataHandler;
@@ -38,7 +36,9 @@ namespace IllusionMods
 
         //internal TextAssetResourceRedirector _textAssetResourceRedirector;
         internal TextResourceHelper TextResourceHelper;
+#if RAW_DUMP_SUPPORT
         internal TextAssetRawBytesHandler TextAssetRawBytesHandler;
+#endif
 
         public event TextResourceRedirectorAwakeHandler TextResourceRedirectorAwake;
         public event TranslatorTranslationsLoadedHandler TranslatorTranslationsLoaded;
@@ -53,16 +53,23 @@ namespace IllusionMods
 
             XuaHooks.Init();
 
-            ExcelDataHandler = new ExcelDataHandler(TextResourceHelper);
-            ScenarioDataHandler = new ScenarioDataHandler(TextResourceHelper);
-            TextAssetTableHandler = new TextAssetTableHandler(TextResourceHelper);
-            TextAssetRawBytesHandler = new TextAssetRawBytesHandler(TextResourceHelper);
+            ExcelDataHandler = new ExcelDataHandler(this);
+            ScenarioDataHandler = new ScenarioDataHandler(this);
+            TextAssetTableHandler = new TextAssetTableHandler(this);
+#if RAW_DUMP_SUPPORT
+            TextAssetRawBytesHandler = new TextAssetRawBytesHandler(this);
+#endif
 
             enabled = false;
 #if !HS
-            ChaListDataHandler = new ChaListDataHandler();
+            ChaListDataHandler = new ChaListDataHandler(this);
 #endif
             OnTextResourceRedirectorAwake(EventArgs.Empty);
+        }
+
+        protected T CreateHelper<T>() where T : IHelper
+        {
+            return BaseHelperFactory<T>.Create<T>();
         }
 
         internal void Main()
@@ -81,7 +88,7 @@ namespace IllusionMods
             TranslatorTranslationsLoaded?.Invoke(this, eventArgs);
         }
 
-        public void AddTranslationToTextCache(string key, string value, int scope = -1)
+        public virtual void AddTranslationToTextCache(string key, string value, int scope = -1)
         {
             XuaHooks.AddTranslationDelegate?.Invoke(key, value, scope);
         }
@@ -105,48 +112,5 @@ namespace IllusionMods
             return result;
         }
 #endif
-        internal static class XuaHooks
-        {
-            internal static bool Initialized;
-
-            internal static AddTranslation AddTranslationDelegate;
-
-            internal static void Init()
-            {
-                if (Initialized) return;
-                Initialized = true;
-                HarmonyWrapper.PatchAll(typeof(XuaHooks));
-
-                var defaultTranslator = AutoTranslator.Default;
-                if (defaultTranslator == null) return;
-                var defaultCache =
-                    AccessTools.Field(defaultTranslator.GetType(), "TextCache")?.GetValue(defaultTranslator) ??
-                    AccessTools.Property(defaultTranslator.GetType(), "TextCache")
-                        ?.GetValue(defaultTranslator, new object[0]);
-                if (defaultCache == null) return;
-                var method = AccessTools.Method(defaultCache.GetType(), "AddTranslation");
-                if (method == null) return;
-                try
-                {
-                    AddTranslationDelegate = (AddTranslation) Delegate.CreateDelegate(
-                        typeof(AddTranslation), defaultCache, method);
-                }
-                catch (ArgumentException)
-                {
-                    //  mono versions fallback to this
-                    AddTranslationDelegate = (key, value, scope) =>
-                        method.Invoke(defaultCache, new object[] {key, value, scope});
-                }
-            }
-
-            [HarmonyPostfix]
-            [HarmonyPatch(typeof(AutoTranslationPlugin), "LoadTranslations")]
-            internal static void TranslationsLoadedPostfix()
-            {
-                _instance?.OnTranslatorTranslationsLoaded(EventArgs.Empty);
-            }
-
-            internal delegate void AddTranslation(string key, string value, int scope);
-        }
     }
 }

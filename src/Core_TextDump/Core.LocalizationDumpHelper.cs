@@ -17,7 +17,7 @@ namespace IllusionMods
         protected readonly Dictionary<string, Dictionary<string, string>> AutoLocalizers =
             new Dictionary<string, Dictionary<string, string>>();
 
-        public LocalizationDumpHelper(TextDump plugin) : base(plugin)
+        protected LocalizationDumpHelper(TextDump plugin) : base(plugin)
         {
             _instance = this;
         }
@@ -45,7 +45,7 @@ namespace IllusionMods
         protected Dictionary<string, string> PersonalityLocalizer()
         {
             var results = new Dictionary<string, string>();
-            foreach (var voiceInfo in Singleton<Voice>.Instance.voiceInfoList)
+            foreach (var voiceInfo in GetVoiceInfos())
             {
                 var key = GetPersonalityName(voiceInfo);
                 var value = GetPersonalityNameLocalization(voiceInfo);
@@ -56,9 +56,21 @@ namespace IllusionMods
             return results;
         }
 
+        protected virtual IEnumerable<VoiceInfo.Param> GetVoiceInfos()
+        {
+#if AI || KK
+            return Singleton<Voice>.Instance.voiceInfoList;
+#elif HS2
+            if (Manager.Voice.infoTable != null) return Manager.Voice.infoTable.Values;
+            return new List<VoiceInfo.Param>();
+#else
+            return new List<VoiceInfo.Param>();
+#endif
+        }
 
         private IEnumerable<ITranslationDumper> GetHookedTextLocalizationGenerators()
         {
+
             return HookedTextLocalizationGenerators;
         }
 
@@ -139,12 +151,14 @@ namespace IllusionMods
             }
         }
 
-        protected void FieldLocalizerAddResults(object sources, ref Dictionary<string, string> results)
+        protected bool FieldLocalizerAddResults(object sources, ref Dictionary<string, string> results)
         {
+            bool result = false;
             void AddResult(string[] src, ref Dictionary<string, string> localizations)
             {
                 //Logger.LogWarning(src);
                 AddLocalizationToResults(localizations, src[0], src.Length > 1 ? src[1] : string.Empty);
+                result = true;
             }
 
             while (true)
@@ -160,6 +174,16 @@ namespace IllusionMods
 
                         break;
                     }
+                    case string[,] multi:
+                    {
+                        for (var i = 0; i < multi.GetLength(1); i++)
+                        {
+                            var entry = new[] {multi[0, i], multi[1, i]};
+                            AddResult(entry, ref results);
+                        }
+                        break;
+                    }
+
                     case string[] single:
                         AddResult(single, ref results);
                         break;
@@ -169,6 +193,7 @@ namespace IllusionMods
                     case IEnumerable<string[]> entries:
                         sources = entries.ToArray();
                         continue;
+
                     default:
                         Logger.LogError($"FieldLocalizerAddResults: Unexpected object: {sources}");
                         break;
@@ -176,6 +201,8 @@ namespace IllusionMods
 
                 break;
             }
+
+            return result;
         }
 
         protected StringTranslationDumper MakeStandardInstanceLocalizer<T>(params string[] fieldNames) where T : new()
@@ -196,7 +223,9 @@ namespace IllusionMods
                         continue;
                     }
 
-                    FieldLocalizerAddResults(field.GetValue(instance), ref results);
+                    if (FieldLocalizerAddResults(field.GetValue(instance), ref results)) continue;
+
+                    Logger.LogWarning($"MakeStandardInstanceLocalizer: Unable process field: {typeof(T).Name}.{fieldName}");
                 }
 
                 return results;
@@ -221,7 +250,8 @@ namespace IllusionMods
                         continue;
                     }
 
-                    FieldLocalizerAddResults(field.GetValue(null), ref results);
+                    if (FieldLocalizerAddResults(field.GetValue(null), ref results)) continue;
+                    Logger.LogWarning($"MakeStandardStaticLocalizer: Unable process field: {type.Name}.{fieldName}");
                 }
 
                 return results;

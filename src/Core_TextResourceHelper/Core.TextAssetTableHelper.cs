@@ -46,7 +46,14 @@ namespace IllusionMods
             Enabled = ColSplitStrings.Any() && RowSplitStrings.Any();
         }
 
-        protected ManualLogSource Logger => _logger = _logger ?? BepInEx.Logging.Logger.CreateLogSource(GetType().Name);
+        protected ManualLogSource Logger
+        {
+            get
+            {
+                if (_logger != null) return _logger;
+                return (_logger = BepInEx.Logging.Logger.CreateLogSource(GetType().Name));
+            }
+        }
 
         private readonly string[] _rowSplitStrings;
         private readonly string[] _colSplitStrings;

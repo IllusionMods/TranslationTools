@@ -20,7 +20,7 @@ namespace IllusionMods.Shared
 
         private string TrimString(string input)
         {
-            if (input == null) return input;
+            if (string.IsNullOrEmpty(input)) return input;
             var result = input.Trim();
             if (_extraTrimChars != null) result = result.Trim(_extraTrimChars).Trim();
             return result;
@@ -28,6 +28,9 @@ namespace IllusionMods.Shared
 
         public bool Equals(string x, string y)
         {
+            if (x == y) return true;
+            if (x == null || y == null) return false;
+
             return TrimString(x) == TrimString(y);
         }
 

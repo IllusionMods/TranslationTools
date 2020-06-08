@@ -50,9 +50,9 @@ namespace IllusionMods
                     "[TextDump] Incorrect plugin for this application. Remove AI_INT_TextDump and use AI_TextDump.");
             }
 
-            TextResourceHelper = new AI_TextResourceHelper();
-            LocalizationDumpHelper = new AI_INT_LocalizationDumpHelper(this);
-            AssetDumpHelper = new AI_INT_AssetDumpHelper(this);
+            TextResourceHelper = CreateHelper<AI_TextResourceHelper>();
+            LocalizationDumpHelper = CreatePluginHelper<AI_INT_LocalizationDumpHelper>();
+            AssetDumpHelper = CreatePluginHelper<AI_INT_AssetDumpHelper>();
 
             CheckReadyToDumpChecker = AI_INT_CheckReadyToDump;
 

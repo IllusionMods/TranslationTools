@@ -49,6 +49,11 @@ namespace IllusionMods
             return _paths.GetEnumerator();
         }
 
+        public static string Normalize(string item)
+        {
+            return TextResourceHelper.Helpers.NormalizePathSeparators(item);
+        }
+
 
         /// <summary>
         ///     Determines whether path starts with one of the PathList entries.
@@ -64,11 +69,6 @@ namespace IllusionMods
             var search = isPathNormalized ? path : Normalize(path);
             //Logger.LogError($"searching for {search} in [{string.Join(", ", _paths.ToArray())}]");
             return Array.Find(_paths.ToArray(), p => search.StartsWith(p, StringComparison.OrdinalIgnoreCase)) != null;
-        }
-
-        public static string Normalize(string item)
-        {
-            return TextResourceHelper.Helpers.NormalizePathSeparators(item);
         }
     }
 }

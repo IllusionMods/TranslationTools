@@ -10,7 +10,7 @@ using ADV;
 
 namespace IllusionMods
 {
-    public partial class TextResourceHelper
+    public partial class TextResourceHelper : BaseHelperFactory<TextResourceHelper>, IHelper
     {
         private static ManualLogSource _logger;
         protected static readonly string ChoiceDelimiter = ",";
@@ -21,11 +21,18 @@ namespace IllusionMods
 
         private TextAssetTableHelper _tableHelper;
 
-        protected static ManualLogSource Logger =>
-            _logger = _logger ?? BepInEx.Logging.Logger.CreateLogSource(nameof(TextResourceHelper));
+        protected ManualLogSource Logger
+        {
+            get
+            {
+                if (_logger != null) return _logger;
+                return (_logger = BepInEx.Logging.Logger.CreateLogSource(GetType().Name));
+            }
+        }
 
         public TextAssetTableHelper TableHelper => _tableHelper ?? (_tableHelper = GetTableHelper());
 
+        protected TextResourceHelper() { }
 
         public virtual bool IsValidLocalization(string original, string localization)
         {
@@ -92,13 +99,13 @@ namespace IllusionMods
         public Dictionary<string, string> GlobalMappings { get; } = new Dictionary<string, string>();
 
         // Contains strings that should not be replaced in `Command.Text` based resources
-        public HashSet<string> TextKeysBlacklist { get; protected set; }
+        public HashSet<string> TextKeysBlacklist { get; protected set; } = new HashSet<string>();
 
         // Only dump `Command.Calc` strings if `params.Args[0]` listed here
-        public HashSet<string> CalcKeys { get; protected set; }
+        public HashSet<string> CalcKeys { get; protected set; } = new HashSet<string>();
 
         // Only dump `Command.Format` strings if `params.Args[0]` listed here
-        public HashSet<string> FormatKeys { get; protected set; }
+        public HashSet<string> FormatKeys { get; protected set; } = new HashSet<string>();
 
         protected HashSet<Command> SupportedCommands { get; } = new HashSet<Command>
         {
@@ -288,5 +295,9 @@ namespace IllusionMods
 
             return translated;
         }
+
+        public virtual void InitializeHelper() { } 
+            
+        
     }
 }

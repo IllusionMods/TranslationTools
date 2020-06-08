@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 using ADV;
 using IllusionMods.Shared;
@@ -9,9 +10,8 @@ using MessagePack;
 using UnityEngine;
 using UnityEngine.Assertions;
 using static IllusionMods.TextResourceHelper.Helpers;
-#if AI
+#if AI || HS2
 using AIChara;
-
 #endif
 
 namespace IllusionMods
@@ -29,7 +29,7 @@ namespace IllusionMods
 
         protected AssetDumpColumnInfo StdTextAssetCols;
 
-        public AssetDumpHelper(TextDump plugin) : base(plugin)
+        protected AssetDumpHelper(TextDump plugin) : base(plugin)
         {
             StdTextAssetCols = new AssetDumpColumnInfo(new Dictionary<string, string>
             {
@@ -94,9 +94,11 @@ namespace IllusionMods
             Assert.IsNotNull(AssetDumpGenerators);
             var dumpers = AssetDumpGenerators.ToList();
 
+            Logger.LogDebug($"AssetDumpGenerators Count={dumpers.Count}");
             while (dumpers.Count > 0)
             {
                 var assetDumpGenerator = dumpers.PopFront();
+                Logger.LogDebug(assetDumpGenerator.Method.Name);
                 var entries = new List<ITranslationDumper>();
                 try
                 {
@@ -106,6 +108,8 @@ namespace IllusionMods
                 {
                     Logger.LogError($"Error dumping: {assetDumpGenerator} : {err}");
                 }
+
+                Logger.LogDebug($"{assetDumpGenerator.Method.Name} => {entries.Count}");
 
                 foreach (var entry in entries) yield return entry;
             }
@@ -125,38 +129,7 @@ namespace IllusionMods
 
         protected virtual IEnumerable<ITranslationDumper> GetHTextDumpers()
         {
-            var cellsToDump = TableHelper.HTextColumns;
-            if (cellsToDump.Count == 0) yield break;
-            foreach (var assetBundleName in GetAssetBundleNameListFromPath("h/list/"))
-            {
-                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName)
-                    .Where(x => x.StartsWith("personality_voice_")))
-                {
-                    if (!assetName.EndsWith(".txt")) continue;
-
-                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
-
-                    IDictionary<string, string> AssetDumper()
-                    {
-                        var translations = new OrderedDictionary<string, string>();
-
-                        var asset = ManualLoadAsset<TextAsset>(assetBundleName, assetName, "abdata");
-                        if (asset is null) return translations;
-
-                        bool CellHandler(int _, int j, string contents)
-                        {
-                            if (!cellsToDump.Contains(j)) return false;
-                            AddLocalizationToResults(translations, contents, string.Empty);
-                            return true;
-                        }
-
-                        TableHelper.ActOnCells(asset, CellHandler, out _);
-                        return translations;
-                    }
-
-                    yield return new StringTranslationDumper(filePath, AssetDumper);
-                }
-            }
+            yield break;
         }
 
         #endregion HText
@@ -522,15 +495,22 @@ namespace IllusionMods
         protected virtual IEnumerable<ITranslationDumper> GetListTextDumpers()
         {
             foreach (var list in GetLists())
-            foreach (var listDumper in MakeListTextCollectors(list.Key, list.Value))
             {
-                yield return listDumper;
+                Logger.LogDebug($"GetLists: {list.Key}, {list.Value}");
+                foreach (var listDumper in MakeListTextCollectors(list.Key, list.Value))
+                {
+                    yield return listDumper;
+                }
             }
 
             foreach (var list in GetStudioLists())
-            foreach (var listDumper in MakeListTextCollectors(list.Key, list.Value, "studio"))
             {
-                yield return listDumper;
+                Logger.LogDebug($"GetStudioLists: {list.Key}, {list.Value}");
+
+                foreach (var listDumper in MakeListTextCollectors(list.Key, list.Value, "studio"))
+                {
+                    yield return listDumper;
+                }
             }
         }
 
@@ -544,10 +524,13 @@ namespace IllusionMods
         {
             var rootPath = baseDir.IsNullOrEmpty() ? path : CombinePaths(baseDir, path);
 
-            foreach (var assetBundleName in GetAssetBundleNameListFromPath(rootPath))
+            Logger.LogDebug($"MakeListTextCollectors: {rootPath}");
+            foreach (var assetBundleName in GetAssetBundleNameListFromPath(rootPath, true))
             {
+                Logger.LogDebug($"MakeListTextCollectors: {rootPath} {assetBundleName}");
                 foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
                 {
+                    Logger.LogDebug($"MakeListTextCollectors: {rootPath} {assetBundleName} {assetName}");
                     var filePath = BuildAssetFilePath(assetBundleName, assetName);
 
                     var translations = new OrderedDictionary<string, string>();
@@ -557,6 +540,9 @@ namespace IllusionMods
                         var done = false;
                         foreach (var tryDump in ListEntryDumpers)
                         {
+                            GetAssetBundleNameListFromPath(rootPath, true);
+                            GetAssetNamesFromBundle(assetBundleName);
+
                             done = tryDump(assetBundleName, assetName, assetDumpColumnInfo, translations);
                             if (done) break;
                         }
@@ -593,64 +579,66 @@ namespace IllusionMods
         {
             var excelAsset = ManualLoadAsset<ExcelData>(assetBundleName, assetName, null);
             if (excelAsset is null) return false;
+            if (excelAsset.list == null || excelAsset.MaxCell <= 0) return true;
 
-            if (excelAsset.list != null && excelAsset.MaxCell > 0)
+            var mappings = new Dictionary<int, int>();
+            var skipName = new Dictionary<int, string>();
+            assetDumpColumnInfo.NumericMappings.ToList().ForEach(x => mappings[x.Key] = x.Value);
+
+            var headers = ResourceHelper.GetExcelHeaderRow(excelAsset, out var firstRow);
+            foreach (var entry in assetDumpColumnInfo.NameMappings)
             {
-                var mappings = new Dictionary<int, int>();
-                var skipName = new Dictionary<int, string>();
-                assetDumpColumnInfo.NumericMappings.ToList().ForEach(x => mappings[x.Key] = x.Value);
-
-                var headers = ResourceHelper.GetExcelHeaderRow(excelAsset, out var firstRow);
-                foreach (var entry in assetDumpColumnInfo.NameMappings)
+                var src = headers.IndexOf(entry.Key);
+                var dest = -1;
+                if (src != -1)
                 {
-                    var src = headers.IndexOf(entry.Key);
-                    var dest = -1;
-                    if (src != -1)
-                    {
-                        if (!string.IsNullOrEmpty(entry.Value)) dest = headers.IndexOf(entry.Value);
+                    if (!string.IsNullOrEmpty(entry.Value)) dest = headers.IndexOf(entry.Value);
 
-                        mappings[src] = dest;
-                        skipName[src] = entry.Key;
-                    }
+                    mappings[src] = dest;
+                    skipName[src] = entry.Key;
                 }
+            }
 
-                var itemLookupColumns = new List<int[]>();
-                foreach (var entry in assetDumpColumnInfo.ItemLookupColumns)
-                {
-                    var lookup = ResourceHelper.GetItemLookupColumns(headers, entry);
-                    if (lookup.Length > 0) itemLookupColumns.Add(lookup);
-                }
+            var itemLookupColumns = new List<int[]>();
+            foreach (var entry in assetDumpColumnInfo.ItemLookupColumns)
+            {
+                var lookup = ResourceHelper.GetItemLookupColumns(headers, entry);
+                if (lookup.Length > 0) itemLookupColumns.Add(lookup);
+            }
 
-                foreach (var mapping in mappings.Where(m => m.Key > -1))
+            foreach (var mapping in mappings.Where(m => m.Key > -1))
+            {
+                for (var i = firstRow; i < excelAsset.list.Count; i++)
                 {
-                    for (var i = firstRow; i < excelAsset.list.Count; i++)
+                    var row = excelAsset.GetRow(i);
+
+                    if (row.Count == 0 || row[0] == "no" || row.Count <= mapping.Key) continue;
+
+                    var key = row[mapping.Key];
+                    var value = string.Empty;
+                    if (skipName.TryGetValue(mapping.Key, out var checkKey) && checkKey == key) continue;
+
+                    if (!ContainsNonAscii(key)) continue;
+
+                    if (mapping.Value > -1 && row.Count > mapping.Value)
                     {
-                        var row = excelAsset.GetRow(i);
-
-                        if (row.Count == 0 || row[0] == "no" || row.Count <= mapping.Key) continue;
-
-                        var key = row[mapping.Key];
-                        var value = string.Empty;
-                        if (skipName.TryGetValue(mapping.Key, out var checkKey) && checkKey == key) continue;
-
-                        if (!ContainsNonAscii(key)) continue;
-
-                        if (mapping.Value > -1 && row.Count > mapping.Value) value = row[mapping.Value];
-
-                        AddLocalizationToResults(translations, key, value);
+                        var possibleTranslation = row[mapping.Value];
+                        if (IsValidExcelLocalization(assetBundleName, assetName, firstRow, i, key, possibleTranslation))
+                            value = possibleTranslation;
                     }
+                    AddLocalizationToResults(translations, key, value);
                 }
+            }
 
-                foreach (var mapping in itemLookupColumns)
+            foreach (var mapping in itemLookupColumns)
+            {
+                for (var i = 1; i < excelAsset.list.Count; i++)
                 {
-                    for (var i = 1; i < excelAsset.list.Count; i++)
-                    {
-                        var row = excelAsset.GetRow(i);
-                        var translatedName = ResourceHelper.PerformNameLookup(row, mapping);
-                        var key = translatedName.Key;
-                        var value = translatedName.Value;
-                        AddLocalizationToResults(translations, key, value);
-                    }
+                    var row = excelAsset.GetRow(i);
+                    var translatedName = ResourceHelper.PerformNameLookup(row, mapping);
+                    var key = translatedName.Key;
+                    var value = translatedName.Value;
+                    AddLocalizationToResults(translations, key, value);
                 }
             }
 

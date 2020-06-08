@@ -384,11 +384,12 @@ namespace IllusionMods
 
         private IEnumerable<AssetBundleInfo> GetAssetTables(AssetBundleInfo assetBundleInfo)
         {
-            if (IsAssetTable(assetBundleInfo, out var excelData, out _))
+            
+            if (IsAssetTable(assetBundleInfo, out _, out _))
             {
                 yield return assetBundleInfo;
             }
-            else if (IsRedirectTable(assetBundleInfo, out excelData))
+            else if (IsRedirectTable(assetBundleInfo, out var excelData))
             {
                 foreach (var entry in excelData.list)
                 {

@@ -14,7 +14,7 @@ namespace IllusionMods
 {
     public partial class TextDump
     {
-        public static partial class Helpers
+        internal static partial class Helpers
         {
             private static readonly HashSet<string> LoadedBundles = new HashSet<string>();
 
@@ -26,17 +26,24 @@ namespace IllusionMods
 
             public static List<string> GetAssetBundleNameListFromPath(string path, bool subdirCheck = false)
             {
-                return CommonLib.GetAssetBundleNameListFromPath(NormalizePathSeparators(path), subdirCheck);
+                var normPath = NormalizePathSeparators(path);
+#if HS2
+                normPath = normPath.Replace('\\', '/').Trim('/') + "/";
+#endif
+                return CommonLib.GetAssetBundleNameListFromPath(normPath, subdirCheck);
             }
 
             public static void UnloadBundles()
             {
-                var bundles = LoadedBundles.ToArray();
+                IllusionMods.AssetLoader.UnloadBundles();
+#if false
+                var bundles = LoadedBundles.ToList();
                 LoadedBundles.Clear();
                 foreach (var assetBundle in bundles)
                 {
                     AssetBundleManager.UnloadAssetBundle(assetBundle, false);
                 }
+#endif
             }
 
 #if HS
@@ -45,6 +52,7 @@ namespace IllusionMods
             public static string[] GetAssetNamesFromBundle(string assetBundleName)
             {
                 string[] ret;
+
                 try
                 {
                     ret = AssetBundleCheck.GetAllAssetName(assetBundleName);
@@ -61,6 +69,9 @@ namespace IllusionMods
                 catch { }
 
 
+
+#if !HS2
+                AssetBundle assetBundle = null;
                 try
                 {
                     if (AssetBundleManager.AllLoadedAssetBundleNames.Contains(assetBundleName))
@@ -86,7 +97,7 @@ namespace IllusionMods
 
                 AssetBundleManager.LoadAssetBundleInternal(assetBundleName, false);
                 var loadedAssetBundle1 = AssetBundleManager.GetLoadedAssetBundle(assetBundleName, out var err);
-                AssetBundle assetBundle;
+                
                 if (loadedAssetBundle1 is null)
                 {
                     Logger.LogError(err);
@@ -101,7 +112,7 @@ namespace IllusionMods
 
                 try
                 {
-                    if (!(assetBundle is null))
+                    if (assetBundle != null)
                     {
                         ret = assetBundle.GetAllAssetNames().Select(Path.GetFileName).ToArray();
                         if (ret?.Length > 0) return ret;
@@ -114,6 +125,7 @@ namespace IllusionMods
                         AssetBundleManager.UnloadAssetBundle(assetBundle.name, false);
                     }
                 }
+#endif
 
 
                 return new string[0];
@@ -122,6 +134,8 @@ namespace IllusionMods
 
             public static T ManualLoadAsset<T>(AssetBundleAddress assetBundleAddress) where T : Object
             {
+                return IllusionMods.AssetLoader.ManualLoadAsset<T>(assetBundleAddress);
+#if false
 #if AI
                 LoadedBundles.Add(assetBundleAddress.AssetBundle);
                 return AssetUtility.LoadAsset<T>((AssetBundleInfo) assetBundleAddress);
@@ -129,6 +143,8 @@ namespace IllusionMods
                 return ManualLoadAsset<T>(assetBundleAddress.AssetBundle, assetBundleAddress.Asset,
                     assetBundleAddress.Manifest);
 #endif
+#endif
+
             }
 
             public static Type FindType(string name)
@@ -153,16 +169,20 @@ namespace IllusionMods
                 return null;
             }
 
+
+
             public static T ManualLoadAsset<T>(string bundle, string asset, string manifest) where T : Object
             {
+                return IllusionMods.AssetLoader.ManualLoadAsset<T>(bundle, asset, manifest);
+#if false
                 LoadedBundles.Add(bundle);
 #if AI
                 return AssetUtility.LoadAsset<T>(bundle, asset, manifest);
 #else
 #if HS
-            var _ = asset;
-            _ = manifest;
-            return null;
+                var _ = asset;
+                _ = manifest;
+                return null;
 #else
                 manifest = manifest.IsNullOrEmpty() ? null : manifest;
                 Logger.DebugLogDebug($"ManualLoadAsset: {bundle}, {asset}, {manifest}");
@@ -174,6 +194,9 @@ namespace IllusionMods
                 }
                 catch
                 {
+#if HS2
+                    throw;
+#else
                     AssetBundleManager.LoadAssetBundleInternal(bundle, false, manifest);
                     var assetBundle = AssetBundleManager.GetLoadedAssetBundle(bundle, out var error, manifest);
                     if (!string.IsNullOrEmpty(error))
@@ -183,7 +206,9 @@ namespace IllusionMods
 
                     var result = assetBundle.m_AssetBundle.LoadAsset<T>(asset);
                     return result;
+#endif
                 }
+#endif
 #endif
 #endif
             }

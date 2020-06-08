@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿#if RAW_DUMP_SUPPORT
+using System.IO;
 using BepInEx.Logging;
 using UnityEngine;
 using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
@@ -20,6 +21,47 @@ namespace IllusionMods
         public static bool Enabled { get; set; } = false;
 
         protected static ManualLogSource Logger => TextResourceRedirector.Logger;
+
+
+        public override TextAndEncoding TranslateTextAsset(string calculatedModificationPath, TextAsset asset,
+            IAssetOrResourceLoadedContext context)
+        {
+            Logger.DebugLogDebug($"{GetType()} attempt to handle {calculatedModificationPath}");
+            if (!Enabled || asset.bytes == null)
+            {
+                Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath}");
+                return null;
+            }
+
+            byte[] bytes = null;
+            var defaultFile = Path.Combine(calculatedModificationPath, "translation.bytes");
+            if (File.Exists(defaultFile))
+            {
+                bytes = File.ReadAllBytes(defaultFile);
+            }
+
+            if (bytes == null || bytes.Length == 0)
+            {
+                foreach (var entry in RedirectedDirectory.GetFilesInDirectory(calculatedModificationPath, ".bytes"))
+                {
+                    using (var stream = entry.OpenStream())
+                    {
+                        bytes = ReadBytes(stream);
+                    }
+
+                    if (bytes.Length > 0) break;
+                }
+            }
+
+            if (bytes == null || bytes.Length == 0)
+            {
+                Logger.DebugLogDebug($"{GetType()}  unable to handle {calculatedModificationPath}: no .bytes files");
+                return null;
+            }
+
+            Logger.DebugLogDebug($"{GetType()} handled {calculatedModificationPath}");
+            return new TextAndEncoding(bytes, _textResourceHelper.TableHelper.TextAssetEncoding);
+        }
 
         protected override bool DumpAsset(string calculatedModificationPath, TextAsset asset,
             IAssetOrResourceLoadedContext context)
@@ -72,52 +114,14 @@ namespace IllusionMods
                 }
             }
 #endif
-            }
-
-
-        public override TextAndEncoding TranslateTextAsset(string calculatedModificationPath, TextAsset asset,
-            IAssetOrResourceLoadedContext context)
-        {
-            Logger.DebugLogDebug($"{GetType()} attempt to handle {calculatedModificationPath}");
-            if (!Enabled || asset.bytes == null)
-            {
-                Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath}");
-                return null;
-            }
-            byte[] bytes = null;
-            var defaultFile = Path.Combine(calculatedModificationPath, "translation.bytes");
-            if (File.Exists(defaultFile))
-            {
-                bytes = File.ReadAllBytes(defaultFile);
-            }
-
-            if (bytes == null || bytes.Length == 0)
-            {
-                foreach (var entry in RedirectedDirectory.GetFilesInDirectory(calculatedModificationPath, ".bytes"))
-                {
-                    using (var stream = entry.OpenStream())
-                    {
-                        bytes = ReadBytes(stream);
-                    }
-
-                    if (bytes.Length > 0) break;
-                }
-            }
-
-            if (bytes == null || bytes.Length == 0)
-            {
-                Logger.DebugLogDebug($"{GetType()}  unable to handle {calculatedModificationPath}: no .bytes files");
-                return null;
-            }
-            Logger.DebugLogDebug($"{GetType()} handled {calculatedModificationPath}");
-            return new TextAndEncoding(bytes, _textResourceHelper.TableHelper.TextAssetEncoding);
         }
 
-#region IPathListBoundHandler
+        #region IPathListBoundHandler
 
         public PathList WhiteListPaths { get; } = new PathList();
         public PathList BlackListPaths { get; } = new PathList();
 
-#endregion IPathListBoundHandler
+        #endregion IPathListBoundHandler
     }
 }
+#endif

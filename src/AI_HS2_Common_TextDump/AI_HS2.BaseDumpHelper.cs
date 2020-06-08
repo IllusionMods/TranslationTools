@@ -1,5 +1,8 @@
 ﻿using UnityEngine;
 using UnityEx;
+#if HS2
+using Manager;
+#endif
 
 namespace IllusionMods
 {
@@ -7,7 +10,7 @@ namespace IllusionMods
     {
         public static T ManualLoadAsset<T>(AssetBundleInfo assetBundleInfo) where T : Object
         {
-            return TextDump.Helpers.ManualLoadAsset<T>(assetBundleInfo);
+            return AssetLoader.ManualLoadAsset<T>(assetBundleInfo);
         }
     }
 }
