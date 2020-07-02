@@ -656,34 +656,44 @@ namespace IllusionMods
             AssetDumpColumnInfo assetDumpColumnInfo)
         {
             var chaListData = MessagePackSerializer.Deserialize<ChaListData>(asset.bytes);
-            foreach (var entry in chaListData.dictList.Values)
-            foreach (var mapping in assetDumpColumnInfo.NumericMappings)
+
+            foreach (var chaListEntry in chaListData.dictList)
             {
-                var jpCol = mapping.Key;
-                var transCol = mapping.Value;
-                if (entry.Count < jpCol) continue;
+                var id = chaListEntry.Key;
+                var entry = chaListEntry.Value;
 
-                var key = entry[jpCol];
-                var val = string.Empty;
-                if (transCol >= 0 && entry.Count > Math.Max(11, transCol)) val = entry[transCol];
-
-                //Logger.LogWarning($"match: {key}={val}");
-                yield return new KeyValuePair<string, string>(key, val);
-            }
-
-            foreach (var id in chaListData.dictList.Keys)
-            foreach (var mapping in assetDumpColumnInfo.NameMappings)
-            {
-                var key = chaListData.GetInfo(id, mapping.Key);
-                if (!string.IsNullOrEmpty(key))
+                foreach (var mapping in assetDumpColumnInfo.NumericMappings)
                 {
+                    var jpCol = mapping.Key;
+                    var transCol = mapping.Value;
+                    if (entry.Count < jpCol) continue;
+
+                    var key = entry[jpCol];
+                    var val = string.Empty;
+                    if (transCol >= 0 && entry.Count > Math.Max(11, transCol)) val = entry[transCol];
+
+                    //Logger.LogWarning($"match: {key}={val}");
+                    yield return new KeyValuePair<string, string>(key,
+                        IsValidChaListDataLocalization(id, entry, key, val) ? val : string.Empty);
+                }
+
+
+                foreach (var mapping in assetDumpColumnInfo.NameMappings)
+                {
+                    var key = chaListData.GetInfo(id, mapping.Key);
+                    if (string.IsNullOrEmpty(key)) continue;
                     var val = chaListData.GetInfo(id, mapping.Value);
                     yield return new KeyValuePair<string, string>(key,
-                        IsValidLocalization(key, val) ? val : string.Empty);
+                        IsValidChaListDataLocalization(id, entry, key, val) ? val : string.Empty);
                 }
             }
         }
 
+        protected virtual bool IsValidChaListDataLocalization(int id, List<string> entry, string origString,
+            string possibleTranslation)
+        {
+            return IsValidLocalization(origString, possibleTranslation);
+        }
         protected virtual IEnumerable<KeyValuePair<string, string>> DumpListBytes(TextAsset asset,
             AssetDumpColumnInfo assetDumpColumnInfo)
         {

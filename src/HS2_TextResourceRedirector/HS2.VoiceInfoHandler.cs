@@ -1,19 +1,12 @@
 ﻿using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using BepInEx.Configuration;
-using BepInEx.Logging;
 using XUnity.AutoTranslator.Plugin.Core;
-using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
-using XUnity.ResourceRedirector;
 
 namespace IllusionMods
 {
     public class VoiceInfoHandler : ParamAssetLoadedHandler<VoiceInfo, VoiceInfo.Param>
     {
-
-        public VoiceInfoHandler(TextResourceRedirector plugin) : base(plugin) { }
+        public VoiceInfoHandler(TextResourceRedirector plugin) : base(plugin, true) { }
 
 
         public override IEnumerable<VoiceInfo.Param> GetParams(VoiceInfo asset)
@@ -21,7 +14,8 @@ namespace IllusionMods
             return asset.param;
         }
 
-        public override bool UpdateParam(string calculatedModificationPath, SimpleTextTranslationCache cache, VoiceInfo.Param param)
+        public override bool UpdateParam(string calculatedModificationPath, SimpleTextTranslationCache cache,
+            VoiceInfo.Param param)
         {
             var result = false;
             var key = param.Personality;
@@ -29,6 +23,7 @@ namespace IllusionMods
             if (cache.TryGetTranslation(key, true, out var translated))
             {
                 param.Personality = translated;
+                TrackReplacement(key, translated);
                 TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
                 result = true;
             }

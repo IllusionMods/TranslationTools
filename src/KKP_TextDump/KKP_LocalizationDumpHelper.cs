@@ -122,7 +122,7 @@ namespace IllusionMods
             // translateSlotTitle
             //OtherDataByTag[996] = new Dictionary<string, string> {};
 
-            HarmonyWrapper.PatchAll(typeof(KKP_LocalizationDumpHelper));
+            Harmony.CreateAndPatchAll(typeof(KKP_LocalizationDumpHelper));
         }
 
         private static bool IsSupportedForEnumeration(Type type)

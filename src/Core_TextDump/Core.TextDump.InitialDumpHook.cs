@@ -46,7 +46,7 @@ namespace IllusionMods
             internal static void Setup(TextDump textDump)
             {
                 _pluginInstance = textDump;
-                _harmony = HarmonyWrapper.PatchAll(typeof(InitialDumpHook), HarmonyId);
+                _harmony = Harmony.CreateAndPatchAll(typeof(InitialDumpHook), HarmonyId);
             }
         }
     }

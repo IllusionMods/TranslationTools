@@ -88,9 +88,9 @@ namespace IllusionMods
 
                     foreach (var key in TextResourceHelper.GetExcelRowTranslationKeys(asset.name, param.list, i))
                     {
+                        if (string.IsNullOrEmpty(key)) continue;
                         Logger.DebugLogDebug(
                             $"Attempting excel replacement [{row}, {i}]: Searching for replacement key={key}");
-                        if (string.IsNullOrEmpty(key)) continue;
                         if (cache.TryGetTranslation(key, true, out var translated))
                         {
                             result = true;
@@ -103,13 +103,12 @@ namespace IllusionMods
                             break;
                         }
 
-                        if (LanguageHelper.IsTranslatable(key))
+                        if (!LanguageHelper.IsTranslatable(key)) continue;
+
+                        TranslationHelper.RegisterRedirectedResourceTextToPath(key, calculatedModificationPath);
+                        if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled)
                         {
-                            TranslationHelper.RegisterRedirectedResourceTextToPath(key, calculatedModificationPath);
-                            if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled)
-                            {
-                                cache.AddTranslationToCache(key, key);
-                            }
+                            cache.AddTranslationToCache(key, key);
                         }
                     }
                 }

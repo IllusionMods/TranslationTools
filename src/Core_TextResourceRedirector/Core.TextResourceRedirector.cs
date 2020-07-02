@@ -1,6 +1,7 @@
 ﻿using System;
 using BepInEx;
 using BepInEx.Logging;
+using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.ResourceRedirector.Constants;
 
 #if AI
@@ -23,7 +24,7 @@ namespace IllusionMods
 
         public const string PluginName = "Text Resource Redirector";
         public const string GUID = "com.deathweasel.bepinex.textresourceredirector";
-        public const string Version = "1.3";
+        public const string Version = "1.4";
         internal new static ManualLogSource Logger;
 #if !HS
         internal ChaListDataHandler ChaListDataHandler;
@@ -44,14 +45,13 @@ namespace IllusionMods
         public event TranslatorTranslationsLoadedHandler TranslatorTranslationsLoaded;
 
         private static TextResourceRedirector _instance;
+        private static int? _currentGameLanguage;
 
         internal void Awake()
         {
             _instance = this;
             Logger = Logger ?? base.Logger;
             TextResourceHelper = GetTextResourceHelper();
-
-            XuaHooks.Init();
 
             ExcelDataHandler = new ExcelDataHandler(this);
             ScenarioDataHandler = new ScenarioDataHandler(this);
@@ -64,6 +64,7 @@ namespace IllusionMods
 #if !HS
             ChaListDataHandler = new ChaListDataHandler(this);
 #endif
+            XuaHooks.Init();
             OnTextResourceRedirectorAwake(EventArgs.Empty);
         }
 
@@ -93,6 +94,17 @@ namespace IllusionMods
             XuaHooks.AddTranslationDelegate?.Invoke(key, value, scope);
         }
 
+        public int GetCurrentGameLanguage()
+        {
+            if (!_currentGameLanguage.HasValue)
+            {
+                _currentGameLanguage =
+                    TextResourceHelper.XUnityLanguageToGameLanguage(AutoTranslatorSettings.DestinationLanguage);
+            }
+
+            return _currentGameLanguage.Value;
+        }
+
 #if false
         protected virtual bool ChaListDataTranslate(ref ChaListData chaListData, SimpleTextTranslationCache cache,
             string calculatedModificationPath)
@@ -112,5 +124,6 @@ namespace IllusionMods
             return result;
         }
 #endif
+
     }
 }

@@ -77,8 +77,18 @@ namespace IllusionMods
                 if (_stableCount < 3)
                 {
                     StartCoroutine(RetryDelay(10));
-                    NotificationMessage =
-                        $"Number of translations found is continuing to change ({delta}), will keep re-dumping until it's stable for {3 - _stableCount} more cycle(s)";
+                    if (_stableCount == 0)
+                    {
+                        NotificationMessage = $"Number of translations found is continuing to change ({delta})";
+                    }
+                    else
+                    {
+                        NotificationMessage = $"Number of translations unchanged";
+
+                    }
+
+
+                    NotificationMessage += $", will keep re-dumping until it's stable for {3 - _stableCount} more cycle(s)";
                     DumpLevelCompleted--;
                     DumpLevelReady = DumpLevelCompleted;
                 }

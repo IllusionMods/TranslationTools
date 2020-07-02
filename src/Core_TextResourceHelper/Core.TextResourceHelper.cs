@@ -32,6 +32,11 @@ namespace IllusionMods
 
         public TextAssetTableHelper TableHelper => _tableHelper ?? (_tableHelper = GetTableHelper());
 
+        public virtual int XUnityLanguageToGameLanguage(string xUnityLanguage)
+        {
+            return -1;
+        }
+
         protected TextResourceHelper() { }
 
         public virtual bool IsValidLocalization(string original, string localization)
@@ -203,21 +208,19 @@ namespace IllusionMods
 
             foreach (var param in assetList)
             {
-                if (IsReplacement(param) && param.Args.Length > 2 && param.Args[0].StartsWith("sel"))
+                if (!IsReplacement(param) || param.Args.Length <= 2 || !param.Args[0].StartsWith("sel")) continue;
+                var key = param.Args[0];
+                var entry = new KeyValuePair<string, string>(param.Args[1], param.Args[2]);
+                if (result.TryGetValue(key, out var existing))
                 {
-                    var key = param.Args[0];
-                    var entry = new KeyValuePair<string, string>(param.Args[1], param.Args[2]);
-                    if (result.TryGetValue(key, out var existing))
+                    if (existing.Key != entry.Key || existing.Value != entry.Value)
                     {
-                        if (existing.Key != entry.Key || existing.Value != entry.Value)
-                        {
-                            Logger.LogWarning(
-                                $"Duplicate replacement key: {key} in (replacing {result[key]} with {entry}'");
-                        }
+                        Logger.LogWarning(
+                            $"Duplicate replacement key: {key} in (replacing {result[key]} with {entry}'");
                     }
-
-                    result[key] = entry;
                 }
+
+                result[key] = entry;
             }
 
             return result;
@@ -287,17 +290,15 @@ namespace IllusionMods
 #endif
         public string PrepareTranslationForReplacement(ExcelData asset, string translated)
         {
-            if (IsOptionDisplayItemAsset(asset.name))
-            {
-                // use alternate comma because option display items are stored/split on comma
-                return translated.Replace(',', OptionSafeComma);
-            }
-
-            return translated;
+            return IsOptionDisplayItemAsset(asset.name) ? translated.Replace(',', OptionSafeComma) : translated;
         }
 
-        public virtual void InitializeHelper() { } 
-            
-        
+        public virtual void InitializeHelper() { }
+
+
+        public virtual bool IsValidStringArrayParamAssetTranslation(string orig, string translated)
+        {
+            return false;
+        }
     }
 }

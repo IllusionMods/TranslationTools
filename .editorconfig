@@ -24,6 +24,7 @@ dotnet_style_qualification_for_method=false:suggestion
 dotnet_style_qualification_for_property=false:suggestion
 dotnet_style_require_accessibility_modifiers=for_non_interface_members:suggestion
 
+
 # ReSharper properties
 resharper_apply_auto_detected_rules=false
 resharper_braces_for_for=required_for_multiline_statement
@@ -40,6 +41,9 @@ resharper_xml_tab_width=2
 # disable some diagnostics that don't apply when code shared with net35 projects
 dotnet_diagnostic.rcs1058.severity=none
 dotnet_diagnostic.ca1825.severity=none
+dotnet_style_prefer_compound_assignment=false:none
+
+
 
 [*.{appxmanifest,axml,build,config,csproj,dbml,discomap,dtd,jsproj,lsproj,njsproj,nuspec,proj,props,StyleCop,targets,tasks,vbproj,xaml,xamlx,xml,xoml,xsd}]
 indent_style=space

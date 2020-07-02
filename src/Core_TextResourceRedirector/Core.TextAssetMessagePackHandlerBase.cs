@@ -15,7 +15,9 @@ namespace IllusionMods
     public abstract class TextAssetMessagePackHandlerBase<T> : RedirectorTextAssetLoadedHandlerBase, IPathListBoundHandler
         where T : class
     {
-        protected TextAssetMessagePackHandlerBase(TextResourceRedirector plugin, string mark) : base(plugin)
+        protected TextAssetMessagePackHandlerBase(TextResourceRedirector plugin, string mark,
+            bool allowTranslationRegistration = false) : base(plugin,
+            $"with {typeof(T).Name} packed inside", allowTranslationRegistration)
         {
             SetObjectMark(mark);
         }

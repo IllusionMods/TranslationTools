@@ -1,19 +1,13 @@
 ﻿using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using ActionGame;
-using BepInEx.Logging;
 using XUnity.AutoTranslator.Plugin.Core;
-using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
-using XUnity.ResourceRedirector;
 
 namespace IllusionMods
 {
     public class EventInfoHandler : ParamAssetLoadedHandler<EventInfo, EventInfo.Param>
     {
-
-        public EventInfoHandler(TextResourceRedirector plugin) : base(plugin) { }
+        public EventInfoHandler(TextResourceRedirector plugin) : base(plugin, true) { }
 
 
         public override IEnumerable<EventInfo.Param> GetParams(EventInfo asset)
@@ -21,7 +15,8 @@ namespace IllusionMods
             return asset.param;
         }
 
-        public override bool UpdateParam(string calculatedModificationPath, SimpleTextTranslationCache cache, EventInfo.Param param)
+        public override bool UpdateParam(string calculatedModificationPath, SimpleTextTranslationCache cache,
+            EventInfo.Param param)
         {
             var key = TextResourceHelper.GetSpecializedKey(param, param.Name);
             if (string.IsNullOrEmpty(key)) return false;
@@ -29,6 +24,7 @@ namespace IllusionMods
             if (cache.TryGetTranslation(key, true, out var translated))
             {
                 param.Name = translated;
+                TrackReplacement(key, translated);
                 TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
                 result = true;
             }

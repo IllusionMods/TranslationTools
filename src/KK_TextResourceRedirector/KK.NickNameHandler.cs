@@ -121,7 +121,7 @@ namespace IllusionMods
             lock (HookLock)
             {
                 if (_hooksInitialized) return;
-                HarmonyWrapper.PatchAll(typeof(Hooks));
+                Harmony.CreateAndPatchAll(typeof(Hooks));
                 _hooksInitialized = true;
             }
         }

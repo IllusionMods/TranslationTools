@@ -21,7 +21,7 @@ namespace IllusionMods
             out HashSet<int> colWhitelist, out HashSet<int> colBlacklist);
 
 
-        public TextAssetTableHandler(TextResourceRedirector plugin) : base(plugin) { }
+        public TextAssetTableHandler(TextResourceRedirector plugin) : base(plugin, "containing tables") { }
 
 
         public TextAssetTableHelper TextAssetTableHelper => Plugin?.TextResourceHelper?.TableHelper;

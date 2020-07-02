@@ -28,6 +28,7 @@ namespace IllusionMods
 
         private void ConfigureHandlersForHS2(TextResourceRedirector sender, EventArgs eventArgs)
         {
+            Logger.LogFatal("ConfigureHandlersForHS2 fired");
             sender.VoiceInfoHandler = new VoiceInfoHandler(sender);
             sender.BGMNameInfoHandler = new BGMNameInfoHandler(sender);
             sender.EventContentInfoDataHandler = new EventContentInfoDataHandler(sender);

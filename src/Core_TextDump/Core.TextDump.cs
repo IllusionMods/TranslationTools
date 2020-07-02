@@ -32,11 +32,11 @@ namespace IllusionMods
 
         public const string GUID = "com.deathweasel.bepinex.textdump";
         public const string PluginName = "Text Dump";
-        public const string Version = "1.3";
+        public const string Version = "1.4";
 
         private const string FormatStringPlaceholder = "_P_L_A_C_E_H_O_L_D_E_R_";
 
-        private const float NotificationDelay = 10f;
+        private const float NotificationDelay = 15f;
 
         internal static int DumpLevelMax = 1;
         internal static int DumpLevelReady = 1;

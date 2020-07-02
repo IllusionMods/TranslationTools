@@ -10,7 +10,7 @@ namespace IllusionMods
 {
     public class ChaListDataHandler : TextAssetMessagePackHandlerBase<ChaListData>
     {
-        public ChaListDataHandler(TextResourceRedirector plugin) : base(plugin, ChaListData.ChaListDataMark)
+        public ChaListDataHandler(TextResourceRedirector plugin) : base(plugin, ChaListData.ChaListDataMark, true)
         {
             SearchLength = ObjectMark.Count() + 10;
         }
@@ -25,6 +25,7 @@ namespace IllusionMods
             {
                 if (entry.Count <= idx || !cache.TryGetTranslation(entry[idx], true, out var translation)) continue;
 
+                TrackReplacement(entry[idx], translation);
                 TranslationHelper.RegisterRedirectedResourceTextToPath(translation, calculatedModificationPath);
                 result = true;
                 entry[idx] = translation;

@@ -6,10 +6,11 @@ using UnityEngine.UI;
 
 namespace IllusionMods
 {
-    public partial class MapInfoHandler : RedirectorAssetLoadedHandlerBase<MapInfo>
+    public partial class MapInfoHandler
     {
         protected static string GetMapName(MapInfo.Param mapInfoParam)
         {
+            Instance.ConvertMapNameEnableCount = 1; // turn on globally
             return mapInfoParam.MapNames[0];
         }
 
@@ -25,13 +26,15 @@ namespace IllusionMods
             [HarmonyPatch(typeof(LobbyMainUI), "LoadMapImage")]
             internal static void LoadMapImagePostfix(LobbyMainUI __instance)
             {
-                Logger.LogFatal($"Fired {nameof(LoadMapImagePostfix)}");
                 var txtMap = Traverse.Create(__instance).Field<Text>("txtMap").Value;
                 if (txtMap != null && Instance._mapLookup.TryGetValue(txtMap.text, out var translation))
                 {
                     txtMap.text = translation;
                 }
             }
+
+#if false
+            /* disabling, causes crashes when moving between rooms from map selection menu in game */
 
             [HarmonyPrefix]
             [HarmonyPatch(typeof(MapSelectUI), "ResetMapScroll")]
@@ -48,6 +51,7 @@ namespace IllusionMods
                     entry.MapNames[0] = translation;
                 }
             }
+#endif
         }
     }
 }

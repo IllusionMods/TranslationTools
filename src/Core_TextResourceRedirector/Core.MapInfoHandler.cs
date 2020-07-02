@@ -1,22 +1,13 @@
 ﻿#if KK||HS2
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using BepInEx.Configuration;
-using BepInEx.Harmony;
 using HarmonyLib;
-using UnityEngine.SceneManagement;
+using Manager;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
 using XUnity.ResourceRedirector;
-
-#if HS2
-using Manager;
-using Scene = UnityEngine.SceneManagement.Scene;
-#endif
-
 
 namespace IllusionMods
 {
@@ -37,39 +28,12 @@ namespace IllusionMods
         private readonly Dictionary<string, string> _mapLookup = new Dictionary<string, string>();
         private readonly Dictionary<string, string> _reverseMapLookup = new Dictionary<string, string>();
 
-        public MapInfoHandler(TextResourceRedirector plugin) : base(plugin)
+        public MapInfoHandler(TextResourceRedirector plugin) : base(plugin, allowTranslationRegistration: true)
         {
             Instance = this;
-
-            EnableRegisterAsTranslations = this.ConfigEntryBind("Register Map Names as Translations", true,
-                "If Map Names from assets should be also used for text translations");
-
-            plugin.TranslatorTranslationsLoaded += Plugin_TranslatorTranslationsLoaded;
-            SceneManager.sceneLoaded += SceneManager_sceneLoaded;
         }
-
-        public static ConfigEntry<bool> EnableRegisterAsTranslations { get; private set; }
 
         internal int ConvertMapNameEnableCount { get; set; }
-
-        private void SceneManager_sceneLoaded(Scene arg0, LoadSceneMode arg1)
-        {
-            RegisterAsTranslations();
-        }
-
-        private void Plugin_TranslatorTranslationsLoaded(TextResourceRedirector sender, EventArgs eventArgs)
-        {
-            RegisterAsTranslations();
-        }
-
-        private void RegisterAsTranslations()
-        {
-            if (!EnableRegisterAsTranslations.Value) return;
-            foreach (var entry in _mapLookup)
-            {
-                Plugin.AddTranslationToTextCache(entry.Key, entry.Value);
-            }
-        }
 
         /// <summary>
         ///     Caches forward and reverse translation of assets as they're loaded, but does not apply them.
@@ -95,7 +59,6 @@ namespace IllusionMods
 
             if (cache.IsEmpty) return true;
 
-            var enableRegister = EnableRegisterAsTranslations.Value;
             // register with helper or dump without translating here
             foreach (var key in asset.param
                 .Select(entry => TextResourceHelper.GetSpecializedKey(entry, GetMapName(entry)))
@@ -106,7 +69,7 @@ namespace IllusionMods
                     if (string.IsNullOrEmpty(translated)) continue;
                     _mapLookup[key] = translated;
                     _reverseMapLookup[translated] = key;
-                    if (enableRegister) Plugin.AddTranslationToTextCache(key, translated);
+                    TrackReplacement(key, translated);
                     TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
                 }
                 else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
@@ -151,7 +114,7 @@ namespace IllusionMods
                 lock (HookLock)
                 {
                     if (_hooksInitialized) return;
-                    HarmonyWrapper.PatchAll(typeof(Hooks));
+                    Harmony.CreateAndPatchAll(typeof(Hooks));
 
                     _hooksInitialized = true;
                 }
@@ -163,8 +126,12 @@ namespace IllusionMods
             internal static void BaseMapConvertMapNamePostfix(ref string __result)
             {
                 if (Instance == null || Instance.ConvertMapNameEnableCount <= 0 ||
-                    !Instance._mapLookup.TryGetValue(__result, out var translated)) return;
-                Logger.LogDebug($"BaseMapConvertMapNamePostfix: {__result} => {translated}");
+                    !Instance._mapLookup.TryGetValue(__result, out var translated))
+                {
+                    return;
+                }
+
+                Logger.DebugLogDebug($"BaseMapConvertMapNamePostfix: {__result} => {translated}");
                 __result = translated;
             }
 
@@ -174,12 +141,9 @@ namespace IllusionMods
             internal static void RestoreMapNamePrefix(ref string mapName)
             {
                 if (Instance == null || !Instance._reverseMapLookup.TryGetValue(mapName, out var origName)) return;
-                Logger.LogDebug($"RestoreMapNamePrefix: {mapName} => {origName}");
+                Logger.DebugLogDebug($"RestoreMapNamePrefix: {mapName} => {origName}");
                 mapName = origName;
-
             }
-
-
         }
     }
 }

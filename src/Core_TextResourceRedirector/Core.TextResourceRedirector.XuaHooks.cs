@@ -17,7 +17,7 @@ namespace IllusionMods
             {
                 if (Initialized) return;
                 Initialized = true;
-                HarmonyWrapper.PatchAll(typeof(XuaHooks));
+                Harmony.CreateAndPatchAll(typeof(XuaHooks));
 
                 var defaultTranslator = AutoTranslator.Default;
                 if (defaultTranslator == null) return;
@@ -47,6 +47,7 @@ namespace IllusionMods
             [HarmonyPatch(typeof(AutoTranslationPlugin), "LoadTranslations")]
             internal static void TranslationsLoadedPostfix()
             {
+                Logger.LogWarning($"{typeof(XuaHooks)} {nameof(TranslationsLoadedPostfix)} fired");
                 _instance?.OnTranslatorTranslationsLoaded(EventArgs.Empty);
             }
 

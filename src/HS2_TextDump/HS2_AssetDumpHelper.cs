@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using HarmonyLib;
 using IllusionMods.Shared;
 using UnityEngine;
 
@@ -9,7 +10,6 @@ namespace IllusionMods
     internal class HS2_AssetDumpHelper : AI_HS2_AssetDumpHelper
     {
         protected HS2_AssetDumpHelper(TextDump plugin) : base(plugin) { }
-
         public override void InitializeHelper()
         {
             AssetDumpGenerators.Insert(0,GetVoiceInfoDumpers);
@@ -18,12 +18,56 @@ namespace IllusionMods
             AssetDumpGenerators.Add(GetParameterNameInfoDumpers);
             AssetDumpGenerators.Add(GetAchievementInfoDumpers);
             AssetDumpGenerators.Add(GetMapInfoDumpers);
+            AssetDumpGenerators.Add(GetHPositionDumpers);
             base.InitializeHelper();
         }
 
-        protected override IEnumerable<KeyValuePair<string, AssetDumpColumnInfo>> GetLists()
+        protected virtual IEnumerable<ITranslationDumper> GetHPositionDumpers()
         {
-            foreach (var entry in base.GetLists()) yield return entry;
+            const string rootPath = "list/h/animationinfo";
+
+            var field = Manager.HSceneManager.HResourceTables?.GetType().GetField("assetNames");
+
+            var hTypeNames = field?.GetValue(Manager.HSceneManager.HResourceTables) as string[] ?? new []
+                {"aibu", "houshi", "sonyu", "tokushu", "les", "3P_F2M1", "3P"};
+
+            bool IsHPositionList(string assetName)
+            {
+                return hTypeNames.Any(n => assetName.StartsWith($"{n}_", StringComparison.OrdinalIgnoreCase));
+            }
+
+            var assetDumpColumnInfo = new AssetDumpColumnInfo(new KeyValuePair<int, int>(0, -1));
+
+            foreach (var assetBundleName in GetAssetBundleNameListFromPath(rootPath, true))
+            {
+                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
+                {
+                    if (!IsHPositionList(assetName)) continue;
+
+
+                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
+
+                    IDictionary<string, string> AssetDumper()
+                    {
+                        var translations = new OrderedDictionary<string, string>();
+                        var done = false;
+                        foreach (var tryDump in ListEntryDumpers)
+                        {
+                            GetAssetBundleNameListFromPath(rootPath, true);
+                            GetAssetNamesFromBundle(assetBundleName);
+
+                            done = tryDump(assetBundleName, assetName, assetDumpColumnInfo, translations);
+                            if (done) break;
+                        }
+
+                        if (!done) Logger.LogWarning($"Unable to dump '{rootPath}': '{assetBundleName}': {assetName}");
+
+                        return translations;
+                    }
+
+                    yield return new StringTranslationDumper(filePath, AssetDumper);
+                }
+            }
         }
 
         protected override bool IsValidExcelLocalization(string assetBundleName, string assetName, int firstRow,
@@ -35,6 +79,15 @@ namespace IllusionMods
             if (possibleTranslation == "None" && origString != "なし" && (row == 0 || row == firstRow)) return false;
             return base.IsValidExcelLocalization(assetBundleName, assetName, row, firstRow, origString,
                 possibleTranslation);
+        }
+
+        protected override bool IsValidChaListDataLocalization(int id, List<string> entry, string origString, string possibleTranslation)
+        {
+            // HS2 already has translation columns in table (mostly empty)
+            // row 0 is always 'None' which isn't always correct
+            if (possibleTranslation == "None" && origString != "なし" && id == 0) return false;
+
+            return base.IsValidChaListDataLocalization(id, entry, origString, possibleTranslation);
         }
 
         protected IEnumerable<ITranslationDumper> GetVoiceInfoDumpers()

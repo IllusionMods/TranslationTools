@@ -45,5 +45,10 @@ namespace IllusionMods
         {
             return handler.Plugin.Config.Bind<TConf>(handler.ConfigSectionName, key, defaultValue, description);
         }
+
+        public static ConfigEntry<TConf> ConfigEntryBind<TConf>(this IRedirectorHandler handler, string key, TConf defaultValue, ConfigDescription description)
+        {
+            return handler.Plugin.Config.Bind<TConf>(handler.ConfigSectionName, key, defaultValue, description);
+        }
     }
 }

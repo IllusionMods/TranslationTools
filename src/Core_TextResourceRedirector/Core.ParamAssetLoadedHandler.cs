@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using BepInEx.Configuration;
-using BepInEx.Logging;
 using UnityEngine;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
@@ -12,12 +10,14 @@ namespace IllusionMods
 {
     public abstract class ParamAssetLoadedHandler<T, TParam> : RedirectorAssetLoadedHandlerBase<T> where T : Object
     {
+        protected bool DisableEmptyCacheCheck { get; set; } = false;
+        protected ParamAssetLoadedHandler(TextResourceRedirector plugin, bool allowTranslationRegistration = false) :
+            base(plugin, allowTranslationRegistration: allowTranslationRegistration) { }
 
-
-        protected ParamAssetLoadedHandler(TextResourceRedirector plugin) : base(plugin) { }
         public abstract IEnumerable<TParam> GetParams(T asset);
 
-        public abstract bool UpdateParam(string calculatedModificationPath, SimpleTextTranslationCache cache, TParam param);
+        public abstract bool UpdateParam(string calculatedModificationPath, SimpleTextTranslationCache cache,
+            TParam param);
 
         public abstract bool DumpParam(SimpleTextTranslationCache cache, TParam param);
 
@@ -37,6 +37,7 @@ namespace IllusionMods
 
             return result;
         }
+
         protected override bool ReplaceOrUpdateAsset(string calculatedModificationPath, ref T asset,
             IAssetOrResourceLoadedContext context)
         {
@@ -49,7 +50,7 @@ namespace IllusionMods
                 false,
                 true);
 
-            if (cache.IsEmpty) return false;
+            if (cache.IsEmpty && !DisableEmptyCacheCheck) return false;
 
             var result = false;
 
@@ -61,6 +62,5 @@ namespace IllusionMods
 
             return result;
         }
-       
     }
 }
