@@ -13,7 +13,7 @@ namespace IllusionMods
             ItemLookup = new AssetDumpColumnInfo(null, null, true, new[]
             {
                 "アイテム名",
-                "名前(メモ)"
+                "名前(メモ)",
             });
 
             ItemLookupAndAssetCols =

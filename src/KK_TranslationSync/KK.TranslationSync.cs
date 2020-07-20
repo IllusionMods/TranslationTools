@@ -22,7 +22,7 @@ namespace IllusionMods
         public const string GUID = "com.deathweasel.bepinex.translationsync";
         public const string PluginName = "Translation Sync";
         public const string PluginNameInternal = "KK_TranslationSync";
-        public const string Version = "1.3.1";
+        public const string Version = "1.3.2";
 
         public static ConfigEntry<bool> Enabled { get; private set; }
         public static ConfigEntry<string> Personality { get; private set; }
@@ -46,6 +46,7 @@ namespace IllusionMods
                 SyncTLs(TLType.Scenario, true);
                 SyncTLs(TLType.Communication, true);
                 SyncTLs(TLType.H, true);
+                SyncTLs(TLType.Nickname, true);
                 Logger.Log(LogLevel.Info, "Sync complete.");
             }
             else if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) && Input.GetKey(TranslationSyncHotkey.Value.MainKey))
@@ -58,6 +59,7 @@ namespace IllusionMods
                 SyncTLs(TLType.Scenario);
                 SyncTLs(TLType.Communication);
                 SyncTLs(TLType.H);
+                SyncTLs(TLType.Nickname);
                 Logger.Log(LogLevel.Info, "Sync complete.");
             }
         }
@@ -70,13 +72,25 @@ namespace IllusionMods
                 SyncTLs(TLType.Scenario);
                 SyncTLs(TLType.Communication);
                 SyncTLs(TLType.H);
+                SyncTLs(TLType.Nickname);
             }
+
             for (int i = 0; i <= 10; i++)
             {
                 Personality.Value = "c-" + i.ToString("00");
                 SyncTLs(TLType.Scenario);
                 SyncTLs(TLType.Communication);
                 SyncTLs(TLType.H);
+                SyncTLs(TLType.Nickname);
+            }
+
+            for (int i = 0; i <= 10; i++)
+            {
+                Personality.Value = "c-" + i.ToString("0");
+                SyncTLs(TLType.Scenario);
+                SyncTLs(TLType.Communication);
+                SyncTLs(TLType.H);
+                SyncTLs(TLType.Nickname);
             }
             Logger.Log(LogLevel.Info, "Sync complete.");
         }
@@ -109,17 +123,13 @@ namespace IllusionMods
                 }
             }
 
-            string FolderPath = Path.Combine(Paths.PluginPath, TranslationsRoot);
-            FolderPath = Path.Combine(FolderPath, "adv");
-            CountJPText(FolderPath);
+            var translationsTop = Path.Combine(Paths.PluginPath, TranslationsRoot);
 
-            FolderPath = Path.Combine(Paths.PluginPath, TranslationsRoot);
-            FolderPath = Path.Combine(FolderPath, "communication");
-            CountJPText(FolderPath);
-
-            FolderPath = Path.Combine(Paths.PluginPath, TranslationsRoot);
-            FolderPath = Path.Combine(FolderPath, "h");
-            CountJPText(FolderPath);
+            CountJPText(Path.Combine(translationsTop, "adv"));
+            CountJPText(Path.Combine(translationsTop, "communication"));
+            CountJPText(Path.Combine(translationsTop, "h"));
+            CountJPText(Path.Combine(translationsTop, "h"));
+            CountJPText(Path.Combine(translationsTop, Path.Combine("etcetra", Path.Combine("list", "nickname"))));
 
             Logger.Log(LogLevel.Info, $"Total Japanese lines: {AllJPText.Count}");
         }
@@ -148,6 +158,10 @@ namespace IllusionMods
                     Logger.Log(LogLevel.Info, $"Syncing H translations for personality {Personality.Value}...");
                     FolderPath = Path.Combine(FolderPath, @"h\list");
                     break;
+                case TLType.Nickname:
+                    Logger.Log(LogLevel.Info, $"Syncing Nickname translations for personality {Personality.Value}...");
+                    FolderPath = Path.Combine(FolderPath, @"translation\etcetra\list\nickname");
+                    break;
                 default:
                     return;
             }
@@ -155,6 +169,7 @@ namespace IllusionMods
             if (!Directory.Exists(FolderPath))
                 return;
 
+            Logger.LogDebug($"FolderPath={FolderPath}");
             var FilePaths = Directory.GetFiles(FolderPath, "*.txt", SearchOption.AllDirectories).Reverse().ToArray();
             if (FilePaths.Length == 0)
                 return;
@@ -167,9 +182,8 @@ namespace IllusionMods
                 switch (translationType)
                 {
                     case TLType.Scenario:
-                        if (Ending.Contains("penetration"))
-                            continue;
-                        Ending = Ending.Remove(0, 2);
+                        if (!Ending.Contains("penetration"))
+                            Ending = Ending.Remove(0, 2);
                         break;
                     case TLType.Communication:
                         if (Ending.Contains($"communication_{PersonalityNumber}"))
@@ -187,8 +201,14 @@ namespace IllusionMods
                         else
                             continue;
                         break;
+                    case TLType.Nickname:
+                        if (Ending.Contains($"c{Personality.Value}"))
+                            Ending = Ending.Remove(0, Ending.IndexOf($"c{Personality.Value}", StringComparison.Ordinal));
+                        else
+                            continue;
+                        break;
                 }
-                //Logger.Log(LogLevel.Info, $"+{Ending}");
+                Logger.LogDebug($"+{Ending}");
 
                 string[] Lines1 = File.ReadAllLines(File1);
                 Dictionary<string, string> TLLines = new Dictionary<string, string>(new TrimmedStringComparer());
@@ -247,6 +267,8 @@ namespace IllusionMods
                                 continue;
                             break;
                         case TLType.H:
+                            // fall through
+                        case TLType.Nickname:
                             if (!File2.Contains(Ending))
                                 continue;
                             break;
@@ -255,7 +277,7 @@ namespace IllusionMods
                     bool DidEdit2 = false;
                     string[] Lines2 = File.ReadAllLines(File2);
 
-                    //Logger.Log(LogLevel.Info, $"-{File2}");
+                    Logger.LogDebug($"-{File2}");
 
                     for (int i = 0; i < Lines2.Count(); i++)
                     {
@@ -288,7 +310,7 @@ namespace IllusionMods
                             {
                                 Lines2[i] = $"{JPText}={NewTLText}";
                                 DidEdit2 = true;
-                                //Logger.Log(LogLevel.Info, $"Setting:{JPText}={NewTLText}");
+                                Logger.LogDebug($"Setting:{JPText}={NewTLText}");
                             }
                             else
                             {
@@ -311,13 +333,14 @@ namespace IllusionMods
                             }
                         }
                     }
+
                     if (DidEdit2)
                         SaveFile(File2, Lines2);
                 }
             }
         }
 
-        private enum TLType { Scenario, Communication, H }
+        private enum TLType { Scenario, Communication, H, Nickname }
 
         private bool CheckLineForErrors(string line, string fileName, int lineNumber)
         {

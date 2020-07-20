@@ -11,5 +11,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)KK.BaseDumpHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)KK_AssetDumpHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TextDump.cs" />
   </ItemGroup>
 </Project>

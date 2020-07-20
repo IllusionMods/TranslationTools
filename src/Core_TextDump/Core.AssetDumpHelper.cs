@@ -39,7 +39,7 @@ namespace IllusionMods
             StdStudioAssetCols = new AssetDumpColumnInfo(null, null, true, new[]
             {
                 "名称",
-                "表示名"
+                "表示名",
             });
 
             AssetDumpGenerators = new List<TranslationGenerator>
@@ -604,7 +604,10 @@ namespace IllusionMods
             {
                 var lookup = ResourceHelper.GetItemLookupColumns(headers, entry);
                 if (lookup.Length > 0) itemLookupColumns.Add(lookup);
+                Logger.LogDebug($"[TextDump] TryDumpExcelData: {assetBundleName}, {assetName}: {entry} => {string.Join(", ", lookup.Select(i=>i.ToString()).ToArray())}");
             }
+
+            
 
             foreach (var mapping in mappings.Where(m => m.Key > -1))
             {

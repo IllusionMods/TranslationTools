@@ -14,5 +14,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)AI_HS2.AssetBundleAddress.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AI_HS2_LocalizationDumpHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AI_HS2.AssetLoader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AI_HS2.TextDump.cs" />
   </ItemGroup>
 </Project>

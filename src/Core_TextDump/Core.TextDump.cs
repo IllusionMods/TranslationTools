@@ -32,7 +32,7 @@ namespace IllusionMods
 
         public const string GUID = "com.deathweasel.bepinex.textdump";
         public const string PluginName = "Text Dump";
-        public const string Version = "1.4";
+        public const string Version = "1.4.1";
 
         private const string FormatStringPlaceholder = "_P_L_A_C_E_H_O_L_D_E_R_";
 
@@ -53,6 +53,17 @@ namespace IllusionMods
 
         private static readonly Dictionary<string, ResizerCollection> _resizerDict = 
             new Dictionary<string, ResizerCollection>();
+
+        private static IEnumerable<string> GetHeaderLines(params string[] extra)
+        {
+            yield return "//";
+            yield return $"// Dumped for {Constants.GameName} v{GetGameVersion()} by {PluginName} v{Version}";
+            foreach (var line in extra)
+            {
+                yield return $"// {line}";
+            }
+            yield return "//";
+        }
 
 #if RAW_DUMP_SUPPORT
         internal static Dictionary<string, Func<IEnumerable<byte>>> RawTranslationsDict =
@@ -565,7 +576,13 @@ namespace IllusionMods
                     _translationsDict.Remove(entry.Key);
                 }
 
-                if (lines.Count > 0) DumpToFile(filePath, lines);
+                if (lines.Count <= 0)
+                {
+                    Logger.LogDebug($"[TextDump] No lines to dump for {filePath}, skipping.");
+                    continue;
+                }
+
+                DumpToFile(filePath, lines);
             }
 
             foreach (var entry in _resizerDict.ToArray())
@@ -761,7 +778,6 @@ namespace IllusionMods
             {
                 File.Delete(filePath);
             }
-
             writeAction(filePath, value.ToArray());
         }
 
@@ -773,13 +789,15 @@ namespace IllusionMods
 #endif
         private void DumpToFile(string filePath, IEnumerable<string> lines)
         {
-            DumpToFile(filePath, lines, File.WriteAllLines);
+            var allLines = new[] {GetHeaderLines().AsEnumerable(), lines}.SelectMany(s => s);
+            DumpToFile(filePath, allLines, File.WriteAllLines);
         }
 
         private List<string> CreateResizerLines(ResizerCollection resizers)
         {
             var lines = new List<string>();
             var scopeLines = new List<string>();
+
 
             foreach (var scope in resizers.Scopes)
             {

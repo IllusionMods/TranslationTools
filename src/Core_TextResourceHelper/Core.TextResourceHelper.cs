@@ -54,11 +54,30 @@ namespace IllusionMods
         {
             firstRow = 0;
             var headerRow = asset.GetRow(firstRow++);
-            if (headerRow.Count > 1 && (
-                headerRow[0].StartsWith("Ｈ") && headerRow[1].IsNullOrWhiteSpace() ||
-                headerRow.Count == headerRow.Count(h => h.IsNullOrWhiteSpace())))
+            var numEmpty = headerRow.Count(h => h.IsNullOrWhiteSpace());
+            if (headerRow.Count == numEmpty ||
+                headerRow.Count > 1 && (
+                    headerRow[1].IsNullOrWhiteSpace() && (
+                        headerRow[0].StartsWith("Ｈ") ||
+                        headerRow[0] == "主人公")))
+
             {
                 headerRow = asset.GetRow(firstRow++);
+            }
+            else if (numEmpty > 3 || (numEmpty/(headerRow.Count * 1.0)) > 0.49)
+            {
+                var testRow = asset.GetRow(firstRow);
+                var testData = asset.GetRow(firstRow + 1);
+                if (testRow.Count > 1)
+                {
+                    if ((testRow[0] == "表示順番" || testRow[0] == "管理番号") ||
+                        (testData.Count > 1 && int.TryParse(testData[0], out _) && !int.TryParse(testRow[0], out _)))
+                    {
+                        headerRow = testRow;
+                        firstRow++;
+                    }
+                }
+
             }
 
             return headerRow;

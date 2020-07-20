@@ -124,6 +124,8 @@ namespace CheckText
             foreach (var line in lines)
             {
                 var parts = line.Split(new[] {'='}, 2);
+                var key = parts[0].TrimStart('/');
+                if (string.IsNullOrWhiteSpace(key)) continue;
                 yield return new KeyValuePair<string, string>(parts[0].TrimStart('/'), parts[1]);
             }
         }
@@ -257,22 +259,21 @@ namespace CheckText
                 WriteLine($" (found in {resourceEntry.Values.SelectMany(p => p).Distinct().Count()} resource files)",
                     ConsoleColor.DarkGray);
                 var textEntry = textKeys[key];
-                /*
-                WriteLine("Resources:", ConsoleColor.Red);
+
                 foreach (var subResourceEntry in resourceEntry.OrderBy(e => e.Key))
                 {
-                    WritePrefix(2);
+                    WritePrefix(1);
                     Write(subResourceEntry.Key, ConsoleColor.Green);
                     WriteLine($" ({subResourceEntry.Value.Count} files)", ConsoleColor.DarkGray);
 
 
                     foreach (var match in subResourceEntry.Value.OrderBy(e => e))
                     {
-                        WritePrefix(3);
+                        WritePrefix(2);
                         WriteLine(match, ConsoleColor.Yellow);
                     }
                 }
-                */
+                
                 foreach (var subTextEntry in textEntry.OrderBy(e => e.Key))
                 {
                     WritePrefix(1);
