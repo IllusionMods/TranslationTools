@@ -19,10 +19,10 @@ namespace IllusionMods
         {
             var result = new List<bool>
             {
-                UpdateParamField(calculatedModificationPath, cache, ref param.trait),
-                UpdateParamField(calculatedModificationPath, cache, ref param.mind),
-                UpdateParamField(calculatedModificationPath, cache, ref param.state),
-                UpdateParamField(calculatedModificationPath, cache, ref param.hattribute)
+                UpdateParamField(calculatedModificationPath, cache, ref param.trait, "TRAIT:"),
+                UpdateParamField(calculatedModificationPath, cache, ref param.mind, "MIND:"),
+                UpdateParamField(calculatedModificationPath, cache, ref param.state, "STATE:"),
+                UpdateParamField(calculatedModificationPath, cache, ref param.hattribute, "HATTRIBUTE:")
             };
             return result.Any(x => x);
         }

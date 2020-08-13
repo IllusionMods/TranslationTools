@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using HarmonyLib;
 using IllusionMods.Shared;
+using Manager;
 using UnityEngine;
 
 namespace IllusionMods
@@ -10,11 +10,12 @@ namespace IllusionMods
     internal class HS2_AssetDumpHelper : AI_HS2_AssetDumpHelper
     {
         protected HS2_AssetDumpHelper(TextDump plugin) : base(plugin) { }
+
         public override void InitializeHelper()
         {
-            AssetDumpGenerators.Insert(0,GetVoiceInfoDumpers);
-            AssetDumpGenerators.Insert(0,GetBgmNameInfoDumpers);
-            AssetDumpGenerators.Insert(0,GetEventContentInfoDumpers);
+            AssetDumpGenerators.Insert(0, GetVoiceInfoDumpers);
+            AssetDumpGenerators.Insert(0, GetBgmNameInfoDumpers);
+            AssetDumpGenerators.Insert(0, GetEventContentInfoDumpers);
             AssetDumpGenerators.Add(GetParameterNameInfoDumpers);
             AssetDumpGenerators.Add(GetAchievementInfoDumpers);
             AssetDumpGenerators.Add(GetMapInfoDumpers);
@@ -26,9 +27,9 @@ namespace IllusionMods
         {
             const string rootPath = "list/h/animationinfo";
 
-            var field = Manager.HSceneManager.HResourceTables?.GetType().GetField("assetNames");
+            var field = HSceneManager.HResourceTables?.GetType().GetField("assetNames");
 
-            var hTypeNames = field?.GetValue(Manager.HSceneManager.HResourceTables) as string[] ?? new []
+            var hTypeNames = field?.GetValue(HSceneManager.HResourceTables) as string[] ?? new[]
                 {"aibu", "houshi", "sonyu", "tokushu", "les", "3P_F2M1", "3P"};
 
             bool IsHPositionList(string assetName)
@@ -81,7 +82,8 @@ namespace IllusionMods
                 possibleTranslation);
         }
 
-        protected override bool IsValidChaListDataLocalization(int id, List<string> entry, string origString, string possibleTranslation)
+        protected override bool IsValidChaListDataLocalization(int id, List<string> entry, string origString,
+            string possibleTranslation)
         {
             // HS2 already has translation columns in table (mostly empty)
             // row 0 is always 'None' which isn't always correct
@@ -154,9 +156,11 @@ namespace IllusionMods
                 }
             }
         }
+
         protected IEnumerable<ITranslationDumper> GetEventContentInfoDumpers()
         {
-            foreach (var assetBundleName in GetAssetBundleNameListFromPath(AssetBundleNames.GamedataEventcontentPath, true))
+            foreach (var assetBundleName in GetAssetBundleNameListFromPath(AssetBundleNames.GamedataEventcontentPath,
+                true))
             {
                 foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
                 {
@@ -190,6 +194,7 @@ namespace IllusionMods
                 }
             }
         }
+
         protected IEnumerable<ITranslationDumper> GetMapInfoDumpers()
         {
             foreach (var assetBundleName in GetAssetBundleNameListFromPath(AssetBundleNames.MapListMapinfoPath, true))
@@ -205,7 +210,7 @@ namespace IllusionMods
                         var asset = ManualLoadAsset<MapInfo>(assetBundleName, assetName, "abdata");
                         if (asset is null) return translations;
 
-                        void AddResult(string [] strings)
+                        void AddResult(string[] strings)
                         {
                             if (strings == null || strings.Length < 1) return;
                             AddLocalizationToResults(translations, strings[0],
@@ -229,7 +234,8 @@ namespace IllusionMods
 
         protected IEnumerable<ITranslationDumper> GetParameterNameInfoDumpers()
         {
-            foreach (var assetBundleName in GetAssetBundleNameListFromPath(AssetBundleNames.EtcetraListGameparameterPath, true))
+            foreach (var assetBundleName in GetAssetBundleNameListFromPath(
+                AssetBundleNames.EtcetraListParameternamePath, true))
             {
                 foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
                 {
@@ -242,22 +248,42 @@ namespace IllusionMods
                         var asset = ManualLoadAsset<ParameterNameInfo>(assetBundleName, assetName, "abdata");
                         if (asset is null) return translations;
 
-                        void AddResult(string[] strings)
+
+                        void AddResult(string[] strings, string prefix = null)
                         {
-                            if (strings == null || strings.Length < 1) return;
-                            AddLocalizationToResults(translations, strings[0],
-                                strings.Length > 1 && !string.IsNullOrEmpty(strings[1])
-                                    ? strings[1]
-                                    : string.Empty);
+                            if (strings == null || strings.Length < 1 || string.IsNullOrEmpty(strings[0])) return;
+                            var value = strings.Length > 1 && !string.IsNullOrEmpty(strings[1])
+                                ? strings[1]
+                                : string.Empty;
+
+                            AddLocalizationToResults(translations, strings[0], value);
+
+                            if (string.IsNullOrEmpty(prefix)) return;
+
+                            AddLocalizationToResults(translations, $"{prefix.ToUpperInvariant()}:{strings[0]}",
+                                value);
                         }
 
-                        foreach (var entry in asset.param)
+                        void AddResults(Func<ParameterNameInfo.Param, string[]> getter, string prefix = null)
                         {
-                            AddResult(entry.trait);
-                            AddResult(entry.mind);
-                            AddResult(entry.state);
-                            AddResult(entry.hattribute);
+                            foreach (var entry in asset.param)
+                            {
+                                AddResult(getter(entry), prefix);
+                            }
                         }
+
+                        // a bit redundant, but easiest to follow dump order with specialized 
+                        // entries grouped at the end
+                        AddResults(e => e.trait);
+                        AddResults(e => e.mind);
+                        AddResults(e => e.state);
+                        AddResults(e => e.hattribute);
+
+                        AddResults(e => e.trait, nameof(ParameterNameInfo.Param.trait));
+                        AddResults(e => e.mind, nameof(ParameterNameInfo.Param.mind));
+                        AddResults(e => e.state, nameof(ParameterNameInfo.Param.state));
+                        AddResults(e => e.hattribute, nameof(ParameterNameInfo.Param.hattribute));
+
 
                         return translations;
                     }
@@ -266,6 +292,7 @@ namespace IllusionMods
                 }
             }
         }
+
         protected IEnumerable<ITranslationDumper> GetAchievementInfoDumpers()
         {
             foreach (var assetBundleName in GetAssetBundleNameListFromPath(AssetBundleNames.GamedataPath, true))
@@ -313,7 +340,6 @@ namespace IllusionMods
 
             foreach (var assetBundleName in GetAssetBundleNameListFromPath("list/h/sound/voice/"))
             {
-                Logger.LogFatal(assetBundleName);
                 foreach (var assetName in GetAssetNamesFromBundle(assetBundleName).Where(x =>
                     x.StartsWith("HVoice_", StringComparison.OrdinalIgnoreCase) ||
                     x.StartsWith("HVoiceStart_", StringComparison.OrdinalIgnoreCase)))

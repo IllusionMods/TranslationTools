@@ -1,19 +1,15 @@
 ﻿using System.Collections.Generic;
 using CharaCustom;
 using Config;
+using HS2;
+using Manager;
 using UploaderSystem;
 
 namespace IllusionMods
 {
     internal class HS2_LocalizationDumpHelper : AI_HS2_LocalizationDumpHelper
     {
-        protected HS2_LocalizationDumpHelper(TextDump plugin) : base(plugin)
-        {
-
-
-        }
-
-
+        protected HS2_LocalizationDumpHelper(TextDump plugin) : base(plugin) { }
 
         public override IEnumerable<ITranslationDumper> GetInstanceLocalizers()
         {
@@ -22,26 +18,25 @@ namespace IllusionMods
                 yield return localizer;
             }
 
-            yield return MakeStandardInstanceLocalizer<Config.ConfigWindow>("localizeIsInit", "localizeIsTitle");
-            yield return MakeStandardInstanceLocalizer<Config.SoundSetting>("strSelect");
-            yield return MakeStandardInstanceLocalizer<Config.TitleSetting>("strSelect");
-            yield return MakeStandardInstanceLocalizer<HS2.CharaEditUI>("strConfirm");
-            yield return MakeStandardInstanceLocalizer<HS2.ConciergeAchievementUI>("strNextCounts", "strExchange");
-            yield return MakeStandardInstanceLocalizer<HS2.ConciergeMenuUI>("strHScene", "strCustom", "strSearch");
-            yield return MakeStandardInstanceLocalizer<HS2.FoundFemaleWindow>("strHigh", "strNormal", "strLow");
-            yield return MakeStandardInstanceLocalizer<HS2.FurRoomAchievementUI>("strNextCounts", "strExchange");
-            yield return MakeStandardInstanceLocalizer<HS2.FurRoomMapSelectUI>("strHScene");
-            yield return MakeStandardInstanceLocalizer<HS2.FurRoomMenuUI>("strCustom", "strSearch", "strReturnToHome");
-            yield return MakeStandardInstanceLocalizer<HS2.GroupCharaParameterUI>("strResist", "strReset", "strCustom");
+            yield return MakeStandardInstanceLocalizer<ConfigWindow>("localizeIsInit", "localizeIsTitle");
+            yield return MakeStandardInstanceLocalizer<SoundSetting>("strSelect");
+            yield return MakeStandardInstanceLocalizer<TitleSetting>("strSelect");
+            yield return MakeStandardInstanceLocalizer<CharaEditUI>("strConfirm");
+            yield return MakeStandardInstanceLocalizer<ConciergeAchievementUI>("strNextCounts", "strExchange");
+            yield return MakeStandardInstanceLocalizer<ConciergeMenuUI>("strHScene", "strCustom", "strSearch");
+            yield return MakeStandardInstanceLocalizer<FoundFemaleWindow>("strHigh", "strNormal", "strLow");
+            yield return MakeStandardInstanceLocalizer<FurRoomAchievementUI>("strNextCounts", "strExchange");
+            yield return MakeStandardInstanceLocalizer<FurRoomMapSelectUI>("strHScene");
+            yield return MakeStandardInstanceLocalizer<FurRoomMenuUI>("strCustom", "strSearch", "strReturnToHome");
+            yield return MakeStandardInstanceLocalizer<GroupCharaParameterUI>("strResist", "strReset", "strCustom");
             // currently strSleeep is there, but putting strSleep in place in case it's renamed in future
-            yield return MakeStandardInstanceLocalizer<HS2.HomeUI>("strWarning", "strToTitle", "strSleeep", "strSleep");
-            yield return MakeStandardInstanceLocalizer<HS2.LeaveTheRoomUI>("strWarning", "strConfirm");
-            yield return MakeStandardInstanceLocalizer<HS2.LobbyMainUI>("strWarning");
-            yield return MakeStandardInstanceLocalizer<HS2.LobbyMapSelectUI>("strHScene");
-            yield return MakeStandardInstanceLocalizer<HS2.LobbySelectUI>("strConfirm");
-            yield return MakeStandardInstanceLocalizer<HS2.MaleCharaSelectUI>("strConfirm");
-            yield return MakeStandardInstanceLocalizer<HS2.MapSelectUI>("strGotoMap");
-
+            yield return MakeStandardInstanceLocalizer<HomeUI>("strWarning", "strToTitle", "strSleeep", "strSleep");
+            yield return MakeStandardInstanceLocalizer<LeaveTheRoomUI>("strWarning", "strConfirm");
+            yield return MakeStandardInstanceLocalizer<LobbyMainUI>("strWarning");
+            yield return MakeStandardInstanceLocalizer<LobbyMapSelectUI>("strHScene");
+            yield return MakeStandardInstanceLocalizer<LobbySelectUI>("strConfirm");
+            yield return MakeStandardInstanceLocalizer<MaleCharaSelectUI>("strConfirm");
+            yield return MakeStandardInstanceLocalizer<MapSelectUI>("strGotoMap");
         }
 
         public override IEnumerable<ITranslationDumper> GetStaticLocalizers()
@@ -66,7 +61,6 @@ namespace IllusionMods
                 "CustomConfirmOverwriteWithInitializeParam");
 
 
-
             yield return MakeStandardStaticLocalizer(typeof(NetworkDefine), "msgPressAnyKey", "msgServerCheck",
                 "msgServerAccessInfoField",
                 "msgServerAccessField", "msgUpCannotBeIdentified", "msgUpAlreadyUploaded", "msgUpCompressionHousing",
@@ -82,5 +76,45 @@ namespace IllusionMods
                 "msgNetFailedGetVersion", "msgNetFailedConfirmUser", "msgNetFailedUpdateHN", "msgNetUpdatedHN",
                 "msgNetFailedGetAllHN");
         }
+
+        protected override IEnumerable<TranslationGenerator> GetLocalizationGenerators()
+        {
+            foreach (var localizer in base.GetLocalizationGenerators())
+            {
+                yield return localizer;
+            }
+
+            /*yield return GetParameterNameLocalizers;*/
+        }
+        
+        /*
+        protected StringTranslationDumper MakeParameterNameLocalizer(string name,
+            IReadOnlyDictionary<int, string> entries)
+        {
+            IDictionary<string, string> Localizer()
+            {
+                var results = new TranslationDictionary();
+                if (entries == null) return results;
+                foreach (var entry in entries)
+                {
+                    AddLocalizationToResults(results, entry.Value, string.Empty);
+                }
+
+                return results;
+            }
+
+            return new StringTranslationDumper($"ParameterName/{name}", Localizer);
+        }
+
+        protected IEnumerable<ITranslationDumper> GetParameterNameLocalizers()
+        {
+            if (!Game.IsInstance()) yield break;
+            yield return MakeParameterNameLocalizer("HAttribute", Game.infoHAttributeTable);
+            yield return MakeParameterNameLocalizer("Mind", Game.infoMindTable);
+            yield return MakeParameterNameLocalizer("State", Game.infoStateTable);
+            yield return MakeParameterNameLocalizer("Trait", Game.infoTraitTable);
+        }
+
+        */
     }
 }

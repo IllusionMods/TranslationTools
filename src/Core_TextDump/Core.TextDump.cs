@@ -312,6 +312,8 @@ namespace IllusionMods
 
             if (AreAllDumpsComplete())
             {
+                if (dumpAssets) AssetDumpHelper.LogUnmatchedDumpers();
+
                 try
                 {
                     IllusionMods.AssetLoader.UnloadBundles();

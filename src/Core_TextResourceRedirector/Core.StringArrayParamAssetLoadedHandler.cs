@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
 using BepInEx.Configuration;
@@ -36,38 +37,43 @@ namespace IllusionMods
         }
 
         protected virtual bool UpdateParamField(string calculatedModificationPath, SimpleTextTranslationCache cache,
-            ref string[] field)
+            ref string[] field, string prefix=null)
         {
-            var key = field[0];
-            if (string.IsNullOrEmpty(key)) return false;
+            var rawKey = field[0];
+            if (string.IsNullOrEmpty(rawKey)) return false;
 
-            if (cache.TryGetTranslation(key, true, out var translated))
+            var keys = new List<string>();
+            if (!string.IsNullOrEmpty(prefix)) keys.Add($"{prefix}{field[0]}");
+            keys.Add(field[0]);
+
+            foreach (var key in keys)
             {
-                field[0] = translated;
-
-                TrackReplacement(key, translated);
-
-                TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
-                return true;
-            }
-
-            if (EnableInternalAssetTranslation.Value && TranslatedIndex > 0 && field.Length > TranslatedIndex)
-            {
-                var possible = field[TranslatedIndex];
-                if (Plugin.TextResourceHelper.IsValidStringArrayParamAssetTranslation(key, possible))
+                if (cache.TryGetTranslation(key, true, out var translated))
                 {
-                    field[0] = possible;
-                    TrackReplacement(key, possible);
-
-                    TranslationHelper.RegisterRedirectedResourceTextToPath(possible, calculatedModificationPath + " (original asset)");
+                    field[0] = translated;
+                    TrackReplacement(rawKey, translated);
+                    TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
                     return true;
                 }
-            }
 
-            if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
-                LanguageHelper.IsTranslatable(key))
-            {
-                DumpParamField(cache, field);
+                if (EnableInternalAssetTranslation.Value && TranslatedIndex > 0 && field.Length > TranslatedIndex)
+                {
+                    var possible = field[TranslatedIndex];
+                    if (Plugin.TextResourceHelper.IsValidStringArrayParamAssetTranslation(key, possible))
+                    {
+                        field[0] = possible;
+                        TrackReplacement(rawKey, possible);
+                        TranslationHelper.RegisterRedirectedResourceTextToPath(possible,
+                            calculatedModificationPath + " (original asset)");
+                        return true;
+                    }
+                }
+
+                if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
+                    LanguageHelper.IsTranslatable(key))
+                {
+                    DumpParamField(cache, field);
+                }
             }
 
             return false;

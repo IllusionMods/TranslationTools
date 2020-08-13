@@ -3,7 +3,7 @@ using Manager;
 
 namespace IllusionMods
 {
-    partial class TextDump
+    public partial class TextDump
     {
         public static Version GetGameVersion()
         {

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Policy;
 using System.Text;
 using ADV;
 using IllusionMods.Shared;
@@ -12,6 +11,7 @@ using UnityEngine.Assertions;
 using static IllusionMods.TextResourceHelper.Helpers;
 #if AI || HS2
 using AIChara;
+
 #endif
 
 namespace IllusionMods
@@ -23,6 +23,8 @@ namespace IllusionMods
 
         protected readonly List<TranslationGenerator> AssetDumpGenerators;
         protected readonly List<TranslationGenerator> RawAssetDumpGenerators;
+
+        protected Dictionary<string, bool> AssetDumpGeneratorTracker = new Dictionary<string, bool>();
 
         protected AssetDumpColumnInfo StdExcelAssetCols;
         protected AssetDumpColumnInfo StdStudioAssetCols;
@@ -39,7 +41,7 @@ namespace IllusionMods
             StdStudioAssetCols = new AssetDumpColumnInfo(null, null, true, new[]
             {
                 "名称",
-                "表示名",
+                "表示名"
             });
 
             AssetDumpGenerators = new List<TranslationGenerator>
@@ -79,16 +81,6 @@ namespace IllusionMods
 
         protected LocalizationDumpHelper LocalizationDumpHelper => Plugin?.LocalizationDumpHelper;
 
-        protected virtual string BuildAssetFilePath(string assetBundleName, string assetName,
-            string fileName = "translation")
-        {
-            return CombinePaths(
-                Path.GetDirectoryName(assetBundleName),
-                Path.GetFileNameWithoutExtension(assetBundleName),
-                Path.GetFileNameWithoutExtension(assetName),
-                fileName);
-        }
-
         public virtual IEnumerable<ITranslationDumper> GetAssetDumpers()
         {
             Assert.IsNotNull(AssetDumpGenerators);
@@ -98,11 +90,21 @@ namespace IllusionMods
             while (dumpers.Count > 0)
             {
                 var assetDumpGenerator = dumpers.PopFront();
-                Logger.LogDebug(assetDumpGenerator.Method.Name);
+                //Logger.LogDebug(assetDumpGenerator.Method.Name);
                 var entries = new List<ITranslationDumper>();
+                if (!AssetDumpGeneratorTracker.TryGetValue(assetDumpGenerator.Method.Name, out var trackerHit))
+                {
+                    trackerHit = AssetDumpGeneratorTracker[assetDumpGenerator.Method.Name] = false;
+                }
+
                 try
                 {
-                    foreach (var entry in assetDumpGenerator()) entries.Add(entry);
+                    foreach (var entry in assetDumpGenerator())
+                    {
+                        entries.Add(entry);
+                        if (trackerHit) continue;
+                        trackerHit = AssetDumpGeneratorTracker[assetDumpGenerator.Method.Name] = true;
+                    }
                 }
                 catch (Exception err)
                 {
@@ -113,6 +115,22 @@ namespace IllusionMods
 
                 foreach (var entry in entries) yield return entry;
             }
+        }
+
+        public override void PrepareLineForDump(ref string key, ref string value)
+        {
+            base.PrepareLineForDump(ref key, ref value);
+            value = value.Replace(";", ",");
+        }
+
+        protected virtual string BuildAssetFilePath(string assetBundleName, string assetName,
+            string fileName = "translation")
+        {
+            return CombinePaths(
+                Path.GetDirectoryName(assetBundleName),
+                Path.GetFileNameWithoutExtension(assetBundleName),
+                Path.GetFileNameWithoutExtension(assetName),
+                fileName);
         }
 
 
@@ -133,12 +151,6 @@ namespace IllusionMods
         }
 
         #endregion HText
-
-        public override void PrepareLineForDump(ref string key, ref string value)
-        {
-            base.PrepareLineForDump(ref key, ref value);
-            value = value.Replace(";", ",");
-        }
 
         #region CommunicationText
 
@@ -309,6 +321,17 @@ namespace IllusionMods
             }
 
             return result;
+        }
+
+        public void LogUnmatchedDumpers()
+        {
+            if (AssetDumpGeneratorTracker.All(e => e.Value)) return;
+
+
+            Logger.LogInfo("[TextDump] The following dumpers matched no assets: " +
+                           JoinStrings(", ",
+                               AssetDumpGeneratorTracker.Where(e => !e.Value).OrderBy(e => e.Key).Select(e => e.Key)
+                                   .ToArray()));
         }
 
         protected virtual IEnumerable<ITranslationDumper> GetScenarioTextDumpers()
@@ -604,10 +627,10 @@ namespace IllusionMods
             {
                 var lookup = ResourceHelper.GetItemLookupColumns(headers, entry);
                 if (lookup.Length > 0) itemLookupColumns.Add(lookup);
-                Logger.LogDebug($"[TextDump] TryDumpExcelData: {assetBundleName}, {assetName}: {entry} => {string.Join(", ", lookup.Select(i=>i.ToString()).ToArray())}");
+                Logger.LogDebug(
+                    $"[TextDump] TryDumpExcelData: {assetBundleName}, {assetName}: {entry} => {string.Join(", ", lookup.Select(i => i.ToString()).ToArray())}");
             }
 
-            
 
             foreach (var mapping in mappings.Where(m => m.Key > -1))
             {
@@ -627,8 +650,11 @@ namespace IllusionMods
                     {
                         var possibleTranslation = row[mapping.Value];
                         if (IsValidExcelLocalization(assetBundleName, assetName, firstRow, i, key, possibleTranslation))
+                        {
                             value = possibleTranslation;
+                        }
                     }
+
                     AddLocalizationToResults(translations, key, value);
                 }
             }
@@ -697,6 +723,7 @@ namespace IllusionMods
         {
             return IsValidLocalization(origString, possibleTranslation);
         }
+
         protected virtual IEnumerable<KeyValuePair<string, string>> DumpListBytes(TextAsset asset,
             AssetDumpColumnInfo assetDumpColumnInfo)
         {

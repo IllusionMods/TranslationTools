@@ -5,7 +5,7 @@ using System.Text;
 
 namespace IllusionMods
 {
-    partial class TextDump
+    public partial class TextDump
     {
         private static Version _gameVersion;
         /// <summary>
