@@ -32,6 +32,16 @@ IF EXIST %POSTBUILD_CONFIG% CALL "%POSTBUILD_CONFIG%"
 
 set TARGET_SUBDIR=BepInEx\plugins\TranslationTools
 
+IF "%2" == "ALL" (
+    call %~dpnx0 "%1" HS
+    call %~dpnx0 "%1" PH
+    call %~dpnx0 "%1" KK
+    call %~dpnx0 "%1" EC
+    call %~dpnx0 "%1" AI
+    call %~dpnx0 "%1" HS2
+    goto END
+)
+
 IF "%2" == "KK" (
     IF NOT "%KK_DIR%" == "" (
         set TARGET=%KK_DIR%\%TARGET_SUBDIR%
