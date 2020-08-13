@@ -70,12 +70,20 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HS2_TextResourceRedirector"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckText", "src\CheckText\CheckText.csproj", "{1E950853-C0A8-47AB-B575-392E6DD69626}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BenchmarkTranslation", "BenchmarkTranslation", "{1E158F92-1E52-4726-9717-353B01368297}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BenchmarkTranslation", "src\BenchmarkTranslation\BenchmarkTranslation.csproj", "{2140252A-14AD-409E-BD1A-8BC2715D82CE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TranslationStyleCheck", "src\TranslationStyleCheck\TranslationStyleCheck.csproj", "{5903F564-562F-4F41-B5BD-FAE1F8F0FF11}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{0c56dbc3-848c-42fd-b4f2-ab31863261f8}*SharedItemsImports = 4
 		src\Shared.Plugin\Shared.Plugin.projitems*{0c56dbc3-848c-42fd-b4f2-ab31863261f8}*SharedItemsImports = 4
 		src\Shared\Shared.projitems*{0c56dbc3-848c-42fd-b4f2-ab31863261f8}*SharedItemsImports = 4
 		src\Shared\Shared.projitems*{1e950853-c0a8-47ab-b575-392e6dd69626}*SharedItemsImports = 4
+		src\Shared.Plugin\Shared.Plugin.projitems*{2140252a-14ad-409e-bd1a-8bc2715d82ce}*SharedItemsImports = 4
+		src\Shared\Shared.projitems*{2140252a-14ad-409e-bd1a-8bc2715d82ce}*SharedItemsImports = 4
 		src\Core_TextDump\Core_TextDump.projitems*{29f5e391-4979-49d2-9df2-11bdc7d7252e}*SharedItemsImports = 4
 		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{29f5e391-4979-49d2-9df2-11bdc7d7252e}*SharedItemsImports = 4
 		src\KK_Common_TextDump\KK_Common_TextDump.projitems*{29f5e391-4979-49d2-9df2-11bdc7d7252e}*SharedItemsImports = 4
@@ -202,6 +210,14 @@ Global
 		{1E950853-C0A8-47AB-B575-392E6DD69626}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E950853-C0A8-47AB-B575-392E6DD69626}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1E950853-C0A8-47AB-B575-392E6DD69626}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2140252A-14AD-409E-BD1A-8BC2715D82CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2140252A-14AD-409E-BD1A-8BC2715D82CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2140252A-14AD-409E-BD1A-8BC2715D82CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2140252A-14AD-409E-BD1A-8BC2715D82CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5903F564-562F-4F41-B5BD-FAE1F8F0FF11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5903F564-562F-4F41-B5BD-FAE1F8F0FF11}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5903F564-562F-4F41-B5BD-FAE1F8F0FF11}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5903F564-562F-4F41-B5BD-FAE1F8F0FF11}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -230,6 +246,8 @@ Global
 		{CAE304C7-9423-4997-BC94-80D9EEF1C8E7} = {BBFC4A4F-16DE-4182-8BE1-D364D0F165A2}
 		{B3D97C86-E061-4A67-964A-CEFDA2E2AB21} = {57C76B28-11D8-4B59-AED0-AA3935FD7F93}
 		{1E950853-C0A8-47AB-B575-392E6DD69626} = {AF74661D-12F5-440F-980A-11AC18974B48}
+		{2140252A-14AD-409E-BD1A-8BC2715D82CE} = {1E158F92-1E52-4726-9717-353B01368297}
+		{5903F564-562F-4F41-B5BD-FAE1F8F0FF11} = {AF74661D-12F5-440F-980A-11AC18974B48}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D0F79985-4CB7-46CB-BEC2-FF89C476ED20}
