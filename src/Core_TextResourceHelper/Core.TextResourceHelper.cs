@@ -197,7 +197,8 @@ namespace IllusionMods
             {
                 try
                 {
-                    return Helpers.JoinStrings(ChoiceDelimiter, translation,
+                    return Helpers.JoinStrings(ChoiceDelimiter, 
+                        translation.Replace(ChoiceDelimiter[0], OptionSafeComma),
                         param.Args[i].Split(ChoiceDelimiter.ToCharArray(), 2)[1]);
                 }
                 catch
