@@ -5,10 +5,10 @@ Translation tools for Illusion games
 
 ### TextResourceRedirector
 
-- **v1.2.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r4/AI_TextResourceRedirector.v1.2.1.zip)** - For AI Girl
+- **v1.4.2 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r12/AI_TextResourceRedirector.v1.4.2.zip)** - For AI Girl
 - **v1.1.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r2/HS_TextResourceRedirector.v1.1.1.zip)** - For Honey Select
-- **v1.3 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r7/HS2_TextResourceRedirector.v1.3.zip)** - For Honey Select 2
-- **v1.2.4 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r6/KK_TextResourceRedirector.v1.2.4.zip)** - For Koikatsu
+- **v1.4.2 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r12/HS2_TextResourceRedirector.v1.4.2.zip)** - For Honey Select 2
+- **v1.4.2 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r12/KK_TextResourceRedirector.v1.4.2.zip)** - For Koikatsu
 
 
 
@@ -16,12 +16,12 @@ Allows translations to override individual assets. Required for some translation
 
 ### TextDump
 
-- **v1.2.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r4/AI_TextDump.v1.2.1.zip)** - For AI Girl
-- **v1.2.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r4/AI_INT_TextDump.v1.2.1.zip)** - For AI Shoujo (Steam)
+- **v1.4.2 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r11/AI_TextDump.v1.4.2.zip)** - For AI Girl
+- **v1.4.2 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r11/AI_INT_TextDump.v1.4.2.zip)** - For AI Shoujo (Steam)
 - **v1.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r2/HS_TextDump.v1.1.zip)** - For Honey Select
-- **v1.3 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r7/HS2_TextDump.v1.3.zip)** - For Honey Select 2
-- **v1.2.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r4/KK_TextDump.v1.2.1.zip)** - For Koikatsu
-- **v1.2.1 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r4/KKP_TextDump.v1.2.1.zip)** - For Koikatsu Party
+- **v1.4.2 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r11/HS2_TextDump.v1.4.2.zip)** - For Honey Select 2
+- **v1.4.2 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r11/KK_TextDump.v1.4.2.zip)** - For Koikatsu
+- **v1.4.2 - [Download](https://github.com/IllusionMods/TranslationTools/releases/download/r11/KKP_TextDump.v1.4.2.zip)** - For Koikatsu Party
 
 
 Dumps untranslated text in to .txt files so that the lines can be used by translators working on the translation projects. Normally only executes under studio on initial load. Versions for localized games run under the main game and require multiple dump stages. Check the console and/or log file for specifics.
