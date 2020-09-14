@@ -431,9 +431,6 @@ namespace IllusionMods
                             throw;
                         }
                     }
-
-                    Logger.LogFatal(
-                        $"DEBUG MESSAGE: GetCustomListDumpers: {asset.name} {colToDump} => {results.Count}");
                     return results;
                 }
 
@@ -452,7 +449,6 @@ namespace IllusionMods
                     var dumper = BuildDumper(asset, assetName);
                     foreach (var filePath in BuildCustomListDumperAssetFilePaths(assetBundleName, assetName))
                     {
-                        Logger.LogError($"{assetBundleName} {assetName} -> {filePath}");
                         yield return new StringTranslationDumper(filePath, dumper);
                     }
                 }
@@ -465,7 +461,6 @@ namespace IllusionMods
                     var dumper = BuildDumper(asset, assetName);
                     foreach (var filePath in BuildCustomListDumperAssetFilePaths(assetBundleName, assetName))
                     {
-                        Logger.LogError($"{assetBundleName} {assetName} -> {filePath}");
                         yield return new StringTranslationDumper(filePath, dumper);
                     }
                 }

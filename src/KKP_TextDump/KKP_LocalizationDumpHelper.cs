@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using ActionGame.Point;
-using BepInEx.Harmony;
 using HarmonyLib;
 using IllusionMods.Shared;
 using Localize.Translate;
 using Manager;
 using UnityEngine;
+using UnityEngine.UI;
 using static IllusionMods.TextResourceHelper.Helpers;
-using Object = UnityEngine.Object;
 
 namespace IllusionMods
 {
@@ -125,36 +124,29 @@ namespace IllusionMods
             Harmony.CreateAndPatchAll(typeof(KKP_LocalizationDumpHelper));
         }
 
-        private static bool IsSupportedForEnumeration(Type type)
+        public static List<SaveData.Heroine> LoadHeroines(string assetBundlePath)
         {
-            return type != null &&
-                   SupportedEnumerationTypes.Any(supported => type == supported || type.IsSubclassOf(supported));
-        }
-
-        private static bool IsSupportedForEnumeration(Component component)
-        {
-            return IsSupportedForEnumeration(component.GetType());
-        }
-
-        private static string GetTextFromSupportedComponent(Component component)
-        {
-            if (component == null) return string.Empty;
-
-            var componentType = component.GetType();
-            var fieldInfo = AccessTools.Property(componentType, "text");
-            if (fieldInfo != null)
+            var heroines = new Dictionary<int, TextAsset>();
+            foreach (var assetBundleName in GetAssetBundleNameListFromPath(assetBundlePath))
             {
-                return fieldInfo.GetValue(component, new object[0]) as string;
+                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName).Where(a => a.EndsWith(".bytes")))
+                {
+                    var textAsset = ManualLoadAsset<TextAsset>(assetBundleName, assetName, null);
+                    if (textAsset == null) continue;
+
+                    if (int.TryParse(textAsset.name.Replace("c", string.Empty), out var id))
+                    {
+                        heroines[id] = textAsset;
+                    }
+                }
             }
 
-            var propInfo = AccessTools.Property(componentType, "text");
-            if (propInfo != null)
+            return heroines.Select(h =>
             {
-                return propInfo.GetValue(component, new object[0]) as string;
-            }
-
-            TextDump.Logger.LogWarning($"Unable to access 'text' property for {component}");
-            return string.Empty;
+                var heroine = new SaveData.Heroine(false);
+                Game.LoadFromTextAsset(h.Key, heroine, h.Value);
+                return heroine;
+            }).ToList();
         }
 
         protected static IEnumerable<KeyValuePair<GameObject, Component>> EnumerateTextComponents(GameObject gameObject,
@@ -206,140 +198,14 @@ namespace IllusionMods
             }
         }
 
-        private static IEnumerable<KeyValuePair<GameObject, Component>> EnumerateTextComponents(GameObject gameObject,
-            HashSet<object> handled = null, List<UIBinder> binders = null)
-        {
-            handled = handled ?? new HashSet<object>();
-
-            if (handled.Contains(gameObject)) yield break;
-            handled.Add(gameObject);
-
-            if (binders != null)
-            {
-                foreach (var binder in gameObject.GetComponents<UIBinder>())
-                {
-                    if (!binders.Contains(binder))
-                    {
-                        binders.Add(binder);
-                    }
-                }
-            }
-
-            foreach (var component in gameObject.GetComponents<Component>())
-            {
-                //Logger.LogInfo($"EnumerateTextComponents: {gameObject} GetComponents (text) {text}");
-                if (IsSupportedForEnumeration(component))
-                {
-                    yield return new KeyValuePair<GameObject, Component>(gameObject, component);
-                }
-
-                foreach (var result in EnumerateTextComponents(gameObject, component, handled, binders))
-                {
-                    yield return result;
-                }
-            }
-
-            foreach (var childText in GetChildrenFromGameObject(gameObject)
-                .SelectMany(child => EnumerateTextComponents(child, handled, binders)))
-            {
-                yield return childText;
-            }
-        }
-
-        [HarmonyPrefix]
-        [HarmonyPatch(typeof(UIBinder), "Load")]
-        private static void UIBinderLoadPrefix(UIBinder __instance, out TranslationHookState __state)
-        {
-            var gameObject = __instance.gameObject;
-            var path = CombinePaths(gameObject.scene.path.Replace(".unity", ""), gameObject.name);
-            TextDump.Logger.LogInfo($"[TextDump] Collecting UI info for {path}");
-            var items = EnumerateTextComponents(gameObject).ToList();
-            var components = items.Select(t => t.Value).ToList();
-            var scopes = items.Select(t =>
-            {
-                try
-                {
-                    return t.Key.scene.buildIndex;
-                }
-                catch
-                {
-                    return -1;
-                }
-            }).ToList();
-
-
-
-            __state = new TranslationHookState(path);
-
-            __state.Context.Add(components);
-            __state.Context.Add(scopes);
-            var origValues = components.Select(GetTextFromSupportedComponent).ToList();
-            __state.Context.Add(origValues);
-            var origResizers = components.Select(GetTextResizerFromComponent).ToList();
-            __state.Context.Add(origResizers);
-        }
-
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(UIBinder), "Load")]
-        private static void UIBinderLoadPostfix(UIBinder __instance, TranslationHookState __state)
-        {
-            var gameObject = __instance.gameObject;
-            var path = __state.Path;
-
-            var components = (List<Component>) __state.Context[0];
-            var scopes = (List<int>) __state.Context[1];
-            var origValues = (List<string>) __state.Context[2];
-            var origResizers = (List<XuaResizerResult>) __state.Context[3];
-
-            var items = EnumerateTextComponents(gameObject).ToList();
-            if (items.Count != components.Count)
-            {
-                TextDump.Logger.LogWarning(
-                    $"UIBinder {gameObject}: Component count has changed, may not be able to get all translations");
-            }
-            else
-            {
-                components = items.Select(t => t.Value).ToList();
-            }
-
-            var results = new TranslationDictionary();
-            var resizers = new ResizerCollection();
-
-            for (var i = 0; i < components.Count; i++)
-            {
-                var key = origValues[i];
-                var val = GetTextFromSupportedComponent(components[i]);
-
-                var scope = scopes[i];
-                _instance.AddLocalizationToResults(results.GetScope(scope), key, val);
-
-                
-                var currentResizer = GetTextResizerFromComponent(components[i]);
-
-                var resizePath = components[i].GetXuaResizerPath();
-                if (!string.IsNullOrEmpty(resizePath))
-                {
-                    var delta = currentResizer.Delta(origResizers[i]);
-                    var scopedResizers = resizers.GetScope(scope);
-                    scopedResizers[resizePath] = delta.GetDirectives().ToList();
-                }
-                
-            }
-
-            var outputName = CombinePaths("Bind/UI", path);
-            HookedTextLocalizationGenerators.Add(new StringTranslationDumper(outputName, () => results));
-            HookedTextLocalizationGenerators.Add(new ResizerDumper(outputName, () => resizers));
-        }
-
         protected static XuaResizerResult GetTextResizerFromComponent(Component component)
         {
             var result = new XuaResizerResult();
             var componentType = component.GetType();
             Type matchType;
-            TextDump.Logger.LogFatal($"GetTextResizerFromComponent: {componentType}");
-            if (component is UnityEngine.UI.Text textComponent)
+
+            if (component is Text textComponent)
             {
-                TextDump.Logger.LogFatal($"GetTextResizerFromComponent: {component}: is Text");
                 result.AutoResize = textComponent.resizeTextForBestFit;
                 result.FontSize = textComponent.fontSize;
                 result.LineSpacing = (decimal) textComponent.lineSpacing;
@@ -351,7 +217,6 @@ namespace IllusionMods
                     : XuaResizerResult.VerticalOverflowValue.Truncate;
             }
 
-
             // UILabel
             /*
             if (SupportedEnumerationTypeMap.TryGetValue("UILabel", out var uiLabelType) &&
@@ -362,13 +227,13 @@ namespace IllusionMods
             }
             */
 
-            else if ((SupportedEnumerationTypeMap.TryGetValue("TMPro.TextMeshPro", out matchType) &&
-                      matchType.IsAssignableFrom(componentType)) ||
-                     (SupportedEnumerationTypeMap.TryGetValue("TMPro.TextMeshProUGUI", out matchType) &&
-                      matchType.IsAssignableFrom(componentType)))
+            else if (SupportedEnumerationTypeMap.TryGetValue("TMPro.TextMeshPro", out matchType) &&
+                     matchType.IsAssignableFrom(componentType) ||
+                     SupportedEnumerationTypeMap.TryGetValue("TMPro.TextMeshProUGUI", out matchType) &&
+                     matchType.IsAssignableFrom(componentType))
             {
-                TextDump.Logger.LogFatal($"GetTextResizerFromComponent: {component}/{matchType}: is TMPro");
                 var nullArgs = new object[0];
+
                 T GetComponentPropertyValue<T>(string name)
                 {
                     var propInfo = AccessTools.Property(matchType, name);
@@ -388,7 +253,7 @@ namespace IllusionMods
 
                 result.AutoResize = GetComponentPropertyValue<bool?>("enableAutoSizing");
                 result.FontSize = (decimal?) GetComponentPropertyValue<float?>("fontSize");
-                result.LineSpacing = (decimal?)GetComponentPropertyValue<float?>("lineSpacing");
+                result.LineSpacing = (decimal?) GetComponentPropertyValue<float?>("lineSpacing");
 
                 /*
                 yield return new KeyValuePair<string, string>(path,
@@ -397,8 +262,6 @@ namespace IllusionMods
                     $"UGUI_VerticalOverflow({textComponent.verticalOverflow.ToString()})");
                 */
             }
-
-            TextDump.Logger.LogFatal($"GetTextResizerFromComponent: {component}: {result}");
             return result;
         }
 
@@ -478,6 +341,161 @@ namespace IllusionMods
             return Localize.Translate.Manager.GetPersonalityName(voiceInfo.No, false);
         }
 
+        private static bool IsSupportedForEnumeration(Type type)
+        {
+            return type != null &&
+                   SupportedEnumerationTypes.Any(supported => type == supported || type.IsSubclassOf(supported));
+        }
+
+        private static bool IsSupportedForEnumeration(Component component)
+        {
+            return IsSupportedForEnumeration(component.GetType());
+        }
+
+        private static string GetTextFromSupportedComponent(Component component)
+        {
+            if (component == null) return string.Empty;
+
+            var componentType = component.GetType();
+            var fieldInfo = AccessTools.Property(componentType, "text");
+            if (fieldInfo != null)
+            {
+                return fieldInfo.GetValue(component, new object[0]) as string;
+            }
+
+            var propInfo = AccessTools.Property(componentType, "text");
+            if (propInfo != null)
+            {
+                return propInfo.GetValue(component, new object[0]) as string;
+            }
+
+            TextDump.Logger.LogWarning($"Unable to access 'text' property for {component}");
+            return string.Empty;
+        }
+
+        private static IEnumerable<KeyValuePair<GameObject, Component>> EnumerateTextComponents(GameObject gameObject,
+            HashSet<object> handled = null, List<UIBinder> binders = null)
+        {
+            handled = handled ?? new HashSet<object>();
+
+            if (handled.Contains(gameObject)) yield break;
+            handled.Add(gameObject);
+
+            if (binders != null)
+            {
+                foreach (var binder in gameObject.GetComponents<UIBinder>())
+                {
+                    if (!binders.Contains(binder))
+                    {
+                        binders.Add(binder);
+                    }
+                }
+            }
+
+            foreach (var component in gameObject.GetComponents<Component>())
+            {
+                //Logger.LogInfo($"EnumerateTextComponents: {gameObject} GetComponents (text) {text}");
+                if (IsSupportedForEnumeration(component))
+                {
+                    yield return new KeyValuePair<GameObject, Component>(gameObject, component);
+                }
+
+                foreach (var result in EnumerateTextComponents(gameObject, component, handled, binders))
+                {
+                    yield return result;
+                }
+            }
+
+            foreach (var childText in GetChildrenFromGameObject(gameObject)
+                .SelectMany(child => EnumerateTextComponents(child, handled, binders)))
+            {
+                yield return childText;
+            }
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(UIBinder), "Load")]
+        private static void UIBinderLoadPrefix(UIBinder __instance, out TranslationHookState __state)
+        {
+            var gameObject = __instance.gameObject;
+            var path = CombinePaths(gameObject.scene.path.Replace(".unity", ""), gameObject.name);
+            TextDump.Logger.LogInfo($"[TextDump] Collecting UI info for {path}");
+            var items = EnumerateTextComponents(gameObject).ToList();
+            var components = items.Select(t => t.Value).ToList();
+            var scopes = items.Select(t =>
+            {
+                try
+                {
+                    return t.Key.scene.buildIndex;
+                }
+                catch
+                {
+                    return -1;
+                }
+            }).ToList();
+
+
+            __state = new TranslationHookState(path);
+
+            __state.Context.Add(components);
+            __state.Context.Add(scopes);
+            var origValues = components.Select(GetTextFromSupportedComponent).ToList();
+            __state.Context.Add(origValues);
+            var origResizers = components.Select(GetTextResizerFromComponent).ToList();
+            __state.Context.Add(origResizers);
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(UIBinder), "Load")]
+        private static void UIBinderLoadPostfix(UIBinder __instance, TranslationHookState __state)
+        {
+            var gameObject = __instance.gameObject;
+            var path = __state.Path;
+
+            var components = (List<Component>) __state.Context[0];
+            var scopes = (List<int>) __state.Context[1];
+            var origValues = (List<string>) __state.Context[2];
+            var origResizers = (List<XuaResizerResult>) __state.Context[3];
+
+            var items = EnumerateTextComponents(gameObject).ToList();
+            if (items.Count != components.Count)
+            {
+                TextDump.Logger.LogWarning(
+                    $"UIBinder {gameObject}: Component count has changed, may not be able to get all translations");
+            }
+            else
+            {
+                components = items.Select(t => t.Value).ToList();
+            }
+
+            var results = new TranslationDictionary();
+            var resizers = new ResizerCollection();
+
+            for (var i = 0; i < components.Count; i++)
+            {
+                var key = origValues[i];
+                var val = GetTextFromSupportedComponent(components[i]);
+
+                var scope = scopes[i];
+                _instance.AddLocalizationToResults(results.GetScope(scope), key, val);
+
+
+                var currentResizer = GetTextResizerFromComponent(components[i]);
+
+                var resizePath = components[i].GetXuaResizerPath();
+                if (!string.IsNullOrEmpty(resizePath))
+                {
+                    var delta = currentResizer.Delta(origResizers[i]);
+                    var scopedResizers = resizers.GetScope(scope);
+                    scopedResizers[resizePath] = delta.GetDirectives().ToList();
+                }
+            }
+
+            var outputName = CombinePaths("Bind/UI", path);
+            HookedTextLocalizationGenerators.Add(new StringTranslationDumper(outputName, () => results));
+            HookedTextLocalizationGenerators.Add(new ResizerDumper(outputName, () => resizers));
+        }
+
         private Dictionary<string, string> CollectCycleLocalizaitons()
         {
             var results = new Dictionary<string, string>();
@@ -533,31 +551,6 @@ namespace IllusionMods
             return results;
         }
 
-        public static List<SaveData.Heroine> LoadHeroines(string assetBundlePath)
-        {
-            var heroines = new Dictionary<int, TextAsset>();
-            foreach (var assetBundleName in GetAssetBundleNameListFromPath(assetBundlePath))
-            {
-                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName).Where(a => a.EndsWith(".bytes")))
-                {
-                    var textAsset = ManualLoadAsset<TextAsset>(assetBundleName, assetName, null);
-                    if (textAsset == null) continue;
-
-                    if (int.TryParse(textAsset.name.Replace("c", string.Empty), out var id))
-                    {
-                        heroines[id] = textAsset;
-                    }
-                }
-            }
-
-            return heroines.Select(h =>
-            {
-                var heroine = new SaveData.Heroine(false);
-                Game.LoadFromTextAsset(h.Key, heroine, h.Value);
-                return heroine;
-            }).ToList();
-        }
-
         private IDictionary<string, string> CollectHeroineLocalizations()
         {
             var results = new OrderedDictionary<string, string>();
@@ -576,14 +569,14 @@ namespace IllusionMods
                 var translatedFirst = translatedHeroine?.param.chara.firstname ?? string.Empty;
                 var translatedLast = translatedHeroine?.param.chara.lastname ?? string.Empty;
                 AddLocalizationToResults(results, baseHeroine.param.chara.firstname,
-                   translatedFirst);
+                    translatedFirst);
                 AddLocalizationToResults(results, baseHeroine.param.chara.lastname,
-                   translatedLast);
+                    translatedLast);
                 AddLocalizationToResults(results, baseHeroine.param.chara.nickname,
                     translatedHeroine?.param.chara.nickname ?? string.Empty);
 
                 // Add names in both orders
-                AddLocalizationToResults(results, 
+                AddLocalizationToResults(results,
                     JoinStrings(" ", baseHeroine.param.chara.firstname, baseHeroine.param.chara.lastname).Trim(),
                     JoinStrings(" ", translatedFirst, translatedLast).Trim());
                 AddLocalizationToResults(results,
@@ -637,7 +630,10 @@ namespace IllusionMods
 
 
             if (!(propInfo?.GetValue(null, new object[0]) is Dictionary<string, List<ScenarioCharaName.Param>>
-                scenarioReplaceNameData)) return results;
+                scenarioReplaceNameData))
+            {
+                return results;
+            }
 
             foreach (var name in scenarioReplaceNameData.Values.SelectMany(nameList => nameList))
             {

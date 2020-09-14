@@ -146,7 +146,7 @@ namespace IllusionMods
             Logger.LogDebug($"CheckReadyToDump: waiting for Manager.GameSystem");
             while (Singleton<Manager.GameSystem>.Instance == null) yield return new WaitForSeconds(1);
 
-            Logger.LogFatal($"Language = {Singleton<Manager.GameSystem>.Instance.language}");
+            Logger.LogDebug($"Language = {Singleton<Manager.GameSystem>.Instance.language}");
 
             
             foreach (var pth in AssetPathsToWaitOn)
