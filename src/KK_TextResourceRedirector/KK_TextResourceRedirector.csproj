@@ -84,6 +84,7 @@
     <Compile Include="KK.EventInfoHandler.cs" />
     <Compile Include="KK.TextResourceRedirector.cs" />
     <Compile Include="KK.NickNameHandler.cs" />
+    <Compile Include="KK.MakerCustomDataHandler.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -9,7 +9,7 @@ using XUnity.ResourceRedirector;
 namespace IllusionMods
 {
     public abstract class ParamAssetLoadedHandler<T, TParam> : RedirectorAssetLoadedHandlerBase<T> where T : Object
-    {
+    { 
         protected bool DisableEmptyCacheCheck { get; set; } = false;
         protected ParamAssetLoadedHandler(TextResourceRedirector plugin, bool allowTranslationRegistration = false) :
             base(plugin, allowTranslationRegistration: allowTranslationRegistration) { }
@@ -54,7 +54,7 @@ namespace IllusionMods
 
             var result = false;
 
-
+            var skipRegistration = !IsTranslationRegistrationAllowed(calculatedModificationPath);
             foreach (var entry in GetParams(asset))
             {
                 if (UpdateParam(calculatedModificationPath, cache, entry)) result = true;

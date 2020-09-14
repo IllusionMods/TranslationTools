@@ -76,6 +76,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BenchmarkTranslation", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TranslationStyleCheck", "src\TranslationStyleCheck\TranslationStyleCheck.csproj", "{5903F564-562F-4F41-B5BD-FAE1F8F0FF11}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RandomNameProvider", "RandomNameProvider", "{731BC5B0-3B4D-46CD-9C26-5CE6041185EB}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Core_RandomNameProvider", "src\Core_RandomNameProvider\Core_RandomNameProvider.shproj", "{C29DA5E2-ABA2-43E8-B9E4-75E1F6898DE9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KK_RandomNameProvider", "src\KK_RandomNameProvider\KK_RandomNameProvider.csproj", "{9D707EF3-C450-4640-8626-74DD202B3067}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{0c56dbc3-848c-42fd-b4f2-ab31863261f8}*SharedItemsImports = 4
@@ -124,6 +130,9 @@ Global
 		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{9b93ab99-a9a9-4d91-a419-9c124e79e3ba}*SharedItemsImports = 4
 		src\Shared.Plugin\Shared.Plugin.projitems*{9b93ab99-a9a9-4d91-a419-9c124e79e3ba}*SharedItemsImports = 4
 		src\Shared\Shared.projitems*{9b93ab99-a9a9-4d91-a419-9c124e79e3ba}*SharedItemsImports = 4
+		src\Core_RandomNameProvider\Core_RandomNameProvider.projitems*{9d707ef3-c450-4640-8626-74dd202b3067}*SharedItemsImports = 4
+		src\Shared.Plugin\Shared.Plugin.projitems*{9d707ef3-c450-4640-8626-74dd202b3067}*SharedItemsImports = 4
+		src\Shared\Shared.projitems*{9d707ef3-c450-4640-8626-74dd202b3067}*SharedItemsImports = 4
 		src\Shared.Plugin\Shared.Plugin.projitems*{a1be9306-265d-45f8-bc45-a505fc0e2150}*SharedItemsImports = 13
 		src\AI_HS2_TextResourceHelper\AI_HS2_TextResourceHelper.projitems*{b3d97c86-e061-4a67-964a-cefda2e2ab21}*SharedItemsImports = 4
 		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{b3d97c86-e061-4a67-964a-cefda2e2ab21}*SharedItemsImports = 4
@@ -136,6 +145,7 @@ Global
 		src\Core_TextResourceHelper\Core_TextResourceHelper.projitems*{b697727b-9f9c-44b0-baa4-de9cbf184ea5}*SharedItemsImports = 4
 		src\Core_TextResourceRedirector\Core_TextResourceRedirector.projitems*{b697727b-9f9c-44b0-baa4-de9cbf184ea5}*SharedItemsImports = 4
 		src\Shared\Shared.projitems*{b697727b-9f9c-44b0-baa4-de9cbf184ea5}*SharedItemsImports = 4
+		src\Core_RandomNameProvider\Core_RandomNameProvider.projitems*{c29da5e2-aba2-43e8-b9e4-75e1f6898de9}*SharedItemsImports = 13
 		src\Shared\Shared.projitems*{c65ae0bf-9d71-4420-8fa0-81f77ce303a5}*SharedItemsImports = 4
 		src\HS2_TextResourceHelper\HS2_TextResourceHelper.projitems*{cae304c7-9423-4997-bc94-80d9eef1c8e7}*SharedItemsImports = 13
 		src\Core_TextResourceRedirector\Core_TextResourceRedirector.projitems*{dcfde35b-c56b-48aa-8244-248ef1c805c3}*SharedItemsImports = 13
@@ -218,6 +228,10 @@ Global
 		{5903F564-562F-4F41-B5BD-FAE1F8F0FF11}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5903F564-562F-4F41-B5BD-FAE1F8F0FF11}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5903F564-562F-4F41-B5BD-FAE1F8F0FF11}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9D707EF3-C450-4640-8626-74DD202B3067}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D707EF3-C450-4640-8626-74DD202B3067}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D707EF3-C450-4640-8626-74DD202B3067}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D707EF3-C450-4640-8626-74DD202B3067}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -248,6 +262,8 @@ Global
 		{1E950853-C0A8-47AB-B575-392E6DD69626} = {AF74661D-12F5-440F-980A-11AC18974B48}
 		{2140252A-14AD-409E-BD1A-8BC2715D82CE} = {1E158F92-1E52-4726-9717-353B01368297}
 		{5903F564-562F-4F41-B5BD-FAE1F8F0FF11} = {AF74661D-12F5-440F-980A-11AC18974B48}
+		{C29DA5E2-ABA2-43E8-B9E4-75E1F6898DE9} = {731BC5B0-3B4D-46CD-9C26-5CE6041185EB}
+		{9D707EF3-C450-4640-8626-74DD202B3067} = {731BC5B0-3B4D-46CD-9C26-5CE6041185EB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D0F79985-4CB7-46CB-BEC2-FF89C476ED20}

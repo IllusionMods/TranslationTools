@@ -46,6 +46,7 @@ namespace IllusionMods
 
             AssetDumpGenerators = new List<TranslationGenerator>
             {
+                GetRandomNameListDumpers,
                 GetCommunicationTextDumpers,
                 GetListTextDumpers,
                 GetScenarioTextDumpers,
@@ -76,6 +77,7 @@ namespace IllusionMods
                 TryDumpTextAsset
             };
         }
+
 
         protected List<TryDumpListEntry> ListEntryDumpers { get; }
 
@@ -142,6 +144,88 @@ namespace IllusionMods
 
         }
         */
+
+        private IEnumerable<ITranslationDumper> GetRandomNameListDumpers()
+        {
+            foreach (var randomNameRoot in ResourceHelper.GetRandomNameDirs())
+            {
+                foreach (var assetBundleName in GetAssetBundleNameListFromPath(randomNameRoot, true))
+                {
+                    foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
+                    {
+                        if (!ResourceHelper.IsRandomNameListAsset(assetName)) continue;
+                        var filePath = BuildAssetFilePath(assetBundleName, assetName);
+                        yield return new StringTranslationDumper(filePath,
+                            MakeRandomNameListDumper(assetBundleName, assetName));
+                    }
+                }
+            }
+        }
+
+        private TranslationDumper<IDictionary<string, string>>.TranslationCollector MakeRandomNameListDumper(string assetBundleName, string assetName)
+        {
+            IDictionary<string, string> AssetDumper()
+            {
+                var translationsByColumn = new Dictionary<int, OrderedDictionary<string, string>>();
+                var nameColumns = new OrderedDictionary<string, HashSet<int>>();
+                var translations = new OrderedDictionary<string, string>();
+
+                var asset = ManualLoadAsset<ExcelData>(assetBundleName, assetName, "abdata");
+                if (asset is null) return translations;
+
+                // first row all numbers, second row is headers
+                for (var rowIndex = 2; rowIndex < asset.list.Count; rowIndex++)
+                {
+                    var row = asset.GetRow(rowIndex);
+                    for (var cellIndex = 1; cellIndex < row.Count; cellIndex++)
+                    {
+                        var entry = row[cellIndex];
+                        if (string.IsNullOrEmpty(entry) || entry == "0") continue;
+
+                        if (!translationsByColumn.TryGetValue(cellIndex, out var columnTranslations))
+                        {
+                            translationsByColumn[cellIndex] =
+                                columnTranslations = new OrderedDictionary<string, string>();
+                        }
+                        AddLocalizationToResults(columnTranslations, entry, string.Empty);
+
+                        var key = entry.Trim();
+
+                        if (!nameColumns.TryGetValue(key, out var cols))
+                        {
+                            nameColumns[key] = cols = new HashSet<int>();
+                        }
+                        cols.Add(cellIndex);
+                    }
+                }
+
+                
+                foreach (var colNum in translationsByColumn.Keys.OrderBy(n => n))
+                {
+                    translations.Add($"// BEGIN COLUMN {colNum}", " --- ");
+                    foreach (var transEntry in translationsByColumn[colNum])
+                    {
+                        AddLocalizationToResults(translations, transEntry.Key, transEntry.Value);
+                        if (nameColumns[transEntry.Key].Count < 2) continue;
+
+                        // same name can be translated differently based on gender or given/family name
+                        // so dump specialized keys for names found in more than one column
+
+                        var row = asset.list.Skip(2).Select(r => r.list)
+                            .FirstOrDefault(r => r.Count > colNum && r[colNum].Trim() == transEntry.Key);
+                        if (row == null) continue;
+                        foreach (var key in ResourceHelper.GetExcelRowTranslationKeys(asset.name, row, colNum))
+                        {
+                            AddLocalizationToResults(translations, key, transEntry.Value);
+                        }
+                    }
+                    translations.Add($"// END COLUMN {colNum}", " --- ");
+                }
+                return translations;
+            }
+            return AssetDumper;
+        }
+
 
         #region HText
 

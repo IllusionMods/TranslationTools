@@ -13,15 +13,17 @@ namespace IllusionMods
     public abstract class RedirectorAssetLoadedHandlerBase<T> : AssetLoadedHandlerBaseV2<T>, IRedirectorHandler<T>
         where T : Object
     {
-        private readonly bool _allowTranslationRegistration;
         private readonly Dictionary<string, string> _loadedReplacements = new Dictionary<string, string>();
+
+        private readonly HashSet<string> _excludedTranslationRegistrationPaths =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         protected RedirectorAssetLoadedHandlerBase(TextResourceRedirector plugin, string extraEnableHelp = null,
             bool allowTranslationRegistration = false)
         {
             CheckDirectory = true;
             Plugin = plugin;
-            _allowTranslationRegistration = allowTranslationRegistration;
+            AllowTranslationRegistration = allowTranslationRegistration;
             ConfigSectionName = GetType().Name;
 
             EnableHandler = this.ConfigEntryBind("Enabled", true, new ConfigDescription(
@@ -49,7 +51,7 @@ namespace IllusionMods
         protected static ManualLogSource Logger => TextResourceRedirector.Logger;
 
         public bool EnableRegisterAsTranslations =>
-            _allowTranslationRegistration && Enabled && (EnableRegisterAsTranslationsHandler?.Value ?? false);
+            AllowTranslationRegistration && Enabled && (EnableRegisterAsTranslationsHandler?.Value ?? false);
 
         protected TextResourceHelper TextResourceHelper => Plugin.TextResourceHelper;
 
@@ -59,9 +61,10 @@ namespace IllusionMods
 
         public string ConfigSectionName { get; }
 
-        protected void TrackReplacement(string orig, string translated)
+        protected virtual void TrackReplacement(string calculatedModificationPath, string orig, string translated)
         {
-            if (!_allowTranslationRegistration || orig == translated) return;
+            if (!IsTranslationRegistrationAllowed(calculatedModificationPath) || orig == translated) return;
+
             _loadedReplacements[orig] = translated;
             if (EnableRegisterAsTranslations) Plugin.AddTranslationToTextCache(orig, translated);
         }
@@ -77,7 +80,10 @@ namespace IllusionMods
 
         protected override string CalculateModificationFilePath(T asset, IAssetOrResourceLoadedContext context)
         {
-            return asset.DefaultCalculateModificationFilePath(context);
+            var path = asset.DefaultCalculateModificationFilePath(context);
+            if (AllowTranslationRegistration && TextResourceHelper.IsRandomNameListAsset(asset.name))
+                ExcludePathFromTranslationRegistration(path);
+            return path;
         }
 
         protected override bool ShouldHandleAsset(T asset, IAssetOrResourceLoadedContext context)
@@ -96,6 +102,24 @@ namespace IllusionMods
         {
             RegisterAsTranslations();
         }
+
+
 #endif
+        public bool AllowTranslationRegistration { get; }
+
+        public void ExcludePathFromTranslationRegistration(string path)
+        {
+            _excludedTranslationRegistrationPaths.Add(path);
+        }
+
+        public bool IsTranslationRegistrationAllowed(string path)
+        {
+            return AllowTranslationRegistration && !_excludedTranslationRegistrationPaths.Contains(path);
+        }
+
+        public bool IsRandomNameListAsset(string assetName)
+        {
+            return TextResourceHelper.IsRandomNameListAsset(assetName);
+        }
     }
 }

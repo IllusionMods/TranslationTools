@@ -15,6 +15,8 @@ namespace IllusionMods
         public MapInfoHandler MapInfoHandler { get; private set; }
         public EventInfoHandler EventInfoHandler { get; private set; }
 
+        public MakerCustomDataHandler MakerCustomDataHandler { get; private set; }
+
         public TextResourceRedirector()
         {
             TextResourceRedirectorAwake += ConfigureHandlersForKK;
@@ -30,6 +32,9 @@ namespace IllusionMods
             sender.NickNameHandler = new NickNameHandler(sender);
             sender.MapInfoHandler = new MapInfoHandler(sender);
             sender.EventInfoHandler = new EventInfoHandler(sender);
+            sender.MakerCustomDataHandler = new MakerCustomDataHandler(sender);
+
+
             // limit what handlers will attempt to handle to speed things up
             if (sender.ScenarioDataHandler is IPathListBoundHandler scenarioHandler)
             {

@@ -46,12 +46,13 @@ namespace IllusionMods
             if (!string.IsNullOrEmpty(prefix)) keys.Add($"{prefix}{field[0]}");
             keys.Add(field[0]);
 
+            var shouldTrack = !IsTranslationRegistrationAllowed(calculatedModificationPath);
             foreach (var key in keys)
             {
                 if (cache.TryGetTranslation(key, true, out var translated))
                 {
                     field[0] = translated;
-                    TrackReplacement(rawKey, translated);
+                    if (shouldTrack) TrackReplacement(calculatedModificationPath, rawKey, translated);
                     TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
                     return true;
                 }
@@ -62,7 +63,7 @@ namespace IllusionMods
                     if (Plugin.TextResourceHelper.IsValidStringArrayParamAssetTranslation(key, possible))
                     {
                         field[0] = possible;
-                        TrackReplacement(rawKey, possible);
+                        if (shouldTrack) TrackReplacement(calculatedModificationPath, rawKey, possible);
                         TranslationHelper.RegisterRedirectedResourceTextToPath(possible,
                             calculatedModificationPath + " (original asset)");
                         return true;

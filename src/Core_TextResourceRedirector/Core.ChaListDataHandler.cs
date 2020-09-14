@@ -21,11 +21,12 @@ namespace IllusionMods
             var idx = obj.lstKey.IndexOf("Name");
             if (idx == -1) return false;
             var result = false;
+            var shouldTrack = !IsTranslationRegistrationAllowed(calculatedModificationPath);
             foreach (var entry in obj.dictList.Values)
             {
                 if (entry.Count <= idx || !cache.TryGetTranslation(entry[idx], true, out var translation)) continue;
 
-                TrackReplacement(entry[idx], translation);
+                if (shouldTrack) TrackReplacement(calculatedModificationPath, entry[idx], translation);
                 TranslationHelper.RegisterRedirectedResourceTextToPath(translation, calculatedModificationPath);
                 result = true;
                 entry[idx] = translation;

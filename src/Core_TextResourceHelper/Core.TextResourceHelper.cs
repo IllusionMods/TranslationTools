@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using BepInEx.Logging;
+using IllusionMods.Shared;
 #if !HS
 using ADV;
 
@@ -42,7 +44,12 @@ namespace IllusionMods
         public virtual bool IsValidLocalization(string original, string localization)
         {
             if (original == null) throw new ArgumentNullException(nameof(original));
-            return !string.IsNullOrEmpty(localization) && localization != "0" && localization != original;
+            var trimmedOrig = original.Trim();
+            var trimmedLocal = localization?.Trim();
+            return !int.TryParse(trimmedOrig, out _) &&
+                   !string.IsNullOrEmpty(trimmedLocal) &&
+                   !string.Equals("0", trimmedLocal) &&
+                   !string.Equals(trimmedOrig, trimmedLocal);
         }
 
         public virtual IEnumerable<int> GetSupportedExcelColumns(string calculatedModificationPath, ExcelData asset)
@@ -78,8 +85,7 @@ namespace IllusionMods
                     }
                 }
 
-            }
-
+            } 
             return headerRow;
         }
 
@@ -101,7 +107,12 @@ namespace IllusionMods
         {
             if (row == null || row.Count <= i) yield break;
             var key = row[i];
-            if (IsValidExcelRowTranslationKey(key)) yield return key;
+            if (!IsValidExcelRowTranslationKey(key)) yield break;
+
+            // specialized match much come first
+            if (IsRandomNameListAsset(assetName)) yield return $"NAME[{i}]:{key}";
+
+            yield return key;
         }
 
         public virtual bool IsOptionDisplayItemAsset(string assetName)
@@ -116,6 +127,11 @@ namespace IllusionMods
             var parts = Helpers.SplitPath(Path.GetDirectoryName(path));
             return parts?.LastOrDefault()?.StartsWith("optiondisplayitems", StringComparison.OrdinalIgnoreCase) ??
                    false;
+        }
+
+        public virtual bool IsRandomNameListAsset(string assetName)
+        {
+            return false;
         }
 
 #if !HS
@@ -251,6 +267,11 @@ namespace IllusionMods
             yield return "adv/scenario";
         }
 
+        public virtual IEnumerable<string> GetRandomNameDirs()
+        {
+            yield break;
+        }
+
         public virtual IEnumerable<KeyValuePair<string, AssetDumpColumnInfo>> GetLists()
         {
             return new Dictionary<string, AssetDumpColumnInfo>();
@@ -259,7 +280,7 @@ namespace IllusionMods
         public virtual void AddLocalizationToResults(IDictionary<string, string> results, string origTxt,
             string transTxt)
         {
-            if (origTxt.IsNullOrWhiteSpace()) return;
+            if (origTxt.IsNullOrWhiteSpace() || double.TryParse(origTxt.Trim(), out _)) return;
             var localization = CleanLocalization(origTxt, transTxt);
             if (!results.ContainsKey(origTxt) || !string.IsNullOrEmpty(localization))
             {
@@ -320,5 +341,7 @@ namespace IllusionMods
         {
             return false;
         }
+
+
     }
 }

@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using ADV;
 using static IllusionMods.TextResourceHelper.Helpers;
 
@@ -7,7 +10,7 @@ namespace IllusionMods
 {
     public class KK_TextResourceHelper : TextResourceHelper
     {
-        private static readonly Dictionary<string, IEnumerable<string>> ExcelListPathColumnMapping =
+        private static readonly Dictionary<string, IEnumerable<string>> ExcelListPathColumnNameMapping =
             new Dictionary<string, IEnumerable<string>>
             {
                 {
@@ -64,7 +67,7 @@ namespace IllusionMods
 
         public override IEnumerable<int> GetSupportedExcelColumns(string calculatedModificationPath, ExcelData asset)
         {
-            foreach (var mapping in ExcelListPathColumnMapping)
+            foreach (var mapping in ExcelListPathColumnNameMapping)
             {
                 if (!calculatedModificationPath.Contains(mapping.Key)) continue;
 
@@ -72,7 +75,28 @@ namespace IllusionMods
                 return mapping.Value.Select(h => headers.IndexOf(h)).Where(i => i != -1).Distinct().OrderBy(x => x);
             }
 
-            return base.GetSupportedExcelColumns(calculatedModificationPath, asset);
+            var result = base.GetSupportedExcelColumns(calculatedModificationPath, asset).ToList();
+
+            if (result.Count == 0 && string.Equals(asset.name, "cus_pose", StringComparison.OrdinalIgnoreCase))
+            {
+                result.Add(3);
+            }
+
+            return result;
+        }
+
+        public override IEnumerable<string> GetRandomNameDirs()
+        {
+            yield return "list/random_name";
+            foreach (var dir in base.GetRandomNameDirs())
+            {
+                yield return dir;
+            }
+        }
+
+        public override bool IsRandomNameListAsset(string assetName)
+        {
+            return assetName.StartsWith("random_name", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

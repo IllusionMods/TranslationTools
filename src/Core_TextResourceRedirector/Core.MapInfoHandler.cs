@@ -59,6 +59,8 @@ namespace IllusionMods
 
             if (cache.IsEmpty) return true;
 
+            var shouldTrack = !IsTranslationRegistrationAllowed(calculatedModificationPath);
+
             // register with helper or dump without translating here
             foreach (var key in asset.param
                 .Select(entry => TextResourceHelper.GetSpecializedKey(entry, GetMapName(entry)))
@@ -69,7 +71,7 @@ namespace IllusionMods
                     if (string.IsNullOrEmpty(translated)) continue;
                     _mapLookup[key] = translated;
                     _reverseMapLookup[translated] = key;
-                    TrackReplacement(key, translated);
+                    if (shouldTrack) TrackReplacement(calculatedModificationPath, key, translated);
                     TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
                 }
                 else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&

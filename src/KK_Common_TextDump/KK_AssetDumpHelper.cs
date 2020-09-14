@@ -351,82 +351,140 @@ namespace IllusionMods
             }
         }
 
+        protected IEnumerable<ExcelData.Param> GetExcelEntries(ExcelData asset, string assetName)
+        {
+
+            if (!assetName.StartsWith("cus_")) return asset.list;
+
+            var maxCell = asset.MaxCell - 1;
+            return asset.Get(new ExcelData.Specify(0, 0),
+                new ExcelData.Specify(maxCell, asset.list[maxCell].list.Count - 1));
+        }
+
         protected IEnumerable<ITranslationDumper> GetCustomListDumpers()
         {
+            TranslationDumper<IDictionary<string,string>>.TranslationCollector BuildDumper(ExcelData asset, string assetName = null)
+            {
+                if (string.IsNullOrEmpty(assetName)) assetName = asset.name;
+
+                // cache results, only process once
+                OrderedDictionary<string, string> results = null;
+                IDictionary<string, string> Dumper()
+                {
+                    if (results != null) return results;
+                    
+                    results = new OrderedDictionary<string, string>();
+                    if (asset == null) return results;
+                    var firstRow = 0;
+                    var colToDump = -1;
+                    if (asset.list[0].list.Count == 0 || asset.list[0].list[0].IsNullOrEmpty())
+                    {
+                        var i = 0;
+                        while (i < asset.list.Count && asset.list[i].list.Count == 0) i++;
+                        if (i < asset.list.Count)
+                        {
+                            firstRow = i;
+                            var row = asset.GetRow(i);
+
+                            if (asset.name.Contains("_pose") && row.Count >= 7) colToDump = 3;
+                            else if (row.Count >= 9) colToDump = 2;
+                            else if (row.Count > 2) colToDump = 1;
+                        }
+
+                    }
+                    else
+                    {
+                        var header = ResourceHelper.GetExcelHeaderRow(asset, out firstRow);
+                        colToDump = header.IndexOf("デフォルト");
+                    }
+
+                    if (colToDump == -1) return results;
+
+                    var mapIdx = -1;
+
+                    if (asset.name.StartsWith("cus_eb_ptn")) mapIdx = 0;
+                    else if (asset.name.StartsWith("cus_e_ptn")) mapIdx = 1;
+                    else if (asset.name.StartsWith("cus_m_ptn")) mapIdx = 2;
+                    else if (asset.name.StartsWith("cus_eyeslook")) mapIdx = 3;
+                    else if (asset.name.StartsWith("cus_necklook")) mapIdx = 4;
+                    else if (asset.name.StartsWith("cus_pose")) mapIdx = 5;
+                    else if (asset.name.StartsWith("cus_filelist")) mapIdx = 6;
+                    else if (asset.name.StartsWith("cus_selectlist")) mapIdx = 7;
+
+
+                    // CUSTOM_LIST2 = 3
+                    var processor = GetTranslateManagerRowProcessor(3, mapIdx, colToDump);
+                    var items = GetExcelEntries(asset, assetName).ToList();
+                    for (var i = firstRow; i < items.Count; i++)
+                    {
+                        try
+                        {
+                            foreach (var entry in processor(items[i].list))
+                            {
+                                if (entry.Key.Contains("unity3d")) continue;
+                                AddLocalizationToResults(results, entry);
+                            }
+                        }
+                        catch (Exception err)
+                        {
+                            Logger.LogFatal($"GetCustomListDumpers: {err}\n{err.StackTrace}");
+                            throw;
+                        }
+                    }
+
+                    Logger.LogFatal(
+                        $"DEBUG MESSAGE: GetCustomListDumpers: {asset.name} {colToDump} => {results.Count}");
+                    return results;
+                }
+
+                return Dumper;
+            }
+
+
+
             var assetBundleNames = GetAssetBundleNameListFromPath("custom/", true);
             foreach (var assetBundleName in assetBundleNames)
             {
                 foreach (var assetName in GetAssetNamesFromBundle(assetBundleName).Where(n => n.StartsWith("cus_")))
                 {
-                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
-
-                    IDictionary<string, string> Dumper()
+                    
+                    var asset = ManualLoadAsset<ExcelData>(assetBundleName, assetName, null);
+                    var dumper = BuildDumper(asset, assetName);
+                    foreach (var filePath in BuildCustomListDumperAssetFilePaths(assetBundleName, assetName))
                     {
-                        var results = new OrderedDictionary<string, string>();
-                        var asset = ManualLoadAsset<ExcelData>(assetBundleName, assetName, null);
-                        if (asset == null) return results;
-                        var firstRow = 0;
-                        var colToDump = -1;
-                        if (asset.list[0].list.Count == 0 || asset.list[0].list[0].IsNullOrEmpty())
-                        {
-                            var i = 0;
-                            while (i < asset.list.Count && asset.list[i].list.Count == 0) i++;
-                            if (i < asset.list.Count)
-                            {
-                                firstRow = i;
-                                var row = asset.GetRow(i);
-
-                                if (asset.name.Contains("_pose") && row.Count >= 7) colToDump = 3;
-                                else if (row.Count >= 9) colToDump = 2;
-                                else if (row.Count > 2) colToDump = 1;
-                            }
-
-                        }
-                        else
-                        {
-                            var header = ResourceHelper.GetExcelHeaderRow(asset, out firstRow);
-                            colToDump = header.IndexOf("デフォルト");
-                        }
-
-                        if (colToDump == -1) return results;
-
-                        var mapIdx = -1;
-
-                        if (asset.name.StartsWith("cus_eb_ptn")) mapIdx = 0;
-                        else if (asset.name.StartsWith("cus_e_ptn")) mapIdx = 1;
-                        else if (asset.name.StartsWith("cus_m_ptn")) mapIdx = 2;
-                        else if (asset.name.StartsWith("cus_eyeslook")) mapIdx = 3;
-                        else if (asset.name.StartsWith("cus_necklook")) mapIdx = 4;
-                        else if (asset.name.StartsWith("cus_pose")) mapIdx = 5;
-                        else if (asset.name.StartsWith("cus_filelist")) mapIdx = 6;
-                        else if (asset.name.StartsWith("cus_selectlist")) mapIdx = 7;
-
-
-                        // CUSTOM_LIST2 = 3
-                        var processor = GetTranslateManagerRowProcessor(3, mapIdx, colToDump);
-
-                        for (var i = firstRow; i < asset.list.Count; i++)
-                        {
-                            try
-                            {
-                                foreach (var entry in processor(asset.GetRow(i)))
-                                {
-                                    if (entry.Key.Contains("unity3d")) continue;
-                                    AddLocalizationToResults(results, entry);
-                                }
-                            }
-                            catch (Exception err)
-                            {
-                                Logger.LogFatal($"GetCustomListDumpers: {err}\n{err.StackTrace}");
-                                throw;
-                            }
-                        }
-
-                        return results;
+                        Logger.LogError($"{assetBundleName} {assetName} -> {filePath}");
+                        yield return new StringTranslationDumper(filePath, dumper);
                     }
-
-                    yield return new StringTranslationDumper(filePath, Dumper);
                 }
+
+                // some custom lists have multiple assets with the same name in the same bundle, so also get them this way
+                var assetBundleData = new AssetBundleData(assetBundleName, null);
+                foreach (var asset in assetBundleData.GetAllAssets<ExcelData>())
+                {
+                    var assetName = asset.name;
+                    var dumper = BuildDumper(asset, assetName);
+                    foreach (var filePath in BuildCustomListDumperAssetFilePaths(assetBundleName, assetName))
+                    {
+                        Logger.LogError($"{assetBundleName} {assetName} -> {filePath}");
+                        yield return new StringTranslationDumper(filePath, dumper);
+                    }
+                }
+            }
+        }
+
+        private IEnumerable<string> BuildCustomListDumperAssetFilePaths(string assetBundleName, string assetName)
+        {
+            while (true)
+            {
+                yield return BuildAssetFilePath(assetBundleName, assetName);
+                if (assetBundleName.Contains("customscenelist") && !assetBundleName.Contains("customscenelist.unity3d"))
+                {
+                    yield return BuildAssetFilePath(CombinePaths(Path.GetDirectoryName(assetBundleName), "customscenelist.unity3d"), assetName);
+                }
+
+                var altName = assetName.Replace("_trial", string.Empty);
+                if (assetName == altName) yield break;
+                assetName = altName;
             }
         }
 

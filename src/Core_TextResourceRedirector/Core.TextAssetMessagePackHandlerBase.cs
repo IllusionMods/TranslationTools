@@ -65,6 +65,7 @@ namespace IllusionMods
         public override TextAndEncoding TranslateTextAsset(string calculatedModificationPath, TextAsset asset,
             IAssetOrResourceLoadedContext context)
         {
+
             Logger.DebugLogDebug($"{GetType()} attempt to handle {calculatedModificationPath}");
             var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
             var redirectedResources = RedirectedDirectory.GetFilesInDirectory(calculatedModificationPath, ".txt");
@@ -94,16 +95,12 @@ namespace IllusionMods
         }
 
 
+
         protected void SetObjectMark(string mark)
         {
             ObjectMark = Encoding.GetBytes(mark);
         }
-
-        protected override string CalculateModificationFilePath(TextAsset asset, IAssetOrResourceLoadedContext context)
-        {
-            return context.GetPreferredFilePathWithCustomFileName(asset, null).Replace(".unity3d", "");
-        }
-
+        
         protected override bool DumpAsset(string calculatedModificationPath, TextAsset asset,
             IAssetOrResourceLoadedContext context)
         {

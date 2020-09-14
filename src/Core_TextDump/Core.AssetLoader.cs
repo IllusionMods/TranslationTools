@@ -5,6 +5,7 @@ using ADV.Commands.Base;
 using BepInEx.Logging;
 using UnityEngine;
 using Logger = UnityEngine.Logger;
+using Object = UnityEngine.Object;
 
 namespace IllusionMods
 {

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using ADV;
@@ -54,6 +55,20 @@ namespace IllusionMods
             result = tmp.IndexOf(xUnityLanguage);
             
             return result != -1 ? result : base.XUnityLanguageToGameLanguage(xUnityLanguage);
+        }
+
+        public override IEnumerable<string> GetRandomNameDirs()
+        {
+            yield return "list/characustom";
+            foreach (var dir in base.GetRandomNameDirs())
+            {
+                yield return dir;
+            }
+        }
+
+        public override bool IsRandomNameListAsset(string assetName)
+        {
+            return assetName.StartsWith("namelist", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

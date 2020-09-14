@@ -24,7 +24,7 @@ namespace IllusionMods
 
         public const string PluginName = "Text Resource Redirector";
         public const string GUID = "com.deathweasel.bepinex.textresourceredirector";
-        public const string Version = "1.4.1.1";
+        public const string Version = "1.4.2";
         internal new static ManualLogSource Logger;
 #if !HS
         internal ChaListDataHandler ChaListDataHandler;
@@ -54,6 +54,7 @@ namespace IllusionMods
             TextResourceHelper = GetTextResourceHelper();
 
             ExcelDataHandler = new ExcelDataHandler(this);
+
             ScenarioDataHandler = new ScenarioDataHandler(this);
             TextAssetTableHandler = new TextAssetTableHandler(this);
 #if RAW_DUMP_SUPPORT

@@ -11,7 +11,8 @@ namespace IllusionMods
 {
     public class ExcelDataHandler : RedirectorAssetLoadedHandlerBase<ExcelData>, IPathListBoundHandler
     {
-        public ExcelDataHandler(TextResourceRedirector plugin) : base(plugin) { }
+        public ExcelDataHandler(TextResourceRedirector plugin, bool allowTranslationRegistration = false) : 
+            base(plugin, null, allowTranslationRegistration) { }
 
 
         /// <summary>
@@ -75,8 +76,9 @@ namespace IllusionMods
 
             var filter = columnsToTranslate.Count > 0;
 
-
             var row = -1;
+
+            var shouldTrack = !IsTranslationRegistrationAllowed(calculatedModificationPath);
             foreach (var param in asset.list)
             {
                 row++;
@@ -95,9 +97,11 @@ namespace IllusionMods
                         {
                             result = true;
                             translated = TextResourceHelper.PrepareTranslationForReplacement(asset, translated);
+                            if (shouldTrack) TrackReplacement(calculatedModificationPath, key, translated);
                             TranslationHelper.RegisterRedirectedResourceTextToPath(translated,
                                 calculatedModificationPath);
-                            Logger.DebugLogDebug($"Replacing [{row}, {i}]: key={key}: {param.list[i]} => {translated}");
+                            Logger.DebugLogDebug(
+                                $"Replacing [{row}, {i}]: key={key}: {param.list[i]} => {translated}");
 
                             param.list[i] = translated;
                             break;

@@ -23,6 +23,7 @@ namespace IllusionMods
     /// </summary>
     [BepInIncompatibility("gravydevsupreme.xunity.autotranslator")]
     [BepInIncompatibility("gravydevsupreme.xunity.resourceredirector")]
+    [BepInIncompatibility("random_name_provider")]
     public partial class TextDump
     {
         public delegate void TextDumpEventHandler(TextDump sender, EventArgs eventArgs);
@@ -32,11 +33,11 @@ namespace IllusionMods
 
         public const string GUID = "com.deathweasel.bepinex.textdump";
         public const string PluginName = "Text Dump";
-        public const string Version = "1.4.1";
+        public const string Version = "1.4.2";
 
         private const string FormatStringPlaceholder = "_P_L_A_C_E_H_O_L_D_E_R_";
 
-        private const float NotificationDelay = 15f;
+        private const float NotificationDelay = 12f;
 
         internal static int DumpLevelMax = 1;
         internal static int DumpLevelReady = 1;
@@ -225,7 +226,14 @@ namespace IllusionMods
 
         internal void Update()
         {
-            if (!Enabled.Value || AreAllDumpsComplete()) return;
+            if (!Enabled.Value) return;
+
+            if (AreAllDumpsComplete())
+            {
+                if (_writeInProgress) HandleNotification();
+                return;
+            }
+
 
             OnTextDumpUpdate(EventArgs.Empty);
 
@@ -253,7 +261,7 @@ namespace IllusionMods
 
         private void InitHelpers()
         {
-            Assert.IsNotNull(TextResourceHelper, "textResourceHelper not initilized in time");
+            Assert.IsNotNull(TextResourceHelper, "textResourceHelper not initialized in time");
             AssetDumpHelper = AssetDumpHelper ?? CreatePluginHelper<AssetDumpHelper>();
             LocalizationDumpHelper = LocalizationDumpHelper ?? CreatePluginHelper<LocalizationDumpHelper>();
             Logger.LogDebug($"{TextResourceHelper}, {AssetDumpHelper}, {LocalizationDumpHelper}");

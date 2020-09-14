@@ -23,7 +23,7 @@ namespace IllusionMods
             if (cache.TryGetTranslation(key, true, out var translated))
             {
                 param.Personality = translated;
-                TrackReplacement(key, translated);
+                TrackReplacement(calculatedModificationPath, key, translated);
                 TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
                 result = true;
             }

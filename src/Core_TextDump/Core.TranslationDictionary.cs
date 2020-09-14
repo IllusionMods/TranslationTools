@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using IllusionMods.Shared;
+using UnityEngine;
 
 namespace IllusionMods
 {
@@ -223,6 +224,7 @@ namespace IllusionMods
             var defaultScope = result.GetScope(-1);
             foreach (var entry in defaultScopeDictionary)
             {
+                if (defaultScope.ContainsKey(entry.Key)) continue;
                 defaultScope.Add(entry.Key, entry.Value);
             }
 

@@ -12,5 +12,12 @@ namespace IllusionMods
         string ConfigSectionName { get; }
     }
 
-    public interface IRedirectorHandler<T> : IRedirectorHandler where T : UnityEngine.Object { }
+    public interface IRedirectorHandler<T> : IRedirectorHandler where T : UnityEngine.Object
+    {
+        bool AllowTranslationRegistration { get; }
+
+        void ExcludePathFromTranslationRegistration(string path);
+
+        bool IsTranslationRegistrationAllowed(string path);
+    }
 }

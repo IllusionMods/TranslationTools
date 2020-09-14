@@ -48,6 +48,7 @@ namespace IllusionMods
         protected override bool ReplaceOrUpdateAsset(string calculatedModificationPath, ref TitleSkillName asset,
             IAssetOrResourceLoadedContext context)
         {
+
             var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
             var redirectedResources = RedirectedDirectory.GetFilesInDirectory(calculatedModificationPath, ".txt");
             var streams = redirectedResources.Select(x => x.OpenStream());
