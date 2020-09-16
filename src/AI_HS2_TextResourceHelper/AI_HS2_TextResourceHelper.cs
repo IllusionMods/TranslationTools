@@ -68,7 +68,7 @@ namespace IllusionMods
 
         public override bool IsRandomNameListAsset(string assetName)
         {
-            return assetName.StartsWith("namelist", StringComparison.OrdinalIgnoreCase);
+            return assetName.StartsWith("randnamelist", StringComparison.OrdinalIgnoreCase);
         }
     }
 }
