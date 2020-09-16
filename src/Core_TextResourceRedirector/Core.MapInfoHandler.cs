@@ -59,7 +59,7 @@ namespace IllusionMods
 
             if (cache.IsEmpty) return true;
 
-            var shouldTrack = !IsTranslationRegistrationAllowed(calculatedModificationPath);
+            var shouldTrack = IsTranslationRegistrationAllowed(calculatedModificationPath);
 
             // register with helper or dump without translating here
             foreach (var key in asset.param

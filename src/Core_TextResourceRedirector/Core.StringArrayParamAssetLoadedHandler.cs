@@ -46,7 +46,7 @@ namespace IllusionMods
             if (!string.IsNullOrEmpty(prefix)) keys.Add($"{prefix}{field[0]}");
             keys.Add(field[0]);
 
-            var shouldTrack = !IsTranslationRegistrationAllowed(calculatedModificationPath);
+            var shouldTrack = IsTranslationRegistrationAllowed(calculatedModificationPath);
             foreach (var key in keys)
             {
                 if (cache.TryGetTranslation(key, true, out var translated))

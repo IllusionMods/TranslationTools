@@ -78,7 +78,7 @@ namespace IllusionMods
 
             var row = -1;
 
-            var shouldTrack = !IsTranslationRegistrationAllowed(calculatedModificationPath);
+            var shouldTrack = IsTranslationRegistrationAllowed(calculatedModificationPath);
             foreach (var param in asset.list)
             {
                 row++;
