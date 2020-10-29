@@ -13,6 +13,26 @@ namespace IllusionMods
             ListEntryDumpers.Add(TryDumpTitleSkillName);
         }
 
+        protected override string GetMapInfoPath() => "list/map/mapinfo";
+
+        protected override IEnumerable<string> GetHTypeNames()
+        {
+            string[] result;
+            try
+            {
+                var table = Singleton<Manager.Resources>.Instance.HSceneTable;
+                var field = table.GetType().GetField("assetNames");
+
+                result = field?.GetValue(table) as string[];
+            }
+            catch
+            {
+                result = null;
+            }
+
+            return result ?? base.GetHTypeNames();
+        }
+
         protected virtual bool TryDumpTitleSkillName(string assetBundleName, string assetName, AssetDumpColumnInfo _,
             IDictionary<string, string> translations)
         {
@@ -56,7 +76,7 @@ namespace IllusionMods
 
             yield return new KeyValuePair<string, AssetDumpColumnInfo>("actor/gameitem/recipe/recycling", ItemLookup);
 
-            foreach (var mapdir in new[] {"eventpoint", "popupinfo"})
+            foreach (var mapdir in new[] {"eventpoint", "popupinfo", "mapinfo"})
             {
                 yield return new KeyValuePair<string, AssetDumpColumnInfo>($"map/{mapdir}", StdExcelAssetCols);
             }

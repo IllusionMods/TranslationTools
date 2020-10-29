@@ -2,11 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using ActionGame;
-using Illusion.Game.Extensions;
 using IllusionMods.Shared;
-using Sirenix.OdinInspector.Demos;
 using UnityEngine;
 using static IllusionMods.TextResourceHelper.Helpers;
 
@@ -16,19 +13,65 @@ namespace IllusionMods
     {
         private static readonly char[] PathSplitter =
             new HashSet<char> {Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar}.ToArray();
+
         protected KK_AssetDumpHelper(TextDump plugin) : base(plugin)
         {
             AssetDumpGenerators.Add(GetCustomListDumpers);
             AssetDumpGenerators.Add(GetAnimationInfoDumpers);
             AssetDumpGenerators.Add(GetHPointToggleDumpers);
             AssetDumpGenerators.Add(GetSpecialNickNameDumpers);
-            AssetDumpGenerators.Add(GetMapInfoDumpers);
             AssetDumpGenerators.Add(GetEventInfoDumpers);
 
             AssetDumpGenerators.Add(GetScenarioTextMergers);
             AssetDumpGenerators.Add(GetCommunicationTextMergers);
 
             TextDump.TranslationPostProcessors.Add(OptionDisplayItemsPostProcessor);
+        }
+
+        protected override string GetMapInfoPath() => "map/list/mapinfo/";
+
+        
+        protected virtual bool TryMapInfoTranslationLookup(MapInfo.Param param, out string result)
+        {
+            result = null;
+            return false;
+        }
+
+        protected override IEnumerable<ITranslationDumper> GetMapInfoDumpers()
+        {
+            var mapInfoPath = GetMapInfoPath();
+            if (mapInfoPath.IsNullOrEmpty()) yield break;
+
+            var assetBundleNames = GetAssetBundleNameListFromPath(mapInfoPath, true);
+            foreach (var assetBundleName in assetBundleNames)
+            {
+                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
+                {
+                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
+
+                    IDictionary<string, string> Dumper()
+                    {
+                        var results = new OrderedDictionary<string, string>();
+                        var asset = ManualLoadAsset<MapInfo>(assetBundleName, assetName, null);
+                        if (asset == null || asset.param.Count == 0) return results;
+
+                        foreach (var entry in asset.param)
+                        {
+                            if (!TryMapInfoTranslationLookup(entry, out var value))
+                            {
+                                value = string.Empty;
+                            }
+
+                            AddLocalizationToResults(results, ResourceHelper.GetSpecializedKey(entry, entry.MapName),
+                                value);
+                        }
+
+                        return results;
+                    }
+
+                    yield return new StringTranslationDumper(filePath, Dumper);
+                }
+            }
         }
 
         private bool OptionDisplayItemsPostProcessor(string path, IDictionary<string, string> translations)
@@ -162,6 +205,7 @@ namespace IllusionMods
             result = null;
             return false;
         }
+
         protected IEnumerable<ITranslationDumper> GetEventInfoDumpers()
         {
             var assetBundleNames = GetAssetBundleNameListFromPath("action/list/event/", true);
@@ -169,7 +213,6 @@ namespace IllusionMods
             {
                 foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
                 {
-
                     var filePath = BuildAssetFilePath(assetBundleName, assetName);
 
                     IDictionary<string, string> Dumper()
@@ -185,7 +228,8 @@ namespace IllusionMods
                                 value = string.Empty;
                             }
 
-                            AddLocalizationToResults(results, ResourceHelper.GetSpecializedKey(entry, entry.Name), value);
+                            AddLocalizationToResults(results, ResourceHelper.GetSpecializedKey(entry, entry.Name),
+                                value);
                         }
 
                         return results;
@@ -194,51 +238,16 @@ namespace IllusionMods
                     yield return new StringTranslationDumper(filePath, Dumper);
                 }
             }
-
         }
-        protected virtual bool TryMapInfoTranslationLookup(MapInfo.Param param, out string result)
-        {
-            result = null;
-            return false;
-        }
-        protected IEnumerable<ITranslationDumper> GetMapInfoDumpers()
-        {
-            var assetBundleNames = GetAssetBundleNameListFromPath("map/list/mapinfo/", true);
-            foreach (var assetBundleName in assetBundleNames)
-            {
-                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
-                {
-                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
 
-                    IDictionary<string, string> Dumper()
-                    {
-                        var results = new OrderedDictionary<string, string>();
-                        var asset = ManualLoadAsset<MapInfo>(assetBundleName, assetName, null);
-                        if (asset == null || asset.param.Count == 0) return results;
 
-                        foreach (var entry in asset.param)
-                        {
-                            if (!TryMapInfoTranslationLookup(entry, out var value))
-                            {
-                                value = string.Empty;
-                            }
 
-                            AddLocalizationToResults(results, ResourceHelper.GetSpecializedKey(entry, entry.MapName), value);
-                        }
-
-                        return results;
-                    }
-
-                    yield return new StringTranslationDumper(filePath, Dumper);
-                }
-            }
-
-        }
         protected virtual bool TryNickNameTranslationLookup(NickName.Param param, out string result)
         {
             result = null;
             return false;
         }
+
         protected virtual IEnumerable<ITranslationDumper> GetSpecialNickNameDumpers()
         {
             var assetBundleNames = GetAssetBundleNameListFromPath("etcetra/list/nickname/", true);
@@ -260,11 +269,13 @@ namespace IllusionMods
                                 value = string.Empty;
                             }
 
-                            AddLocalizationToResults(results, ResourceHelper.GetSpecializedKey(entry, entry.Name), value);
+                            AddLocalizationToResults(results, ResourceHelper.GetSpecializedKey(entry, entry.Name),
+                                value);
                         }
 
                         return results;
                     }
+
                     yield return new StringTranslationDumper(filePath, Dumper);
                 }
             }
@@ -303,10 +314,7 @@ namespace IllusionMods
                     }
 
                     yield return new StringTranslationDumper(filePath, Dumper);
-
                 }
-
-
             }
         }
 
@@ -323,7 +331,7 @@ namespace IllusionMods
 
                     // H_POSTURE = 5
                     var processor = GetTranslateManagerRowProcessor(5, assetName, 0,
-                        (row) => row.Count > 1 ? row[1] : string.Empty);
+                        row => row.Count > 1 ? row[1] : string.Empty);
 
                     IDictionary<string, string> Dumper()
                     {
@@ -344,16 +352,12 @@ namespace IllusionMods
                     }
 
                     yield return new StringTranslationDumper(filePath, Dumper);
-
                 }
-
-
             }
         }
 
         protected IEnumerable<ExcelData.Param> GetExcelEntries(ExcelData asset, string assetName)
         {
-
             if (!assetName.StartsWith("cus_")) return asset.list;
 
             var maxCell = asset.MaxCell - 1;
@@ -363,16 +367,18 @@ namespace IllusionMods
 
         protected IEnumerable<ITranslationDumper> GetCustomListDumpers()
         {
-            TranslationDumper<IDictionary<string,string>>.TranslationCollector BuildDumper(ExcelData asset, string assetName = null)
+            TranslationDumper<IDictionary<string, string>>.TranslationCollector BuildDumper(ExcelData asset,
+                string assetName = null)
             {
                 if (string.IsNullOrEmpty(assetName)) assetName = asset.name;
 
                 // cache results, only process once
                 OrderedDictionary<string, string> results = null;
+
                 IDictionary<string, string> Dumper()
                 {
                     if (results != null) return results;
-                    
+
                     results = new OrderedDictionary<string, string>();
                     if (asset == null) return results;
                     var firstRow = 0;
@@ -386,11 +392,16 @@ namespace IllusionMods
                             firstRow = i;
                             var row = asset.GetRow(i);
 
-                            if (asset.name.Contains("_pose") && row.Count >= 7) colToDump = 3;
-                            else if (row.Count >= 9) colToDump = 2;
+                            if (asset.name.Contains("_pose") && row.Count >= 7)
+                            {
+                                colToDump = 3;
+                            }
+                            else if (row.Count >= 9)
+                            {
+                                colToDump = 2;
+                            }
                             else if (row.Count > 2) colToDump = 1;
                         }
-
                     }
                     else
                     {
@@ -402,13 +413,34 @@ namespace IllusionMods
 
                     var mapIdx = -1;
 
-                    if (asset.name.StartsWith("cus_eb_ptn")) mapIdx = 0;
-                    else if (asset.name.StartsWith("cus_e_ptn")) mapIdx = 1;
-                    else if (asset.name.StartsWith("cus_m_ptn")) mapIdx = 2;
-                    else if (asset.name.StartsWith("cus_eyeslook")) mapIdx = 3;
-                    else if (asset.name.StartsWith("cus_necklook")) mapIdx = 4;
-                    else if (asset.name.StartsWith("cus_pose")) mapIdx = 5;
-                    else if (asset.name.StartsWith("cus_filelist")) mapIdx = 6;
+                    if (asset.name.StartsWith("cus_eb_ptn"))
+                    {
+                        mapIdx = 0;
+                    }
+                    else if (asset.name.StartsWith("cus_e_ptn"))
+                    {
+                        mapIdx = 1;
+                    }
+                    else if (asset.name.StartsWith("cus_m_ptn"))
+                    {
+                        mapIdx = 2;
+                    }
+                    else if (asset.name.StartsWith("cus_eyeslook"))
+                    {
+                        mapIdx = 3;
+                    }
+                    else if (asset.name.StartsWith("cus_necklook"))
+                    {
+                        mapIdx = 4;
+                    }
+                    else if (asset.name.StartsWith("cus_pose"))
+                    {
+                        mapIdx = 5;
+                    }
+                    else if (asset.name.StartsWith("cus_filelist"))
+                    {
+                        mapIdx = 6;
+                    }
                     else if (asset.name.StartsWith("cus_selectlist")) mapIdx = 7;
 
 
@@ -431,6 +463,7 @@ namespace IllusionMods
                             throw;
                         }
                     }
+
                     return results;
                 }
 
@@ -438,13 +471,11 @@ namespace IllusionMods
             }
 
 
-
             var assetBundleNames = GetAssetBundleNameListFromPath("custom/", true);
             foreach (var assetBundleName in assetBundleNames)
             {
                 foreach (var assetName in GetAssetNamesFromBundle(assetBundleName).Where(n => n.StartsWith("cus_")))
                 {
-                    
                     var asset = ManualLoadAsset<ExcelData>(assetBundleName, assetName, null);
                     var dumper = BuildDumper(asset, assetName);
                     foreach (var filePath in BuildCustomListDumperAssetFilePaths(assetBundleName, assetName))
@@ -474,7 +505,8 @@ namespace IllusionMods
                 yield return BuildAssetFilePath(assetBundleName, assetName);
                 if (assetBundleName.Contains("customscenelist") && !assetBundleName.Contains("customscenelist.unity3d"))
                 {
-                    yield return BuildAssetFilePath(CombinePaths(Path.GetDirectoryName(assetBundleName), "customscenelist.unity3d"), assetName);
+                    yield return BuildAssetFilePath(
+                        CombinePaths(Path.GetDirectoryName(assetBundleName), "customscenelist.unity3d"), assetName);
                 }
 
                 var altName = assetName.Replace("_trial", string.Empty);
@@ -576,11 +608,11 @@ namespace IllusionMods
         {
             if (!TextDump.IsReadyForFinalDump()) yield break;
             var needle = CombinePaths("", "abdata", "communication", "");
-            var paths = TextDump.GetTranslationPaths().Where((k) => k.Contains(needle)).ToList();
+            var paths = TextDump.GetTranslationPaths().Where(k => k.Contains(needle)).ToList();
             paths.Sort();
             paths.Reverse();
 
-            var splitter = new HashSet<char> { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }.ToArray();
+            var splitter = new HashSet<char> {Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar}.ToArray();
 
             var mappings = new Dictionary<string, Dictionary<string, string>>();
             var fileMaps = new Dictionary<string, List<string>>();
@@ -601,21 +633,22 @@ namespace IllusionMods
 
                 personalityFiles.Add(path);
 
-                foreach (var entry in TextDump.GetTranslationsForPath(path).Where(entry => !entry.Value.IsNullOrEmpty()))
+                foreach (var entry in TextDump.GetTranslationsForPath(path)
+                    .Where(entry => !entry.Value.IsNullOrEmpty()))
                 {
                     AddLocalizationToResults(personalityMap, entry);
                 }
             }
 
-            foreach (var translationDumper in BuildTranslationMergers(fileMaps, mappings)) yield return translationDumper;
-
+            foreach (var translationDumper in BuildTranslationMergers(fileMaps, mappings))
+                yield return translationDumper;
         }
 
         protected IEnumerable<ITranslationDumper> GetScenarioTextMergers()
         {
             if (!TextDump.IsReadyForFinalDump()) yield break;
             var needle = CombinePaths("", "abdata", "adv", "scenario", "");
-            var paths = TextDump.GetTranslationPaths().Where((k) => k.Contains(needle)).ToList();
+            var paths = TextDump.GetTranslationPaths().Where(k => k.Contains(needle)).ToList();
             paths.Sort();
             paths.Reverse();
             var personalityCheckChars = "01234567890-".ToCharArray();
@@ -629,29 +662,36 @@ namespace IllusionMods
                 var personalityIndex = parts.IndexOf("scenario") + 1;
                 if (personalityIndex == 0) continue;
                 var personality = parts[personalityIndex];
-                var isPersonalityFile = personality.Length > 1 && personality.StartsWith("c") && personalityCheckChars.Contains(personality[1]);
+                var isPersonalityFile = personality.Length > 1 && personality.StartsWith("c") &&
+                                        personalityCheckChars.Contains(personality[1]);
                 if (!isPersonalityFile) continue;
 
                 if (!mappings.TryGetValue(personality, out var personalityMap))
                 {
-                    mappings[personality] = personalityMap = new Dictionary<string, string>(new TrimmedStringComparer());
+                    mappings[personality] =
+                        personalityMap = new Dictionary<string, string>(new TrimmedStringComparer());
                 }
+
                 if (!fileMaps.TryGetValue(personality, out var personalityFiles))
                 {
                     fileMaps[personality] = personalityFiles = new List<string>();
                 }
+
                 personalityFiles.Add(path);
 
-                foreach (var entry in TextDump.GetTranslationsForPath(path).Where(entry => !entry.Value.IsNullOrEmpty()))
+                foreach (var entry in TextDump.GetTranslationsForPath(path)
+                    .Where(entry => !entry.Value.IsNullOrEmpty()))
                 {
                     AddLocalizationToResults(personalityMap, entry);
                 }
             }
 
-            foreach (var translationDumper in BuildTranslationMergers(fileMaps, mappings)) yield return translationDumper;
+            foreach (var translationDumper in BuildTranslationMergers(fileMaps, mappings))
+                yield return translationDumper;
         }
 
-        protected IEnumerable<ITranslationDumper> BuildTranslationMergers(Dictionary<string, List<string>> fileMaps, Dictionary<string, Dictionary<string, string>> mappings)
+        protected IEnumerable<ITranslationDumper> BuildTranslationMergers(Dictionary<string, List<string>> fileMaps,
+            Dictionary<string, Dictionary<string, string>> mappings)
         {
             foreach (var personalityFileMap in fileMaps)
             {
@@ -665,7 +705,7 @@ namespace IllusionMods
                     mapPath = CombinePaths(Path.GetDirectoryName(mapPath), Path.GetFileNameWithoutExtension(mapPath));
 
                     var toUpdate = new HashSet<string>(TextDump.GetTranslationsForPath(path)
-                        .Where((e) => e.Value.IsNullOrWhiteSpace()).Select((e) => e.Key));
+                        .Where(e => e.Value.IsNullOrWhiteSpace()).Select(e => e.Key));
 
                     if (toUpdate.Count == 0) continue;
 

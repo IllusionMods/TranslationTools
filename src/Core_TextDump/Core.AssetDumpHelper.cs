@@ -50,7 +50,8 @@ namespace IllusionMods
                 GetCommunicationTextDumpers,
                 GetListTextDumpers,
                 GetScenarioTextDumpers,
-                GetHTextDumpers
+                GetHTextDumpers,
+                GetMapInfoDumpers
             };
 
             //RawAssetDumpGenerators = new List<RawTranslationGenerator> { };
@@ -592,6 +593,13 @@ namespace IllusionMods
 
         #endregion ScenarioText
 
+        protected virtual string GetMapInfoPath() => string.Empty;
+
+        protected virtual IEnumerable<ITranslationDumper> GetMapInfoDumpers()
+        {
+            yield break;
+        }
+
         #region Lists
 
         protected virtual IEnumerable<KeyValuePair<string, AssetDumpColumnInfo>> GetLists()
@@ -864,6 +872,7 @@ namespace IllusionMods
 
             return true;
         }
+       
 
         #endregion Lists
     }

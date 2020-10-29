@@ -13,55 +13,75 @@ namespace IllusionMods
 
         public override void InitializeHelper()
         {
-            AssetDumpGenerators.Insert(0, GetVoiceInfoDumpers);
             AssetDumpGenerators.Insert(0, GetBgmNameInfoDumpers);
             AssetDumpGenerators.Insert(0, GetEventContentInfoDumpers);
             AssetDumpGenerators.Add(GetParameterNameInfoDumpers);
             AssetDumpGenerators.Add(GetAchievementInfoDumpers);
             AssetDumpGenerators.Add(GetMapInfoDumpers);
-            AssetDumpGenerators.Add(GetHPositionDumpers);
             base.InitializeHelper();
         }
 
-        protected virtual IEnumerable<ITranslationDumper> GetHPositionDumpers()
+        protected override IEnumerable<string> GetHTypeNames()
         {
-            const string rootPath = "list/h/animationinfo";
-
-            var field = HSceneManager.HResourceTables?.GetType().GetField("assetNames");
-
-            var hTypeNames = field?.GetValue(HSceneManager.HResourceTables) as string[] ?? new[]
-                {"aibu", "houshi", "sonyu", "tokushu", "les", "3P_F2M1", "3P"};
-
-            bool IsHPositionList(string assetName)
+            string[] result;
+            try
             {
-                return hTypeNames.Any(n => assetName.StartsWith($"{n}_", StringComparison.OrdinalIgnoreCase));
+                var field = HSceneManager.HResourceTables.GetType().GetField("assetNames");
+
+                result = field?.GetValue(HSceneManager.HResourceTables) as string[];
+            }
+            catch
+            {
+                result = null;
             }
 
-            var assetDumpColumnInfo = new AssetDumpColumnInfo(new KeyValuePair<int, int>(0, -1));
+            return result ?? base.GetHTypeNames();
+        }
 
-            foreach (var assetBundleName in GetAssetBundleNameListFromPath(rootPath, true))
+        protected override string GetParamEntryTranslation(object paramEntry)
+        {
+            if (paramEntry is VoiceInfo.Param viParam) return viParam.EnUS;
+            return base.GetParamEntryTranslation(paramEntry);
+        }
+
+        protected override string GetMapInfoPath()
+        {
+            return AssetBundleNames.MapListMapinfoPath ?? base.GetMapInfoPath();
+        }
+
+
+
+        protected override IEnumerable<ITranslationDumper> GetMapInfoDumpers()
+        {
+            var bundlePath = GetMapInfoPath();
+            if (bundlePath.IsNullOrEmpty()) yield break;
+
+            foreach (var assetBundleName in GetAssetBundleNameListFromPath(bundlePath, true))
             {
                 foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
                 {
-                    if (!IsHPositionList(assetName)) continue;
-
-
                     var filePath = BuildAssetFilePath(assetBundleName, assetName);
 
                     IDictionary<string, string> AssetDumper()
                     {
                         var translations = new OrderedDictionary<string, string>();
-                        var done = false;
-                        foreach (var tryDump in ListEntryDumpers)
-                        {
-                            GetAssetBundleNameListFromPath(rootPath, true);
-                            GetAssetNamesFromBundle(assetBundleName);
 
-                            done = tryDump(assetBundleName, assetName, assetDumpColumnInfo, translations);
-                            if (done) break;
+                        var asset =  ManualLoadAsset<MapInfo>(assetBundleName, assetName, "abdata");
+                        if (asset is null) return translations;
+
+                        void AddResult(string[] strings)
+                        {
+                            if (strings == null || strings.Length < 1) return;
+                            AddLocalizationToResults(translations, strings[0],
+                                strings.Length > 1 && !string.IsNullOrEmpty(strings[1])
+                                    ? strings[1]
+                                    : string.Empty);
                         }
 
-                        if (!done) Logger.LogWarning($"Unable to dump '{rootPath}': '{assetBundleName}': {assetName}");
+                        foreach (var entry in asset.param)
+                        {
+                            AddResult(entry.MapNames.ToArray());
+                        }
 
                         return translations;
                     }
@@ -71,6 +91,7 @@ namespace IllusionMods
             }
         }
 
+        /*
         protected override bool IsValidExcelLocalization(string assetBundleName, string assetName, int firstRow,
             int row, string origString,
             string possibleTranslation)
@@ -91,35 +112,8 @@ namespace IllusionMods
 
             return base.IsValidChaListDataLocalization(id, entry, origString, possibleTranslation);
         }
-
-        protected IEnumerable<ITranslationDumper> GetVoiceInfoDumpers()
-        {
-            foreach (var assetBundleName in GetAssetBundleNameListFromPath("etcetra/list/config/", true))
-            {
-                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
-                {
-                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
-
-                    IDictionary<string, string> AssetDumper()
-                    {
-                        var translations = new OrderedDictionary<string, string>();
-
-                        var asset = ManualLoadAsset<VoiceInfo>(assetBundleName, assetName, "abdata");
-                        if (asset is null) return translations;
-
-                        foreach (var entry in asset.param)
-                        {
-                            AddLocalizationToResults(translations, entry.Personality, entry.EnUS);
-                        }
-
-                        return translations;
-                    }
-
-                    yield return new StringTranslationDumper(filePath, AssetDumper);
-                }
-            }
-        }
-
+        */
+       
         protected IEnumerable<ITranslationDumper> GetBgmNameInfoDumpers()
         {
             foreach (var assetBundleName in GetAssetBundleNameListFromPath(AssetBundleNames.GamedataBgmnamePath, true))
@@ -195,42 +189,6 @@ namespace IllusionMods
             }
         }
 
-        protected IEnumerable<ITranslationDumper> GetMapInfoDumpers()
-        {
-            foreach (var assetBundleName in GetAssetBundleNameListFromPath(AssetBundleNames.MapListMapinfoPath, true))
-            {
-                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
-                {
-                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
-
-                    IDictionary<string, string> AssetDumper()
-                    {
-                        var translations = new OrderedDictionary<string, string>();
-
-                        var asset = ManualLoadAsset<MapInfo>(assetBundleName, assetName, "abdata");
-                        if (asset is null) return translations;
-
-                        void AddResult(string[] strings)
-                        {
-                            if (strings == null || strings.Length < 1) return;
-                            AddLocalizationToResults(translations, strings[0],
-                                strings.Length > 1 && !string.IsNullOrEmpty(strings[1])
-                                    ? strings[1]
-                                    : string.Empty);
-                        }
-
-                        foreach (var entry in asset.param)
-                        {
-                            AddResult(entry.MapNames.ToArray());
-                        }
-
-                        return translations;
-                    }
-
-                    yield return new StringTranslationDumper(filePath, AssetDumper);
-                }
-            }
-        }
 
         protected IEnumerable<ITranslationDumper> GetParameterNameInfoDumpers()
         {

@@ -24,7 +24,7 @@ using Path = System.IO.Path;
 
 namespace IllusionMods
 {
-    public partial class AI_INT_LocalizationDumpHelper : LocalizationDumpHelper
+    public partial class AI_INT_LocalizationDumpHelper : AI_LocalizationDumpHelper
     {
         private readonly Dictionary<string, HashSet<string>> _tutorialCategoryMap =
             new Dictionary<string, HashSet<string>>();
@@ -110,11 +110,11 @@ namespace IllusionMods
                     {
                         //Logger.LogWarning($"AssetTable: name={assetTable.name}, assetbundle={assetTable.assetbundle}, asset={assetTable.asset}, manifest={assetTable.manifest}");
                         var objects = GetAssetTableObjects(assetTable);
-                        var assetNameforPath = Path.GetFileNameWithoutExtension(assetTable.asset);
+                        var assetNameForPath = Path.GetFileNameWithoutExtension(assetTable.asset);
                         foreach (var gameObject in objects)
                         {
                             var handled = new HashSet<object>();
-                            var outputName = $"UI/{topLevelName}/{assetNameforPath}/{gameObject.name}";
+                            var outputName = $"UI/{topLevelName}/{assetNameForPath}/{gameObject.name}";
                             if (finished.Contains(outputName)) continue;
                             finished.Add(outputName);
                             var textList = EnumerateTexts(gameObject, handled).Select(t => t.Value).ToArray();

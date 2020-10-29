@@ -108,7 +108,7 @@ namespace IllusionMods
         private void HS2_sceneLoaded(UnityEngine.SceneManagement.Scene scene, LoadSceneMode loadSceneMode)
         {
             if ((IsStudio && scene.name == "Studio" && loadSceneMode == LoadSceneMode.Single) ||
-                (!IsStudio && scene.name == "Lobby"))
+                (!IsStudio && (scene.name == "Lobby" || scene.name == "NightPool")))
             {
                 _LobbyLoaded = true;
             }
@@ -125,26 +125,26 @@ namespace IllusionMods
         private IEnumerator HS2_CheckReadyToDump()
         {
             Logger.LogDebug("CheckReadyToDump: waiting until dump 1 completes");
-            while (DumpLevelCompleted < 1) yield return new WaitForSeconds(1);
+            while (DumpLevelCompleted < 1) yield return CheckReadyToDumpDelay;
 
             Logger.LogDebug("CheckReadyToDump: waiting for Lobby to load");
 
-            while (!_LobbyLoaded) yield return new WaitForSeconds(1);
+            while (!_LobbyLoaded) yield return CheckReadyToDumpDelay;
 
             SceneManager.sceneLoaded -= HS2_sceneLoaded;
            
 
             Logger.LogDebug("CheckReadyToDump: waiting for lobby to finish loading");
             
-            while (Singleton<Manager.Scene>.Instance == null) yield return new WaitForSeconds(1);
-            while (Manager.Scene.IsNowLoadingFade) yield return new WaitForSeconds(1);
+            while (Singleton<Manager.Scene>.Instance == null) yield return CheckReadyToDumpDelay;
+            while (Manager.Scene.IsNowLoadingFade) yield return CheckReadyToDumpDelay;
 
             Logger.LogDebug("CheckReadyToDump: waiting for Manager.Voice");
            
-            while (Voice.infoTable == null || Voice.infoTable.Count == 0) yield return new WaitForSeconds(1);
+            while (Voice.infoTable == null || Voice.infoTable.Count == 0) yield return CheckReadyToDumpDelay;
 
             Logger.LogDebug($"CheckReadyToDump: waiting for Manager.GameSystem");
-            while (Singleton<Manager.GameSystem>.Instance == null) yield return new WaitForSeconds(1);
+            while (Singleton<Manager.GameSystem>.Instance == null) yield return CheckReadyToDumpDelay;
 
             Logger.LogDebug($"Language = {Singleton<Manager.GameSystem>.Instance.language}");
 
@@ -176,7 +176,7 @@ namespace IllusionMods
                     }
                     if (count != 0) break;
 
-                    yield return new WaitForSeconds(1);
+                    yield return CheckReadyToDumpDelay;
                 }
             }
 
@@ -186,12 +186,12 @@ namespace IllusionMods
                 if (DumpLevelReady <= DumpLevelCompleted)
                 {
                     if (_waitOnRetry) Logger.LogDebug("CheckReadyToDump: waiting for retry delay");
-                    while (_waitOnRetry) yield return new WaitForSeconds(1);
+                    while (_waitOnRetry) yield return CheckReadyToDumpDelay;
                     DumpLevelReady++;
                     Logger.LogDebug($"CheckReadyToDump: level {DumpLevelReady} ready!");
                 }
 
-                yield return new WaitForSeconds(1);
+                yield return CheckReadyToDumpDelay;
             }
 
 

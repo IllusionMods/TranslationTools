@@ -83,83 +83,83 @@ namespace IllusionMods
         private IEnumerator AI_INT_CheckReadyToDump()
         {
             Logger.LogDebug("CheckReadyToDump: waiting until dump 2 completes");
-            while (DumpLevelCompleted < 2) yield return new WaitForSeconds(1);
+            while (DumpLevelCompleted < 2) yield return CheckReadyToDumpDelay;
 
             Logger.LogDebug("CheckReadyToDump: waiting dataLoaded");
-            while (!_dataLoaded) yield return new WaitForSeconds(1);
+            while (!_dataLoaded) yield return CheckReadyToDumpDelay;
 
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources");
-            while (!Singleton<Resources>.IsInstance()) yield return new WaitForSeconds(1);
-            while (!Singleton<Resources>.Instance.isActiveAndEnabled) yield return new WaitForSeconds(1);
+            while (!Singleton<Resources>.IsInstance()) yield return CheckReadyToDumpDelay;
+            while (!Singleton<Resources>.Instance.isActiveAndEnabled) yield return CheckReadyToDumpDelay;
 
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.AgentProfile");
-            while (Singleton<Resources>.Instance?.AgentProfile is null) yield return new WaitForSeconds(1);
+            while (Singleton<Resources>.Instance?.AgentProfile is null) yield return CheckReadyToDumpDelay;
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.AnimalDefinePack");
-            while (Singleton<Resources>.Instance?.AnimalDefinePack is null) yield return new WaitForSeconds(1);
+            while (Singleton<Resources>.Instance?.AnimalDefinePack is null) yield return CheckReadyToDumpDelay;
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.AnimalTable");
-            while (Singleton<Resources>.Instance?.AnimalTable is null) yield return new WaitForSeconds(1);
+            while (Singleton<Resources>.Instance?.AnimalTable is null) yield return CheckReadyToDumpDelay;
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.PlayerProfile");
-            while (Singleton<Resources>.Instance?.PlayerProfile is null) yield return new WaitForSeconds(1);
+            while (Singleton<Resources>.Instance?.PlayerProfile is null) yield return CheckReadyToDumpDelay;
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.PopupInfo");
-            while (Singleton<Resources>.Instance?.PopupInfo is null) yield return new WaitForSeconds(1);
+            while (Singleton<Resources>.Instance?.PopupInfo is null) yield return CheckReadyToDumpDelay;
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.Sound");
-            while (Singleton<Resources>.Instance?.Sound is null) yield return new WaitForSeconds(1);
+            while (Singleton<Resources>.Instance?.Sound is null) yield return CheckReadyToDumpDelay;
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.SoundPack");
-            while (Singleton<Resources>.Instance?.SoundPack is null) yield return new WaitForSeconds(1);
+            while (Singleton<Resources>.Instance?.SoundPack is null) yield return CheckReadyToDumpDelay;
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.StatusProfile");
-            while (Singleton<Resources>.Instance?.StatusProfile is null) yield return new WaitForSeconds(1);
+            while (Singleton<Resources>.Instance?.StatusProfile is null) yield return CheckReadyToDumpDelay;
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.WaypointDataList");
-            while (Singleton<Resources>.Instance?.WaypointDataList is null) yield return new WaitForSeconds(1);
+            while (Singleton<Resources>.Instance?.WaypointDataList is null) yield return CheckReadyToDumpDelay;
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.HSceneTable");
-            while (Singleton<Resources>.Instance?.HSceneTable is null) yield return new WaitForSeconds(1);
+            while (Singleton<Resources>.Instance?.HSceneTable is null) yield return CheckReadyToDumpDelay;
 
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.Localize.GetHName");
             string dummy = null;
             while (string.IsNullOrEmpty(dummy))
             {
-                yield return new WaitForSeconds(1);
+                yield return CheckReadyToDumpDelay;
                 dummy = Singleton<Resources>.Instance.Localize.GetHName(1, 1);
             }
 
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.itemIconTables");
-            while (Singleton<Resources>.Instance?.itemIconTables is null) yield return new WaitForSeconds(1);
+            while (Singleton<Resources>.Instance?.itemIconTables is null) yield return CheckReadyToDumpDelay;
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.Map");
-            while (Singleton<Resources>.Instance?.Map is null) yield return new WaitForSeconds(1);
+            while (Singleton<Resources>.Instance?.Map is null) yield return CheckReadyToDumpDelay;
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.LocomotionProfile");
-            while (Singleton<Resources>.Instance?.LocomotionProfile is null) yield return new WaitForSeconds(1);
+            while (Singleton<Resources>.Instance?.LocomotionProfile is null) yield return CheckReadyToDumpDelay;
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.MerchantProfile");
-            while (Singleton<Resources>.Instance?.MerchantProfile is null) yield return new WaitForSeconds(1);
+            while (Singleton<Resources>.Instance?.MerchantProfile is null) yield return CheckReadyToDumpDelay;
 
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.GameInfo");
-            while (!Singleton<Resources>.Instance.GameInfo.initialized) yield return new WaitForSeconds(1);
+            while (!Singleton<Resources>.Instance.GameInfo.initialized) yield return CheckReadyToDumpDelay;
 
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Map.Instance.Simulator");
-            while (Singleton<Map>.Instance?.Simulator is null) yield return new WaitForSeconds(1);
-            while (!Singleton<Map>.Instance.Simulator.IsActiveSimElement) yield return new WaitForSeconds(1);
+            while (Singleton<Map>.Instance?.Simulator is null) yield return CheckReadyToDumpDelay;
+            while (!Singleton<Map>.Instance.Simulator.IsActiveSimElement) yield return CheckReadyToDumpDelay;
             /*
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Map.Instance.Simulator.EnabledTimeProgression");
-            while (!Singleton<Manager.Map>.Instance.Simulator.EnabledTimeProgression) yield return new WaitForSeconds(1);
+            while (!Singleton<Manager.Map>.Instance.Simulator.EnabledTimeProgression) yield return CheckReadyToDumpDelay;
             */
 
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Map.Instance.Player");
-            while (Singleton<Map>.Instance?.Player is null) yield return new WaitForSeconds(1);
+            while (Singleton<Map>.Instance?.Player is null) yield return CheckReadyToDumpDelay;
 
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Map.Instance.Player.PlayerController");
-            while (Singleton<Map>.Instance?.Player?.PlayerController is null) yield return new WaitForSeconds(1);
+            while (Singleton<Map>.Instance?.Player?.PlayerController is null) yield return CheckReadyToDumpDelay;
 
             /**/
             Logger.LogDebug(
                 "CheckReadyToDump: waiting on Manager.Map.Instance.Player.PlayerController.State to be Normal");
             while (!(Singleton<Map>.Instance?.Player?.PlayerController.State is Normal))
             {
-                yield return new WaitForSeconds(1);
+                yield return CheckReadyToDumpDelay;
             }
             /**/
 
             Logger.LogDebug("CheckReadyToDump: waiting for scene to finish loading");
             while (Singleton<Manager.Scene>.Instance.IsNowLoading || Singleton<Manager.Scene>.Instance.IsNowLoadingFade)
             {
-                yield return new WaitForSeconds(1);
+                yield return CheckReadyToDumpDelay;
             }
 
 
@@ -172,7 +172,7 @@ namespace IllusionMods
                     Logger.LogDebug($"CheckReadyToDump: level {DumpLevelReady} ready!");
                 }
 
-                yield return new WaitForSeconds(1);
+                yield return CheckReadyToDumpDelay;
             }
         }
 

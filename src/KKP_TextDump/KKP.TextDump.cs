@@ -120,23 +120,23 @@ namespace IllusionMods
         private void KKP_TextDumpUpdate(TextDump sender, EventArgs eventArgs) { }
 
 
-        private static IEnumerator KKP_CheckReadyToDump()
+        private IEnumerator KKP_CheckReadyToDump()
         {
-            yield return new WaitForSeconds(1);
+            yield return CheckReadyToDumpDelay;
 
             while (DumpLevelReady < (int) DumpLevels.Secondary)
             {
                 if (DumpLevelCompleted < DumpLevelReady)
                 {
                     Logger.LogDebug($"CheckReadyToDump: waiting on {(DumpLevels)DumpLevelReady} dump");
-                    while (DumpLevelCompleted < DumpLevelReady) yield return new WaitForSeconds(1);
+                    while (DumpLevelCompleted < DumpLevelReady) yield return CheckReadyToDumpDelay;
                     continue;
                 }
 
                 if (DumpLevelCompleted == (int) DumpLevels.Secondary - 1)
                 {
                     Logger.LogDebug($"CheckReadyToDump: waiting to leave title screen");
-                    while (_waitForTitleUnload) yield return new WaitForSeconds(1);
+                    while (_waitForTitleUnload) yield return CheckReadyToDumpDelay;
                 }
 
                 DumpLevelReady++;
@@ -144,7 +144,7 @@ namespace IllusionMods
             }
 
             Logger.LogDebug("CheckReadyToDump: waiting for Localize.Translate.Manager");
-            while (!Localize.Translate.Manager.initialized) yield return new WaitForSeconds(1);
+            while (!Localize.Translate.Manager.initialized) yield return CheckReadyToDumpDelay;
 
             /*
             while (DumpLevelReady < (int) DumpLevels.Maker)
@@ -152,17 +152,17 @@ namespace IllusionMods
                 if (DumpLevelCompleted < DumpLevelReady)
                 {
                     Logger.LogDebug($"CheckReadyToDump: waiting on {(DumpLevels) DumpLevelReady} dump");
-                    while (DumpLevelCompleted < DumpLevelReady) yield return new WaitForSeconds(1);
+                    while (DumpLevelCompleted < DumpLevelReady) yield return CheckReadyToDumpDelay;
                     continue;
                 }
 
                 Logger.LogDebug("CheckReadyToDump: waiting for ChaCustom.CustomBase (maker launch)");
-                while (Singleton<ChaCustom.CustomBase>.Instance == null) yield return new WaitForSeconds(1);
+                while (Singleton<ChaCustom.CustomBase>.Instance == null) yield return CheckReadyToDumpDelay;
 
                 while (Singleton<Manager.Scene>.Instance.IsNowLoading ||
                        Singleton<Manager.Scene>.Instance.IsNowLoadingFade)
                 {
-                    yield return new WaitForSeconds(1);
+                    yield return CheckReadyToDumpDelay;
                 }
 
                 DumpLevelReady++;
@@ -175,12 +175,12 @@ namespace IllusionMods
                 if (DumpLevelCompleted < DumpLevelReady)
                 {
                     Logger.LogDebug($"CheckReadyToDump: waiting on {(DumpLevels)DumpLevelReady} dump");
-                    while (DumpLevelCompleted < DumpLevelReady) yield return new WaitForSeconds(1);
+                    while (DumpLevelCompleted < DumpLevelReady) yield return CheckReadyToDumpDelay;
                     continue;
                 }
 
                 Logger.LogDebug($"CheckReadyToDump: waiting to leave title screen");
-                while (_waitForTitleUnload) yield return new WaitForSeconds(1);
+                while (_waitForTitleUnload) yield return CheckReadyToDumpDelay;
                 DumpLevelReady++;
             }
 
@@ -189,26 +189,26 @@ namespace IllusionMods
                 if (DumpLevelCompleted < DumpLevelReady)
                 {
                     Logger.LogDebug($"CheckReadyToDump: waiting on {(DumpLevels)DumpLevelReady} dump");
-                    while (DumpLevelCompleted < DumpLevelReady) yield return new WaitForSeconds(1);
+                    while (DumpLevelCompleted < DumpLevelReady) yield return CheckReadyToDumpDelay;
                     continue;
                 }
 
                 Logger.LogDebug("CheckReadyToDump: waiting on Manager.Game");
-                while (!Singleton<Game>.IsInstance()) yield return new WaitForSeconds(1);
+                while (!Singleton<Game>.IsInstance()) yield return CheckReadyToDumpDelay;
 
                 Logger.LogDebug("CheckReadyToDump: waiting on Manager.Game.actScene");
-                while (Singleton<Game>.Instance?.actScene == null) yield return new WaitForSeconds(1);
+                while (Singleton<Game>.Instance?.actScene == null) yield return CheckReadyToDumpDelay;
 
                 Logger.LogDebug("CheckReadyToDump: waiting on Manager.Game.actScene.Player");
-                while (Singleton<Game>.Instance?.actScene?.Player == null) yield return new WaitForSeconds(1);
+                while (Singleton<Game>.Instance?.actScene?.Player == null) yield return CheckReadyToDumpDelay;
 
                 Logger.LogDebug("CheckReadyToDump: waiting on Manager.Game.Player.isActive");
-                while (!Singleton<Game>.Instance.actScene.Player.isActive) yield return new WaitForSeconds(1);
+                while (!Singleton<Game>.Instance.actScene.Player.isActive) yield return CheckReadyToDumpDelay;
 
                 while (Singleton<Manager.Scene>.Instance.IsNowLoading ||
                        Singleton<Manager.Scene>.Instance.IsNowLoadingFade)
                 {
-                    yield return new WaitForSeconds(1);
+                    yield return CheckReadyToDumpDelay;
                 }
 
                 DumpLevelReady++;
@@ -218,7 +218,7 @@ namespace IllusionMods
             while (DumpLevelReady < (int)DumpLevels.Main)
             {
                 Logger.LogDebug($"CheckReadyToDump: Waiting for {(DumpLevels)DumpLevelReady} to complete");
-                while (DumpLevelCompleted < DumpLevelReady) yield return new WaitForSeconds(1);
+                while (DumpLevelCompleted < DumpLevelReady) yield return CheckReadyToDumpDelay;
                 DumpLevelReady++;
                 Logger.LogDebug($"CheckReadyToDump: Ready for {(DumpLevels)DumpLevelReady}");
             }
