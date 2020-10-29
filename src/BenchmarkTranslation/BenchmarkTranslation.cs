@@ -21,7 +21,7 @@ namespace IllusionMods
     {
         public const string GUID = "com.illusionmods.translationtools.benchmarktranslation";
         public const string PluginName = "Benchmark Translation";
-        public const string Version = "0.2";
+        public const string Version = "0.3";
         public const string PluginNameInternal = PluginName;
 
         private const int MaxOutstandingJobs = 500;
@@ -217,9 +217,17 @@ namespace IllusionMods
                    Interlocked.Read(ref _outstandingJobs) < MaxOutstandingJobs;
         }
 
+        private IEnumerator WaitUntilJobsBelowThreshold(int threshold, IEnumerator delay = null)
+        {
+            while (Interlocked.Read(ref _outstandingJobs) >= threshold) yield return delay;
+        }
+
         private IEnumerator WaitForJobsRate()
         {
             var jobThreshold = (int) Math.Ceiling(MaxOutstandingJobs / 2.0);
+            var thresholdDelay = new WaitForSecondsRealtime(0.5f);
+            var timeDelay = new WaitForSecondsRealtime(1.1f);
+
             while (true)
             {
                 if (_consecutiveFrames >= 30)
@@ -228,11 +236,11 @@ namespace IllusionMods
                 }
                 else if (_consecutiveSeconds >= 30)
                 {
-                    yield return new WaitForSeconds(1.1f);
+                    yield return timeDelay;
                 }
                 else if (Interlocked.Read(ref _outstandingJobs) >= jobThreshold)
                 {
-                    yield return new WaitUntil(() => Interlocked.Read(ref _outstandingJobs) < jobThreshold);
+                    yield return thresholdDelay;
                 }
                 else if (CanStartJob())
                 {
