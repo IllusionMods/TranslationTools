@@ -22,7 +22,7 @@ namespace IllusionMods
 
         private void ConfigureHandlersForAI(TextResourceRedirector sender, EventArgs eventArgs)
         {
-            sender.TitleSkillNameHandler = new TitleSkillNameHandler();
+            sender.TitleSkillNameHandler = new TitleSkillNameHandler(this, true);
             sender.ChaListDataHandler.WhiteListPaths.Add("abdata/list/characustom");
         }
     }

@@ -27,7 +27,8 @@ namespace IllusionMods
         {
             var search = isPathNormalized ? path : PathList.Normalize(path);
             TextResourceRedirector.Logger.DebugLogDebug($"IsPathAllowed: {search}");
-            if (handler.WhiteListPaths.Count > handler.BlackListPaths.Count)
+            // run shorter test first
+            if (handler.WhiteListPaths.Count < handler.BlackListPaths.Count)
             {
                 return IsPathWhitelisted(handler, search, true) && !IsPathBlacklisted(handler, search, true);
             }

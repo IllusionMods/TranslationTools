@@ -34,11 +34,16 @@ namespace IllusionMods
         }
 
         internal static bool DefaultShouldHandleAsset<THandler, TAsset>(this THandler handler, TAsset asset,
-            IAssetOrResourceLoadedContext context) 
-            where TAsset: UnityEngine.Object
-            where THandler: IRedirectorHandler<TAsset>
+            IAssetOrResourceLoadedContext context)
+            where TAsset : UnityEngine.Object
+            where THandler : IRedirectorHandler<TAsset>
         {
-            return handler.Enabled && !context.HasReferenceBeenRedirectedBefore(asset);
+            if (!handler.Enabled || context.HasReferenceBeenRedirectedBefore(asset)) return false;
+            if (handler is IPathListBoundHandler pathListBoundHandler)
+            {
+                return pathListBoundHandler.IsPathAllowed(asset, context);
+            }
+            return true;
         }
 
         public static ConfigEntry<TConf> ConfigEntryBind<TConf>(this IRedirectorHandler handler, string key, TConf defaultValue, string description)

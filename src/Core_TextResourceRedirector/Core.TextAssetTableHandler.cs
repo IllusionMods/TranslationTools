@@ -103,9 +103,7 @@ namespace IllusionMods
         protected override bool ShouldHandleAsset(TextAsset asset, IAssetOrResourceLoadedContext context)
         {
             Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}])?");
-            var result = base.ShouldHandleAsset(asset, context) &&
-                         TextAssetTableHelper.IsTable(asset) &&
-                         this.IsPathAllowed(asset, context);
+            var result = base.ShouldHandleAsset(asset, context) && TextAssetTableHelper.IsTable(asset);
             Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}]) => {result}");
             return result;
         }

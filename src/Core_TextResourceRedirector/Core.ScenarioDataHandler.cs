@@ -205,7 +205,7 @@ namespace IllusionMods
         protected override bool ShouldHandleAsset(ScenarioData asset, IAssetOrResourceLoadedContext context)
         {
             Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}])?");
-            var result = base.ShouldHandleAsset(asset, context) && this.IsPathAllowed(asset, context);
+            var result = base.ShouldHandleAsset(asset, context);
             Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}]) => {result}");
             return result;
         }

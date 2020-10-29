@@ -8,7 +8,7 @@ namespace IllusionMods
 {
     public class PathList : ICollection<string>
     {
-        private readonly HashSet<string> _paths = new HashSet<string>();
+        private readonly HashSet<string> _paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static ManualLogSource Logger => TextResourceRedirector.Logger;
         public int Count => _paths.Count;
 

@@ -54,7 +54,6 @@ namespace IllusionMods
 
             var result = false;
 
-            var skipRegistration = !IsTranslationRegistrationAllowed(calculatedModificationPath);
             foreach (var entry in GetParams(asset))
             {
                 if (UpdateParam(calculatedModificationPath, cache, entry)) result = true;

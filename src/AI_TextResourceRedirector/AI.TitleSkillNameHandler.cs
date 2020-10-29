@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using BepInEx.Logging;
 using XUnity.AutoTranslator.Plugin.Core;
@@ -8,82 +9,53 @@ using XUnity.ResourceRedirector;
 
 namespace IllusionMods
 {
-    public class TitleSkillNameHandler : AssetLoadedHandlerBaseV2<TitleSkillName>
+    public class TitleSkillNameHandler : ParamAssetLoadedHandler<TitleSkillName, TitleSkillName.Param>
     {
-        public TitleSkillNameHandler()
+        public TitleSkillNameHandler(TextResourceRedirector plugin, bool allowTranslationRegistration = false) :
+            base(plugin, allowTranslationRegistration) { }
+
+        public override IEnumerable<TitleSkillName.Param> GetParams(TitleSkillName asset)
         {
-            CheckDirectory = true;
-            Logger.LogDebug($"{GetType()} enabled");
+            return asset.param;
         }
 
-        private static ManualLogSource Logger => TextResourceRedirector.Logger;
-
-        protected override string CalculateModificationFilePath(TitleSkillName asset,
-            IAssetOrResourceLoadedContext context)
+        public override bool UpdateParam(string calculatedModificationPath, SimpleTextTranslationCache cache,
+            TitleSkillName.Param param)
         {
-            return context.GetPreferredFilePathWithCustomFileName(asset, null).Replace(".unity3d", "");
-        }
-
-        protected override bool DumpAsset(string calculatedModificationPath, TitleSkillName asset,
-            IAssetOrResourceLoadedContext context)
-        {
-            var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-            var cache = new SimpleTextTranslationCache(
-                defaultTranslationFile,
-                false);
-
-            foreach (var entry in asset.param)
-            {
-                var key = entry.name0;
-                var value = !string.IsNullOrEmpty(entry.name1) ? entry.name1 : entry.name0;
-                if (!string.IsNullOrEmpty(key) && LanguageHelper.IsTranslatable(key))
-                {
-                    cache.AddTranslationToCache(key, value);
-                }
-            }
-
-            return true;
-        }
-
-        protected override bool ReplaceOrUpdateAsset(string calculatedModificationPath, ref TitleSkillName asset,
-            IAssetOrResourceLoadedContext context)
-        {
-
-            var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-            var redirectedResources = RedirectedDirectory.GetFilesInDirectory(calculatedModificationPath, ".txt");
-            var streams = redirectedResources.Select(x => x.OpenStream());
-            var cache = new SimpleTextTranslationCache(
-                defaultTranslationFile,
-                streams,
-                false,
-                true);
-
-            if (cache.IsEmpty) return false;
-
             var result = false;
-            foreach (var entry in asset.param)
+            var key = param.name0;
+            if (string.IsNullOrEmpty(key)) return false;
+            if (cache.TryGetTranslation(key, true, out var translated))
             {
-                var key = entry.name0;
-                if (string.IsNullOrEmpty(key)) continue;
-                if (cache.TryGetTranslation(key, true, out var translated))
-                {
-                    entry.name0 = translated;
-                    TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
-                    result = true;
-                }
-                else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
-                         LanguageHelper.IsTranslatable(key))
-                {
-                    cache.AddTranslationToCache(key, !string.IsNullOrEmpty(entry.name1) ? entry.name1 : key);
-                }
+                param.name0 = translated;
+                TrackReplacement(calculatedModificationPath, key, translated);
+                TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
+                result = true;
+            }
+            else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
+                     LanguageHelper.IsTranslatable(key))
+            {
+                cache.AddTranslationToCache(key, !string.IsNullOrEmpty(param.name1) ? param.name1 : key);
             }
 
             return result;
         }
 
+        public override bool DumpParam(SimpleTextTranslationCache cache, TitleSkillName.Param param)
+        {
+            var key = TextResourceHelper.GetSpecializedKey(param, param.name0);
+            if (string.IsNullOrEmpty(key) || !LanguageHelper.IsTranslatable(key)) return false;
+            var value = !string.IsNullOrEmpty(param.name1) ? param.name1 : key;
+            cache.AddTranslationToCache(key, value);
+            return true;
+        }
+
         protected override bool ShouldHandleAsset(TitleSkillName asset, IAssetOrResourceLoadedContext context)
         {
-            return !context.HasReferenceBeenRedirectedBefore(asset);
+            Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}])?");
+            var result = base.ShouldHandleAsset(asset, context);
+            Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}]) => {result}");
+            return result;
         }
     }
 }

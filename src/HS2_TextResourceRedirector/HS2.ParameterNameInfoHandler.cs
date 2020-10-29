@@ -4,8 +4,8 @@ using XUnity.AutoTranslator.Plugin.Core;
 
 namespace IllusionMods
 {
-    public class
-        ParameterNameInfoHandler : StringArrayParamAssetLoadedHandler<ParameterNameInfo, ParameterNameInfo.Param>
+    public class ParameterNameInfoHandler : 
+        StringArrayParamAssetLoadedHandler<ParameterNameInfo, ParameterNameInfo.Param>
     {
         public ParameterNameInfoHandler(TextResourceRedirector plugin) : base(plugin) { }
 
