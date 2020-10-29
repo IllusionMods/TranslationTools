@@ -13,10 +13,9 @@ namespace IllusionMods
 {
     public partial class RandomNameProvider : BaseUnityPlugin
     {
-        //public const string GUID = "com.illusionmods.translationtools.random_name_provider";
-        public const string GUID = "random_name_provider";
+        public const string GUID = "com.illusionmods.translationtools.random_name_provider";
         public const string PluginName = "Random Name Provider";
-        public const string Version = "1.1.0";
+        public const string Version = "2.0.1";
 
         internal new static ManualLogSource Logger;
 
@@ -31,9 +30,9 @@ namespace IllusionMods
         {
             // have to hook in awake since random list loaded early
             Logger = Logger ?? base.Logger;
-            EnableLoading = Config.Bind("Config", "Load Names", true, "Load name lists.");
+            EnableLoading = Config.Bind("Config", "Load Names", false, "Load name lists.");
             DumpNames = Config.Bind("Config", "Dump Default", false, "Write default name lists out to files");
-            ReplaceMode = Config.Bind("Config", "Replace Mode", true,
+            ReplaceMode = Config.Bind("Config", "Replace Mode", false,
                 "Replace names with external name lists (otherwise append to defaults");
 
             if (!Directory.Exists(NameDirectory)) Directory.CreateDirectory(NameDirectory);
