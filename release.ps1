@@ -15,12 +15,23 @@ function Zip-Plugin {
     $dll = (Get-ChildItem -Path ($plugin_dir) -Filter $dll_name -Recurse -Force)[0]
     $version = $dll.VersionInfo.FileVersion.ToString() 
 
+    $srcpath = "src\" + $dll.BaseName
+    
+    if (-Not (Test-Path $srcpath)) {
+        return
+    }
+
+    if ($version -eq "0.0.0.0") {
+        return
+    }
+
+
    
     $workdir = $topdir + "\work"
     $destdir = $workdir + "\BepInEx\plugins\TranslationTools"
 
     $zipfile = $topdir + "\dist\" + $dll.BaseName + ".v" + $version + ".zip"
-
+    
     if (Test-Path $zipfile) {
         return
     }
@@ -36,7 +47,8 @@ function Zip-Plugin {
     $dummy = New-Item -ItemType Directory -Force -Path ($topdir + "\dist")
 
     pushd $workdir
-    Compress-Archive -Path "BepInEx" -Force -CompressionLevel "Optimal" -DestinationPath $zipfile
+    #Compress-Archive -Path "BepInEx" -Force -CompressionLevel "Optimal" -DestinationPath $zipfile
+    & 7z.exe a -mx9 -tzip $zipfile BepInEx
     popd
 
     echo $zipfile

@@ -265,6 +265,9 @@ __pycache__/
 *.pyc
 
 # keep directories under libs, not files
-libs/**/*
+libs/**/*.dll
+libs/**/*.pdb
+libs/**/*.xml
 
 *.bak
+

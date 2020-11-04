@@ -37,8 +37,8 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\IllusionLibs.HoneySelect2.Assembly-CSharp.2020.5.29\lib\net46\Assembly-CSharp.dll</HintPath>
-      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\libs\HS2DX\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\IllusionLibs.HoneySelect2.Assembly-CSharp-firstpass.2020.5.29\lib\net35\Assembly-CSharp-firstpass.dll</HintPath>
@@ -98,6 +98,7 @@
     <Compile Include="HS2.TextResourceRedirector.cs" />
     <Compile Include="HS2.MapInfoHandler.cs" />
     <Compile Include="HS2.ParameterNameInfoHandler.cs" />
+    <Compile Include="HS2.PlanNameInfoHandler.cs" />
     <Compile Include="HS2.VoiceInfoHandler.cs" />
   </ItemGroup>
   <Import Project="..\Shared.Plugin\Shared.Plugin.projitems" Label="Shared" />

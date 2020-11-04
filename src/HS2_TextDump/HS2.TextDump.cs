@@ -1,17 +1,12 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using BepInEx;
-using BepInEx.Logging;
 using IllusionMods.Shared;
 using Manager;
 using UnityEngine;
-using UnityEngine.Experimental.PlayerLoop;
 using UnityEngine.SceneManagement;
 using static IllusionMods.TextDump.Helpers;
+using Scene = UnityEngine.SceneManagement.Scene;
 
 namespace IllusionMods
 {
@@ -21,19 +16,21 @@ namespace IllusionMods
     {
         public const string PluginNameInternal = "HS2_TextDump";
 
-        private static bool _LobbyLoaded = false;
+        private static bool _mainMenuLoaded;
 
-        private static readonly string[] AssetPathsToWaitOn = new[]
+
+        private static readonly string[] AssetPathsToWaitOn =
         {
             "list/h/sound/voice",
             "list/characustom",
             "adv/scenario"
         };
 
-        private int _stableCount = 0;
-        private TranslationCount _lastTotal = new TranslationCount();
         private TranslationCount _lastDelta = new TranslationCount();
-        private bool _waitOnRetry = false;
+        private TranslationCount _lastTotal = new TranslationCount();
+
+        private int _stableCount;
+        private bool _waitOnRetry;
 
         static TextDump()
         {
@@ -51,7 +48,6 @@ namespace IllusionMods
 
             TextDumpAwake += HS2_TextDumpAwake;
             TextDumpLevelComplete += TextDump_TextDumpLevelComplete;
-
         }
 
         private void TextDump_TextDumpLevelComplete(TextDump sender, EventArgs eventArgs)
@@ -61,7 +57,7 @@ namespace IllusionMods
             if (DumpLevelCompleted >= DumpLevelMax)
             {
                 NotificationMessage = string.Empty;
-                
+
 
                 if (_total == _lastTotal)
                 {
@@ -83,12 +79,12 @@ namespace IllusionMods
                     }
                     else
                     {
-                        NotificationMessage = $"Number of translations unchanged";
-
+                        NotificationMessage = "Number of translations unchanged";
                     }
 
 
-                    NotificationMessage += $", will keep re-dumping until it's stable for {3 - _stableCount} more cycle(s)";
+                    NotificationMessage +=
+                        $", will keep re-dumping until it's stable for {3 - _stableCount} more cycle(s)";
                     DumpLevelCompleted--;
                     DumpLevelReady = DumpLevelCompleted;
                 }
@@ -105,12 +101,12 @@ namespace IllusionMods
             SceneManager.sceneLoaded += HS2_sceneLoaded;
         }
 
-        private void HS2_sceneLoaded(UnityEngine.SceneManagement.Scene scene, LoadSceneMode loadSceneMode)
+        private void HS2_sceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
         {
-            if ((IsStudio && scene.name == "Studio" && loadSceneMode == LoadSceneMode.Single) ||
-                (!IsStudio && (scene.name == "Lobby" || scene.name == "NightPool")))
+            if (IsStudio && scene.name == "Studio" && loadSceneMode == LoadSceneMode.Single ||
+                !IsStudio && (scene.name == "Lobby" || scene.name == "NightPool"))
             {
-                _LobbyLoaded = true;
+                _mainMenuLoaded = true;
             }
         }
 
@@ -129,30 +125,30 @@ namespace IllusionMods
 
             Logger.LogDebug("CheckReadyToDump: waiting for Lobby to load");
 
-            while (!_LobbyLoaded) yield return CheckReadyToDumpDelay;
+            while (!_mainMenuLoaded) yield return CheckReadyToDumpDelay;
 
             SceneManager.sceneLoaded -= HS2_sceneLoaded;
-           
+
 
             Logger.LogDebug("CheckReadyToDump: waiting for lobby to finish loading");
-            
+
             while (Singleton<Manager.Scene>.Instance == null) yield return CheckReadyToDumpDelay;
             while (Manager.Scene.IsNowLoadingFade) yield return CheckReadyToDumpDelay;
 
             Logger.LogDebug("CheckReadyToDump: waiting for Manager.Voice");
-           
+
             while (Voice.infoTable == null || Voice.infoTable.Count == 0) yield return CheckReadyToDumpDelay;
 
-            Logger.LogDebug($"CheckReadyToDump: waiting for Manager.GameSystem");
-            while (Singleton<Manager.GameSystem>.Instance == null) yield return CheckReadyToDumpDelay;
+            Logger.LogDebug("CheckReadyToDump: waiting for Manager.GameSystem");
+            while (Singleton<GameSystem>.Instance == null) yield return CheckReadyToDumpDelay;
 
-            Logger.LogDebug($"Language = {Singleton<Manager.GameSystem>.Instance.language}");
+            Logger.LogDebug($"Language = {Singleton<GameSystem>.Instance.language}");
 
-            
+
             foreach (var pth in AssetPathsToWaitOn)
             {
                 Logger.LogDebug($"CheckReadyToDump: waiting until we can list asset bundles for {pth}");
-                
+
                 while (true)
                 {
                     var count = 0;
@@ -164,6 +160,7 @@ namespace IllusionMods
                     {
                         count = 0;
                     }
+
                     if (count != 0) break;
 
                     try
@@ -174,6 +171,7 @@ namespace IllusionMods
                     {
                         count = 0;
                     }
+
                     if (count != 0) break;
 
                     yield return CheckReadyToDumpDelay;
@@ -193,9 +191,6 @@ namespace IllusionMods
 
                 yield return CheckReadyToDumpDelay;
             }
-
-
         }
-
     }
 }

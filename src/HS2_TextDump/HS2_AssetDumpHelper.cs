@@ -18,8 +18,11 @@ namespace IllusionMods
             AssetDumpGenerators.Add(GetParameterNameInfoDumpers);
             AssetDumpGenerators.Add(GetAchievementInfoDumpers);
             AssetDumpGenerators.Add(GetMapInfoDumpers);
+            AssetDumpGenerators.Add(GetPlanNameInfoDumpers);
+
             base.InitializeHelper();
         }
+
 
         protected override IEnumerable<string> GetHTypeNames()
         {
@@ -66,7 +69,7 @@ namespace IllusionMods
                     {
                         var translations = new OrderedDictionary<string, string>();
 
-                        var asset =  ManualLoadAsset<MapInfo>(assetBundleName, assetName, "abdata");
+                        var asset = ManualLoadAsset<MapInfo>(assetBundleName, assetName, "abdata");
                         if (asset is null) return translations;
 
                         void AddResult(string[] strings)
@@ -113,7 +116,7 @@ namespace IllusionMods
             return base.IsValidChaListDataLocalization(id, entry, origString, possibleTranslation);
         }
         */
-       
+
         protected IEnumerable<ITranslationDumper> GetBgmNameInfoDumpers()
         {
             foreach (var assetBundleName in GetAssetBundleNameListFromPath(AssetBundleNames.GamedataBgmnamePath, true))
@@ -322,6 +325,45 @@ namespace IllusionMods
                         }
 
                         TableHelper.ActOnCells(asset, CellHandler, out _);
+                        return translations;
+                    }
+
+                    yield return new StringTranslationDumper(filePath, AssetDumper);
+                }
+            }
+        }
+
+        private IEnumerable<ITranslationDumper> GetPlanNameInfoDumpers()
+        {
+            var bundlePath = "spr/list/";
+            foreach (var assetBundleName in GetAssetBundleNameListFromPath(bundlePath, true))
+            {
+                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName)
+                    .Where(x => x.StartsWith("planname", StringComparison.OrdinalIgnoreCase)))
+                {
+                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
+
+                    IDictionary<string, string> AssetDumper()
+                    {
+                        var translations = new OrderedDictionary<string, string>();
+
+                        var asset = ManualLoadAsset<PlanNameInfo>(assetBundleName, assetName, "abdata");
+                        if (asset is null) return translations;
+
+                        void AddResult(string[] strings)
+                        {
+                            if (strings == null || strings.Length < 1) return;
+                            AddLocalizationToResults(translations, strings[0],
+                                strings.Length > 1 && !string.IsNullOrEmpty(strings[1])
+                                    ? strings[1]
+                                    : string.Empty);
+                        }
+
+                        foreach (var entry in asset.param)
+                        {
+                            AddResult(entry.name?.ToArray());
+                        }
+
                         return translations;
                     }
 

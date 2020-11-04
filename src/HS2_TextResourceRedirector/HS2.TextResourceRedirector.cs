@@ -20,6 +20,7 @@ namespace IllusionMods
         public MapInfoHandler MapInfoHandler { get; private set; }
         public ParameterNameInfoHandler ParameterNameInfoHandler { get; private set; }
         public AchievementInfoDataHandler AchievementInfoDataHandler { get; private set; }
+        public object PlanNameInfoHandler { get; private set; }
 
         private TextResourceHelper GetTextResourceHelper()
         {
@@ -35,6 +36,12 @@ namespace IllusionMods
             sender.ParameterNameInfoHandler = new ParameterNameInfoHandler(sender);
             sender.AchievementInfoDataHandler = new AchievementInfoDataHandler(sender);
             sender.ChaListDataHandler.WhiteListPaths.Add("abdata/list/characustom");
+
+            if (TextResourceHelper is HS2_TextResourceHelper helper && helper.IsHS2DX())
+            {
+                // DX only
+                sender.PlanNameInfoHandler = new PlanNameInfoHandler(sender);
+            }
         }
     }
 }
