@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Text;
 using BepInEx;
 using BepInEx.Logging;
 using XUnity.AutoTranslator.Plugin.Core;
@@ -53,6 +55,8 @@ namespace IllusionMods
             Logger = Logger ?? base.Logger;
             TextResourceHelper = GetTextResourceHelper();
 
+            TextFormatter.Init(this);
+
             ExcelDataHandler = new ExcelDataHandler(this);
 
             ScenarioDataHandler = new ScenarioDataHandler(this);
@@ -67,6 +71,27 @@ namespace IllusionMods
 #endif
             XuaHooks.Init();
             OnTextResourceRedirectorAwake(EventArgs.Empty);
+            LogTextResourceHelperSettings();
+        }
+
+        private void LogTextResourceHelperSettings()
+        {
+            var settings = TextResourceHelper?.GetSettingsStrings();
+            if (settings == null || settings.Count == 0) return;
+
+            var message = new StringBuilder();
+            message.Append(nameof(TextResourceHelper)).Append(" (").Append(TextResourceHelper.GetType().FullName)
+                .Append(") Settings:\n");
+            foreach (var setting in settings.OrderBy(s => s.Key))
+            {
+                message.Append(" - ").Append(setting.Key).Append(":\n");
+                foreach (var val in setting.Value.OrderBy(v => v))
+                {
+                    message.Append("    - ").Append(val).Append("\n");
+                }
+            }
+
+            Logger.LogDebug(message.ToString());
         }
 
         protected T CreateHelper<T>() where T : IHelper
@@ -125,6 +150,5 @@ namespace IllusionMods
             return result;
         }
 #endif
-
     }
 }

@@ -35,8 +35,10 @@ namespace IllusionMods
         {
             Instance = this;
            
+            /*
             // replacement fires INSIDE the function we need to postfix, so init hooks up front
             InitHooks();
+            */
         }
 
 
@@ -47,7 +49,6 @@ namespace IllusionMods
         {
             // updating the NickName assets directly causes issues, but after SaveData.LoadNickNameParam() they
             // are safe to manipulate
-            InitHooks();
 
             var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
             var redirectedResources = RedirectedDirectory.GetFilesInDirectory(calculatedModificationPath, ".txt");
@@ -60,24 +61,24 @@ namespace IllusionMods
 
             if (cache.IsEmpty) return true;
 
-            var replacementKey = calculatedModificationPath
+            var personalityKey = calculatedModificationPath
                 .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                 .LastOrDefault();
             // don't touch "player" entry
-            if (string.IsNullOrEmpty(replacementKey) ||
-                replacementKey.Equals("player", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(personalityKey) ||
+                personalityKey.Equals("player", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
 
-            if (!_replacements.TryGetValue(replacementKey, out var replacements))
+            if (!_replacements.TryGetValue(personalityKey, out var replacements))
             {
-                _replacements[replacementKey] = replacements = new Dictionary<string, string>();
+                _replacements[personalityKey] = replacements = new Dictionary<string, string>();
             }
 
             foreach (var entry in asset.param)
             {
-                if (!entry.isSpecial) continue;
+                //if (!entry.isSpecial) continue;
                 var key = TextResourceHelper.GetSpecializedKey(entry, entry.Name);
                 if (string.IsNullOrEmpty(key)) continue;
                 if (cache.TryGetTranslation(key, true, out var translated))
@@ -92,6 +93,7 @@ namespace IllusionMods
                 }
             }
 
+            if (replacements.Count > 0) InitHooks();
             return true;
         }
 
@@ -105,7 +107,7 @@ namespace IllusionMods
 
             foreach (var entry in asset.param)
             {
-                if (!entry.isSpecial) continue;
+                //if (!entry.isSpecial) continue;
                 var key = TextResourceHelper.GetSpecializedKey(entry, entry.Name);
                 if (!string.IsNullOrEmpty(key) && LanguageHelper.IsTranslatable(key))
                 {
@@ -138,7 +140,7 @@ namespace IllusionMods
                     if (!Instance._replacements.TryGetValue(nicks.Key, out var replacements)) continue;
                     foreach (var entry in nicks.Value)
                     {
-                        if (!entry.isSpecial) continue;
+                        //if (!entry.isSpecial) continue;
                         var key = Instance.TextResourceHelper.GetSpecializedKey(entry, entry.Name);
                         if (!replacements.TryGetValue(key, out var translated)) continue;
                         entry.Name = translated;

@@ -1,15 +1,18 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using ADV;
+using JetBrains.Annotations;
 
 namespace IllusionMods
 {
+    [UsedImplicitly]
     public class AI_TextResourceHelper : AI_HS2_TextResourceHelper
     {
-        protected AI_TextResourceHelper() 
+        protected AI_TextResourceHelper()
         {
-            SupportedCommands.Add(Command.Switch); // Definately don't want this in HS2
+            SupportedCommands.Add(Command.Format); // Definitely don't want this in HS2
+            SupportedCommands.Add(Command.Switch); // Definitely don't want this in HS2
             CalcKeys = new HashSet<string>(new[] {"want"});
+            FormatKeys = new HashSet<string>(new[] {"パターン", "セリフ"});
         }
 
         public override IEnumerable<string> GetScenarioDirs()

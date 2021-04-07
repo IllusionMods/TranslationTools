@@ -1,10 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using HarmonyLib;
 using HS2;
+using JetBrains.Annotations;
 
 namespace IllusionMods
 {
+    [UsedImplicitly]
     public class HS2_TextResourceHelper : AI_HS2_TextResourceHelper
     {
         private static bool? _isHS2DX;
@@ -42,6 +43,16 @@ namespace IllusionMods
             var tableHelper = base.GetTableHelper();
             tableHelper.HTextColumns.AddRange(new[] {0});
             return tableHelper;
+        }
+
+        internal override Dictionary<string, IEnumerable<string>> GetSettingsStrings()
+        {
+            var settingsStrings = base.GetSettingsStrings();
+
+            settingsStrings[nameof(IsHS2DX)] = new[] {IsHS2DX().ToString()};
+            settingsStrings[nameof(_blackListedStringArrayParamAssetTranslations)] =
+                _blackListedStringArrayParamAssetTranslations;
+            return settingsStrings;
         }
     }
 }

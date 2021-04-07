@@ -27,5 +27,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core.RedirectorTextAssetLoadedHandlerBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.XuaHooks.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.MapInfoHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextFormatter.cs" />
   </ItemGroup>
 </Project>

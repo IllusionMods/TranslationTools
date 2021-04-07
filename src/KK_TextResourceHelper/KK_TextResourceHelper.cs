@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Runtime.Remoting.Messaging;
 using ADV;
+using JetBrains.Annotations;
 using static IllusionMods.TextResourceHelper.Helpers;
 
 namespace IllusionMods
 {
+    [UsedImplicitly]
     public class KK_TextResourceHelper : TextResourceHelper
     {
         private static readonly Dictionary<string, IEnumerable<string>> ExcelListPathColumnNameMapping =
@@ -29,13 +29,6 @@ namespace IllusionMods
         {
             SupportedCommands.Add(Command.Choice);
             SupportedCommands.Add((Command) 242);
-        }
-
-        protected override TextAssetTableHelper GetTableHelper()
-        {
-            var tableHelper = base.GetTableHelper();
-            tableHelper.HTextColumns.AddRange(new[] {4, 27, 50, 73});
-            return tableHelper;
         }
 
         public override bool IsReplacement(ScenarioData.Param param)
@@ -97,6 +90,13 @@ namespace IllusionMods
         public override bool IsRandomNameListAsset(string assetName)
         {
             return assetName.StartsWith("random_name", StringComparison.OrdinalIgnoreCase);
+        }
+
+        protected override TextAssetTableHelper GetTableHelper()
+        {
+            var tableHelper = base.GetTableHelper();
+            tableHelper.HTextColumns.AddRange(new[] {4, 27, 50, 73});
+            return tableHelper;
         }
     }
 }

@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Remoting.Messaging;
 using BepInEx.Logging;
-using IllusionMods.Shared;
 #if !HS
 using ADV;
 
@@ -14,32 +12,33 @@ namespace IllusionMods
 {
     public partial class TextResourceHelper : BaseHelperFactory<TextResourceHelper>, IHelper
     {
+        public const char OptionSafeComma = '\u201a';
         private static ManualLogSource _logger;
         protected static readonly string ChoiceDelimiter = ",";
         protected static readonly string SpecializedKeyDelimiter = ":";
         public readonly char[] WhitespaceCharacters = {' ', '\t'};
 
-        public const char OptionSafeComma = '\u201a';
-
         private TextAssetTableHelper _tableHelper;
+
+        protected TextResourceHelper() { }
 
         protected ManualLogSource Logger
         {
             get
             {
                 if (_logger != null) return _logger;
-                return (_logger = BepInEx.Logging.Logger.CreateLogSource(GetType().Name));
+                return _logger = BepInEx.Logging.Logger.CreateLogSource(GetType().Name);
             }
         }
 
         public TextAssetTableHelper TableHelper => _tableHelper ?? (_tableHelper = GetTableHelper());
 
+        public virtual void InitializeHelper() { }
+
         public virtual int XUnityLanguageToGameLanguage(string xUnityLanguage)
         {
             return -1;
         }
-
-        protected TextResourceHelper() { }
 
         public virtual bool IsValidLocalization(string original, string localization)
         {
@@ -63,29 +62,28 @@ namespace IllusionMods
             var headerRow = asset.GetRow(firstRow++);
             var numEmpty = headerRow.Count(h => h.IsNullOrWhiteSpace());
             if (headerRow.Count == numEmpty ||
-                headerRow.Count > 1 && (
-                    headerRow[1].IsNullOrWhiteSpace() && (
-                        headerRow[0].StartsWith("Ｈ") ||
-                        headerRow[0] == "主人公")))
+                headerRow.Count > 1 && headerRow[1].IsNullOrWhiteSpace() && (
+                    headerRow[0].StartsWith("Ｈ") ||
+                    headerRow[0] == "主人公"))
 
             {
                 headerRow = asset.GetRow(firstRow++);
             }
-            else if (numEmpty > 3 || (numEmpty/(headerRow.Count * 1.0)) > 0.49)
+            else if (numEmpty > 3 || numEmpty / (headerRow.Count * 1.0) > 0.49)
             {
                 var testRow = asset.GetRow(firstRow);
                 var testData = asset.GetRow(firstRow + 1);
                 if (testRow.Count > 1)
                 {
-                    if ((testRow[0] == "表示順番" || testRow[0] == "管理番号") ||
-                        (testData.Count > 1 && int.TryParse(testData[0], out _) && !int.TryParse(testRow[0], out _)))
+                    if (testRow[0] == "表示順番" || testRow[0] == "管理番号" ||
+                        testData.Count > 1 && int.TryParse(testData[0], out _) && !int.TryParse(testRow[0], out _))
                     {
                         headerRow = testRow;
                         firstRow++;
                     }
                 }
+            }
 
-            } 
             return headerRow;
         }
 
@@ -94,15 +92,6 @@ namespace IllusionMods
             return GetExcelHeaderRow(asset, out _);
         }
 
-        protected virtual TextAssetTableHelper GetTableHelper()
-        {
-            return new TextAssetTableHelper(new[] {"\r\n", "\r", "\n"}, new[] {"\t"});
-        }
-
-        protected virtual bool IsValidExcelRowTranslationKey(string key)
-        {
-            return key != "0";
-        }
         public virtual IEnumerable<string> GetExcelRowTranslationKeys(string assetName, List<string> row, int i)
         {
             if (row == null || row.Count <= i) yield break;
@@ -134,6 +123,27 @@ namespace IllusionMods
             return false;
         }
 
+        public string PrepareTranslationForReplacement(ExcelData asset, string translated)
+        {
+            return IsOptionDisplayItemAsset(asset.name) ? translated.Replace(',', OptionSafeComma) : translated;
+        }
+
+
+        public virtual bool IsValidStringArrayParamAssetTranslation(string orig, string translated)
+        {
+            return false;
+        }
+
+        protected virtual TextAssetTableHelper GetTableHelper()
+        {
+            return new TextAssetTableHelper(new[] {"\r\n", "\r", "\n"}, new[] {"\t"});
+        }
+
+        protected virtual bool IsValidExcelRowTranslationKey(string key)
+        {
+            return key != "0";
+        }
+
 #if !HS
 
         public Dictionary<string, string> GlobalMappings { get; } = new Dictionary<string, string>();
@@ -151,6 +161,19 @@ namespace IllusionMods
         {
             Command.Text
         };
+
+        internal virtual Dictionary<string, IEnumerable<string>> GetSettingsStrings()
+        {
+            return new Dictionary<string, IEnumerable<string>>
+            {
+                {nameof(TextKeysBlacklist), TextKeysBlacklist},
+                {nameof(CalcKeys), CalcKeys},
+                {nameof(FormatKeys), FormatKeys},
+                {nameof(SupportedCommands), SupportedCommands.Select(c => c.ToString())},
+                {nameof(GetRandomNameDirs), GetRandomNameDirs().ToList()},
+                {nameof(GetScenarioDirs), GetScenarioDirs().ToList()}
+            };
+        }
 
         public bool IsSupportedCommand(Command command)
         {
@@ -213,7 +236,7 @@ namespace IllusionMods
             {
                 try
                 {
-                    return Helpers.JoinStrings(ChoiceDelimiter, 
+                    return Helpers.JoinStrings(ChoiceDelimiter,
                         translation.Replace(ChoiceDelimiter[0], OptionSafeComma),
                         param.Args[i].Split(ChoiceDelimiter.ToCharArray(), 2)[1]);
                 }
@@ -328,20 +351,9 @@ namespace IllusionMods
             return new KeyValuePair<string, string>(key, val);
         }
 
+#else // HS
+        internal virtual Dictionary<string, IEnumerable<string>> GetSettingsStrings() =>
+            new Dictionary<string, IEnumerable<string>>();
 #endif
-        public string PrepareTranslationForReplacement(ExcelData asset, string translated)
-        {
-            return IsOptionDisplayItemAsset(asset.name) ? translated.Replace(',', OptionSafeComma) : translated;
-        }
-
-        public virtual void InitializeHelper() { }
-
-
-        public virtual bool IsValidStringArrayParamAssetTranslation(string orig, string translated)
-        {
-            return false;
-        }
-
-
     }
 }
