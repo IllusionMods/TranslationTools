@@ -21,7 +21,7 @@ namespace IllusionMods
     {
         public const string GUID = "com.illusionmods.translationtools.benchmarktranslation";
         public const string PluginName = "Benchmark Translation";
-        public const string Version = "0.3";
+        public const string Version = "0.3.0.1";
         public const string PluginNameInternal = PluginName;
 
         private const int MaxOutstandingJobs = 500;

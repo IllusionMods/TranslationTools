@@ -22,7 +22,7 @@ namespace IllusionMods
         public const string GUID = "com.deathweasel.bepinex.translationsync";
         public const string PluginName = "Translation Sync";
         public const string PluginNameInternal = "KK_TranslationSync";
-        public const string Version = "1.3.3";
+        public const string Version = "1.3.3.1";
 
         public static ConfigEntry<bool> Enabled { get; private set; }
         public static ConfigEntry<string> Personality { get; private set; }
