@@ -303,7 +303,9 @@ namespace IllusionMods
             {
                 foreach (var assetName in GetAssetNamesFromBundle(assetBundleName).Where(x =>
                     x.StartsWith("HVoice_", StringComparison.OrdinalIgnoreCase) ||
-                    x.StartsWith("HVoiceStart_", StringComparison.OrdinalIgnoreCase)))
+                    x.StartsWith("HVoiceStart_", StringComparison.OrdinalIgnoreCase) ||
+                    x.StartsWith("HVoiceEV", StringComparison.OrdinalIgnoreCase) ||
+                    x.StartsWith("HVoiceStartEV", StringComparison.OrdinalIgnoreCase)))
                 {
                     if (!assetName.EndsWith(".txt")) continue;
 
