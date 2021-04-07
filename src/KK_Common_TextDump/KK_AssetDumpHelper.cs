@@ -19,7 +19,7 @@ namespace IllusionMods
             AssetDumpGenerators.Add(GetCustomListDumpers);
             AssetDumpGenerators.Add(GetAnimationInfoDumpers);
             AssetDumpGenerators.Add(GetHPointToggleDumpers);
-            AssetDumpGenerators.Add(GetSpecialNickNameDumpers);
+            AssetDumpGenerators.Add(GetNickNameDumpers);
             AssetDumpGenerators.Add(GetEventInfoDumpers);
 
             AssetDumpGenerators.Add(GetScenarioTextMergers);
@@ -248,7 +248,7 @@ namespace IllusionMods
             return false;
         }
 
-        protected virtual IEnumerable<ITranslationDumper> GetSpecialNickNameDumpers()
+        protected virtual IEnumerable<ITranslationDumper> GetNickNameDumpers()
         {
             var assetBundleNames = GetAssetBundleNameListFromPath("etcetra/list/nickname/", true);
             foreach (var assetBundleName in assetBundleNames)
@@ -262,7 +262,7 @@ namespace IllusionMods
                         var results = new OrderedDictionary<string, string>();
                         var asset = ManualLoadAsset<NickName>(assetBundleName, assetName, null);
                         if (asset == null || asset.param.Count == 0) return results;
-                        foreach (var entry in asset.param.Where(e => e.isSpecial))
+                        foreach (var entry in asset.param)
                         {
                             if (!TryNickNameTranslationLookup(entry, out var value))
                             {
