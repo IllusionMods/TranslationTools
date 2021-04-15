@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Text;
 using BepInEx;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.ResourceRedirector.Constants;
@@ -49,6 +50,8 @@ namespace IllusionMods
         private static TextResourceRedirector _instance;
         private static int? _currentGameLanguage;
 
+        protected ConfigEntry<bool> EnableTracing { get; private set; }
+
         internal void Awake()
         {
             _instance = this;
@@ -70,8 +73,18 @@ namespace IllusionMods
             ChaListDataHandler = new ChaListDataHandler(this);
 #endif
             XuaHooks.Init();
+
+            EnableTracing = Config.Bind("Settings", "Enable Tracing", false, new ConfigDescription(
+                "Enable additional low level debug log messages", null, "Advanced"));
+            EnableTracing.SettingChanged += EnableTracing_SettingChanged;
+            EnableTracing_SettingChanged(this, EventArgs.Empty);
             OnTextResourceRedirectorAwake(EventArgs.Empty);
             LogTextResourceHelperSettings();
+        }
+
+        private void EnableTracing_SettingChanged(object sender, EventArgs e)
+        {
+            TextResourceExtensions.EnableTraces = EnableTracing.Value;
         }
 
         private void LogTextResourceHelperSettings()
