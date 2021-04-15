@@ -889,7 +889,7 @@ namespace IllusionMods
                         if (regex)
                         {
                             key = Regex.Escape(key);
-                            if (isFormat) key = key.Replace(FormatStringPlaceholder, "(.*)");
+                            if (isFormat) key = key.Replace(FormatStringPlaceholder, "(.+)");
                         }
 
                         if (regex) key = (isFormat ? "sr:" : "r:") + "\"^" + key + "$\"";

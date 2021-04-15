@@ -13,5 +13,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)AI.TextDump.Helpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AI_LocalizationDumpHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AI.AssetLoader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AI_LocalizationDumpHelper.Helpers.cs" />
   </ItemGroup>
 </Project>

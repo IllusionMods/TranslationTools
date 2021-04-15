@@ -89,11 +89,10 @@ namespace IllusionMods
             Assert.IsNotNull(AssetDumpGenerators);
             var dumpers = AssetDumpGenerators.ToList();
 
-            Logger.LogDebug($"AssetDumpGenerators Count={dumpers.Count}");
             while (dumpers.Count > 0)
             {
                 var assetDumpGenerator = dumpers.PopFront();
-                //Logger.LogDebug(assetDumpGenerator.Method.Name);
+                //Logger.DebugLogDebug(assetDumpGenerator.Method.Name);
                 var entries = new List<ITranslationDumper>();
                 if (!AssetDumpGeneratorTracker.TryGetValue(assetDumpGenerator.Method.Name, out var trackerHit))
                 {
@@ -114,7 +113,7 @@ namespace IllusionMods
                     Logger.LogError($"Error dumping: {assetDumpGenerator} : {err}");
                 }
 
-                Logger.LogDebug($"{assetDumpGenerator.Method.Name} => {entries.Count}");
+                Logger.DebugLogDebug($"{assetDumpGenerator.Method.Name} => {entries.Count}");
 
                 foreach (var entry in entries) yield return entry;
             }
@@ -430,7 +429,7 @@ namespace IllusionMods
                     foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
                     {
                         var asset = ManualLoadAsset<ScenarioData>(assetBundleName, assetName, "abdata");
-                        if (asset?.list is null) continue;
+                        if (asset is null || asset.list is null) continue;
 
                         var filePath = BuildAssetFilePath(assetBundleName, assetName);
                         var choiceDictionary =
@@ -446,7 +445,7 @@ namespace IllusionMods
                                 if (!ResourceHelper.IsSupportedCommand(param.Command))
                                 {
 #if DEBUG
-                                    Logger.LogDebug($"DumpScenarioText: Unsupported: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
+                                    Logger.DebugLogDebug($"DumpScenarioText: Unsupported: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
 #endif
                                     continue;
                                 }
@@ -475,6 +474,7 @@ namespace IllusionMods
                                             var value = string.Empty;
                                             if (!ResourceHelper.TextKeysBlacklist.Contains(key))
                                             {
+                                                Logger.DebugLogDebug($"DumpScenarioText: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
                                                 if (param.Args.Length >= 3 && !param.Args[2].IsNullOrEmpty())
                                                 {
                                                     value = param.Args[2];
@@ -489,9 +489,9 @@ namespace IllusionMods
                                     }
                                     case Command.Calc:
                                     {
-                                        //Logger.LogDebug($"DumpScenarioText: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
                                         if (param.Args.Length >= 3 && ResourceHelper.CalcKeys.Contains(param.Args[0]))
                                         {
+                                            Logger.DebugLogDebug($"DumpScenarioText: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
                                             var key = ResourceHelper.GetSpecializedKey(param, 2, out var value);
                                             allJpText.Add(key);
                                             AddLocalizationToResults(translations, key, value);
@@ -501,13 +501,12 @@ namespace IllusionMods
                                     }
                                     case Command.Format:
                                     {
-                                        //Logger.LogDebug($"DumpScenarioText: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
                                         if (param.Args.Length >= 2 && ResourceHelper.FormatKeys.Contains(param.Args[0]))
                                         {
+                                            Logger.DebugLogDebug($"DumpScenarioText: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
                                             var key = param.Args[1];
                                             allJpText.Add(key);
                                             AddLocalizationToResults(translations, key, string.Empty);
-
                                             // not sure where localizations are, but they're not in the next arg
                                         }
 
@@ -515,6 +514,7 @@ namespace IllusionMods
                                     }
                                     case Command.Choice:
                                     {
+                                        Logger.DebugLogDebug($"DumpScenarioText: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
                                         for (var i = 0; i < param.Args.Length; i++)
                                         {
                                             var key = ResourceHelper.GetSpecializedKey(param, i, out var fallbackValue);
@@ -536,6 +536,7 @@ namespace IllusionMods
                                     }
                                     case Command.Switch:
                                     {
+                                        Logger.DebugLogDebug($"DumpScenarioText: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
                                         for (var i = 0; i < param.Args.Length; i++)
                                         {
                                             var key = ResourceHelper.GetSpecializedKey(param, i, out var value);
@@ -548,6 +549,7 @@ namespace IllusionMods
 #if AI
                                     case Command.InfoText:
                                     {
+                                        Logger.DebugLogDebug($"DumpScenarioText: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
                                         for (var i = 2; i < param.Args.Length; i += 2)
                                         {
                                             var key = param.Args[i];
@@ -563,6 +565,7 @@ namespace IllusionMods
                                         if (param.Args.Length >= 1 &&
                                             ContainsNonAscii(param.Args[0]))
                                         {
+                                            Logger.DebugLogDebug($"DumpScenarioText: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
                                             allJpText.Add(param.Args[0]);
                                             AddLocalizationToResults(translations, param.Args[0],
                                                 "Jump");
@@ -611,7 +614,7 @@ namespace IllusionMods
         {
             foreach (var list in GetLists())
             {
-                Logger.LogDebug($"GetLists: {list.Key}, {list.Value}");
+                Logger.DebugLogDebug($"GetLists: {list.Key}, {list.Value}");
                 foreach (var listDumper in MakeListTextCollectors(list.Key, list.Value))
                 {
                     yield return listDumper;
@@ -620,7 +623,7 @@ namespace IllusionMods
 
             foreach (var list in GetStudioLists())
             {
-                Logger.LogDebug($"GetStudioLists: {list.Key}, {list.Value}");
+                Logger.DebugLogDebug($"GetStudioLists: {list.Key}, {list.Value}");
 
                 foreach (var listDumper in MakeListTextCollectors(list.Key, list.Value, "studio"))
                 {
@@ -639,13 +642,13 @@ namespace IllusionMods
         {
             var rootPath = baseDir.IsNullOrEmpty() ? path : CombinePaths(baseDir, path);
 
-            Logger.LogDebug($"MakeListTextCollectors: {rootPath}");
+            Logger.DebugLogDebug($"MakeListTextCollectors: {rootPath}");
             foreach (var assetBundleName in GetAssetBundleNameListFromPath(rootPath, true))
             {
-                Logger.LogDebug($"MakeListTextCollectors: {rootPath} {assetBundleName}");
+                Logger.DebugLogDebug($"MakeListTextCollectors: {rootPath} {assetBundleName}");
                 foreach (var assetName in GetAssetNamesFromBundle(assetBundleName))
                 {
-                    Logger.LogDebug($"MakeListTextCollectors: {rootPath} {assetBundleName} {assetName}");
+                    Logger.DebugLogDebug($"MakeListTextCollectors: {rootPath} {assetBundleName} {assetName}");
                     var filePath = BuildAssetFilePath(assetBundleName, assetName);
 
                     var translations = new OrderedDictionary<string, string>();
@@ -719,7 +722,7 @@ namespace IllusionMods
             {
                 var lookup = ResourceHelper.GetItemLookupColumns(headers, entry);
                 if (lookup.Length > 0) itemLookupColumns.Add(lookup);
-                Logger.LogDebug(
+                Logger.DebugLogDebug(
                     $"[TextDump] TryDumpExcelData: {assetBundleName}, {assetName}: {entry} => {string.Join(", ", lookup.Select(i => i.ToString()).ToArray())}");
             }
 

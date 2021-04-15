@@ -9,10 +9,15 @@ namespace IllusionMods
     {
         protected AI_TextResourceHelper()
         {
-            SupportedCommands.Add(Command.Format); // Definitely don't want this in HS2
-            SupportedCommands.Add(Command.Switch); // Definitely don't want this in HS2
-            CalcKeys = new HashSet<string>(new[] {"want"});
-            FormatKeys = new HashSet<string>(new[] {"パターン", "セリフ"});
+            // Format commands with a key of `セリフ` can be handled by TextDump/TextResourceRedirector
+            // others are used to make programatic labels and should be untouched
+            SupportedCommands.Add(Command.Format);
+            FormatKeys.Add("セリフ");
+
+            CalcKeys.Add("want");
+
+            // adding known format key that we don't handle to ensure we don't try and translated it
+            TextKeysBlacklist.Add("パターン");
         }
 
         public override IEnumerable<string> GetScenarioDirs()

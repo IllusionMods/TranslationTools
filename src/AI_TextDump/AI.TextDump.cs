@@ -1,43 +1,69 @@
 ﻿using System;
 using System.Collections;
+using AIProject.Player;
 using BepInEx;
+using HarmonyLib;
 using IllusionMods.Shared;
+using Manager;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UploaderSystem;
 using static IllusionMods.TextDump.Helpers;
+using Resources = Manager.Resources;
+using Scene = UnityEngine.SceneManagement.Scene;
+
 
 namespace IllusionMods
 {
     /// <remarks>
-    ///     Uses studio executable for single stage dump.
+    ///     Uses multi-stage dump against main game application (not Studio). After startup start or load
+    ///     save and wait for notification that dump is available.
     /// </remarks>
     [BepInProcess(Constants.MainGameProcessName)]
     [BepInPlugin(GUID, PluginName, Version)]
     public partial class TextDump : BaseUnityPlugin
     {
         public const string PluginNameInternal = "AI_TextDump";
-        private TranslationCount _lastDelta = new TranslationCount();
-        private TranslationCount _lastTotal = new TranslationCount();
-        private int _stableCount = 0;
-        private bool _waitOnRetry = false;
 
-        private static readonly string[] AssetPathsToWaitOn = new[]
+        private static readonly string[] AssetPathsToWaitOn =
         {
             "list/h/sound/voice",
             "list/characustom",
             "adv/scenario"
         };
 
+        private bool _dataLoaded;
+        private TranslationCount _lastDelta = new TranslationCount();
+        private TranslationCount _lastTotal = new TranslationCount();
+        private int _stableCount;
+
         private bool _startupLoaded;
+        private bool _waitOnRetry;
 
         static TextDump()
         {
-            CurrentExecutionMode = ExecutionMode.BeforeFirstLoad;
-            DumpLevelMax = 3;
+            if (typeof(DownloadScene).GetProperty("isSteam", AccessTools.all) == null)
+            {
+                CurrentExecutionMode = ExecutionMode.BeforeFirstLoad;
+                DumpLevelMax = 4;
+            }
+            else
+            {
+                CurrentExecutionMode = ExecutionMode.Other;
+                DumpLevelMax = 0;
+            }
         }
 
         public TextDump()
         {
+            if (CurrentExecutionMode == ExecutionMode.Other && DumpLevelMax == 0)
+            {
+                InitPluginSettings();
+                Enabled.Value = false;
+                Logger.LogFatal(
+                    "[TextDump] Incorrect plugin for this application. Remove AI_TextDump and use AI_INT_TextDump.");
+            }
+
             TextResourceHelper = CreateHelper<AI_TextResourceHelper>();
             AssetDumpHelper = CreatePluginHelper<AI_AssetDumpHelper>();
             LocalizationDumpHelper = CreatePluginHelper<AI_LocalizationDumpHelper>();
@@ -57,30 +83,97 @@ namespace IllusionMods
 
         private IEnumerator AI_CheckReadyToDump()
         {
-            Logger.LogDebug("CheckReadyToDump: waiting until dump 1 completes");
-            while (DumpLevelCompleted < 1) yield return CheckReadyToDumpDelay;
+            Logger.LogDebug("CheckReadyToDump: waiting until dump 2 completes");
+            while (DumpLevelCompleted < 2) yield return CheckReadyToDumpDelay;
+
+            Logger.LogDebug("CheckReadyToDump: waiting dataLoaded");
+            while (!_dataLoaded) yield return CheckReadyToDumpDelay;
 
             Logger.LogDebug("CheckReadyToDump: waiting for Lobby to load");
-
             while (!_startupLoaded) yield return CheckReadyToDumpDelay;
 
             SceneManager.sceneLoaded -= AI_sceneLoaded;
 
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources");
+            while (!Singleton<Resources>.IsInstance() || Singleton<Resources>.Instance is null)
+                yield return CheckReadyToDumpDelay;
+            while (!Singleton<Resources>.Instance.isActiveAndEnabled) yield return CheckReadyToDumpDelay;
+            var resources = Singleton<Resources>.Instance;
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.AgentProfile");
+            while (resources.AgentProfile is null) yield return CheckReadyToDumpDelay;
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.AnimalDefinePack");
+            while (resources.AnimalDefinePack is null) yield return CheckReadyToDumpDelay;
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.AnimalTable");
+            while (resources.AnimalTable is null) yield return CheckReadyToDumpDelay;
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.PlayerProfile");
+            while (resources.PlayerProfile is null) yield return CheckReadyToDumpDelay;
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.PopupInfo");
+            while (resources.PopupInfo is null) yield return CheckReadyToDumpDelay;
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.Sound");
+            while (resources.Sound is null) yield return CheckReadyToDumpDelay;
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.SoundPack");
+            while (resources.SoundPack is null) yield return CheckReadyToDumpDelay;
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.StatusProfile");
+            while (resources.StatusProfile is null) yield return CheckReadyToDumpDelay;
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.WaypointDataList");
+            while (resources.WaypointDataList is null) yield return CheckReadyToDumpDelay;
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.HSceneTable");
+            while (resources.HSceneTable is null) yield return CheckReadyToDumpDelay;
+
 
             Logger.LogDebug("CheckReadyToDump: waiting for start screen");
 
-            while (Singleton<Manager.Scene>.Instance == null) yield return CheckReadyToDumpDelay;
+            while (Singleton<Manager.Scene>.Instance is null) yield return CheckReadyToDumpDelay;
             //while (Manager.Scene.IsNowLoadingFade) yield return CheckReadyToDumpDelay;
 
             //Logger.LogDebug("CheckReadyToDump: waiting for Manager.Voice");
 
             //while (Manager.Voice..infoTable == null || Voice.infoTable.Count == 0) yield return CheckReadyToDumpDelay;
 
-            Logger.LogDebug($"CheckReadyToDump: waiting for Manager.GameSystem");
-            while (Singleton<Manager.GameSystem>.Instance == null) yield return CheckReadyToDumpDelay;
+            Logger.LogDebug("CheckReadyToDump: waiting for Manager.GameSystem");
+            while (Singleton<GameSystem>.Instance is null) yield return CheckReadyToDumpDelay;
 
-            Logger.LogDebug($"Language = {Singleton<Manager.GameSystem>.Instance.language}");
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.itemIconTables");
+            while (resources.itemIconTables is null) yield return CheckReadyToDumpDelay;
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.Map");
+            while (resources.Map is null) yield return CheckReadyToDumpDelay;
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.LocomotionProfile");
+            while (resources.LocomotionProfile is null) yield return CheckReadyToDumpDelay;
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.MerchantProfile");
+            while (resources.MerchantProfile is null) yield return CheckReadyToDumpDelay;
 
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.GameInfo");
+            while (resources.GameInfo is null || !resources.GameInfo.initialized) yield return CheckReadyToDumpDelay;
+
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Map.Instance.Simulator");
+            while (Singleton<Map>.Instance is null) yield return CheckReadyToDumpDelay;
+            while (Singleton<Map>.Instance.Simulator is null) yield return CheckReadyToDumpDelay;
+            while (!Singleton<Map>.Instance.Simulator.IsActiveSimElement) yield return CheckReadyToDumpDelay;
+            /*
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Map.Instance.Simulator.EnabledTimeProgression");
+            while (!Singleton<Manager.Map>.Instance.Simulator.EnabledTimeProgression) yield return CheckReadyToDumpDelay;
+            */
+
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Map.Instance.Player");
+            while (Singleton<Map>.Instance.Player is null) yield return CheckReadyToDumpDelay;
+
+            Logger.LogDebug("CheckReadyToDump: waiting on Manager.Map.Instance.Player.PlayerController");
+            while (Singleton<Map>.Instance.Player.PlayerController is null) yield return CheckReadyToDumpDelay;
+
+            /**/
+            Logger.LogDebug(
+                "CheckReadyToDump: waiting on Manager.Map.Instance.Player.PlayerController.State to be Normal");
+            while (!(Singleton<Map>.Instance.Player.PlayerController.State is Normal))
+            {
+                yield return CheckReadyToDumpDelay;
+            }
+            /**/
+
+            Logger.LogDebug("CheckReadyToDump: waiting for scene to finish loading");
+            while (Singleton<Manager.Scene>.Instance.IsNowLoading || Singleton<Manager.Scene>.Instance.IsNowLoadingFade)
+            {
+                yield return CheckReadyToDumpDelay;
+            }
 
             foreach (var pth in AssetPathsToWaitOn)
             {
@@ -129,7 +222,7 @@ namespace IllusionMods
                 yield return CheckReadyToDumpDelay;
             }
 
-
+            Logger.LogDebug($"Language = {Singleton<GameSystem>.Instance.language}");
         }
 
         private void AI_TextDumpAwake(TextDump sender, EventArgs eventArgs)
@@ -139,20 +232,27 @@ namespace IllusionMods
 
         private void AI_sceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
         {
-            Logger.LogFatal($"{scene.name} {loadSceneMode}");
-            if ((IsStudio && scene.name == "Studio" && loadSceneMode == LoadSceneMode.Single) ||
-                (!IsStudio && scene.name == "map_title" && loadSceneMode == LoadSceneMode.Additive))
+            Logger.LogDebug($"{scene.name} {loadSceneMode}");
+            if (IsStudio && scene.name == "Studio" && loadSceneMode == LoadSceneMode.Single ||
+                !IsStudio && scene.name == "map_title" && loadSceneMode == LoadSceneMode.Additive)
             {
                 _startupLoaded = true;
             }
 
+            if (!string.IsNullOrEmpty(scene.name) && scene.name.StartsWith("map_") && scene.name.EndsWith("_data"))
+            {
+                _dataLoaded = true;
+            }
+
+            if (DumpLevelReady < 2 && scene.name == "Title")
+            {
+                DumpLevelReady = 2;
+            }
         }
 
         private void AI_TextDumpLevelComplete(TextDump sender, EventArgs eventArgs)
         {
-
             var delta = _total - _lastTotal;
-
             if (DumpLevelCompleted >= DumpLevelMax)
             {
                 NotificationMessage = string.Empty;
@@ -169,30 +269,21 @@ namespace IllusionMods
                     _stableCount = 0;
                 }
 
-                if (_stableCount < 3)
-                {
-                    StartCoroutine(RetryDelay(10));
-                    if (_stableCount == 0)
-                    {
-                        NotificationMessage = $"Number of translations found is continuing to change ({delta})";
-                    }
-                    else
-                    {
-                        NotificationMessage = $"Number of translations unchanged";
+                if (_stableCount >= 3) return;
+                StartCoroutine(RetryDelay(10));
+                NotificationMessage = _stableCount == 0 ?
+                    $"Number of translations found is continuing to change ({delta})" : 
+                    "Number of translations unchanged";
 
-                    }
-
-
-                    NotificationMessage +=
-                        $", will keep re-dumping until it's stable for {3 - _stableCount} more cycle(s)";
-                    DumpLevelCompleted--;
-                    DumpLevelReady = DumpLevelCompleted;
-                }
+                NotificationMessage +=
+                    $", will keep re-dumping until it's stable for {3 - _stableCount} more cycle(s)";
+                DumpLevelCompleted--;
+                DumpLevelReady = DumpLevelCompleted;
             }
             else if (DumpLevelCompleted > 0)
             {
                 NotificationMessage =
-                    "Multiple brute-force dump attempts are required, please wait until you see a message saying files are available";
+                    "Multiple brute-force dump attempts are required, Start/Load game and play until you have control of the player and wait until you see a message saying files are available";
             }
         }
     }

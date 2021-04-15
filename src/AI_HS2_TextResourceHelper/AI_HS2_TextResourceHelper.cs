@@ -13,6 +13,9 @@ namespace IllusionMods
             SupportedCommands.Add(Command.Calc);
             SupportedCommands.Add(Command.Choice);
             SupportedCommands.Add((Command) 242);
+
+            // TextDump sometimes picks up this column header, so workaround here.
+            TextKeysBlacklist.Add("表示名");
         }
 
         public override void InitializeHelper()

@@ -63,6 +63,7 @@ namespace IllusionMods
                 yield return list;
             }
 
+            if (!TextDump.IsReadyForFinalDump()) yield break;
             yield return new KeyValuePair<string, AssetDumpColumnInfo>("actor/animal", ItemLookupAndAssetCols);
 
             foreach (var animal in new[] {"cat", "chicken"})
