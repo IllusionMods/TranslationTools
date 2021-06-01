@@ -5,15 +5,14 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using BepInEx;
-using BepInEx.Configuration;
-using BepInEx.Logging;
-using IllusionMods.Shared;
+using IllusionMods.Shared.TextDumpBase;
 using UnityEngine;
 using UnityEngine.Assertions;
 using BepInExLogLevel = BepInEx.Logging.LogLevel;
 using static IllusionMods.TextResourceHelper.Helpers;
 #if KK
 using Illusion.Extensions;
+
 #endif
 
 namespace IllusionMods
@@ -24,64 +23,30 @@ namespace IllusionMods
     [BepInIncompatibility("gravydevsupreme.xunity.autotranslator")]
     [BepInIncompatibility("gravydevsupreme.xunity.resourceredirector")]
     [BepInIncompatibility("random_name_provider")]
-    public partial class TextDump
+    public partial class TextDump : BaseTextDumpPlugin
     {
-        public delegate void TextDumpEventHandler(TextDump sender, EventArgs eventArgs);
-
-        public delegate bool TranslationPostProcessor(string path, TranslationDictionary translations);
-
-
         public const string GUID = "com.deathweasel.bepinex.textdump";
         public const string PluginName = "Text Dump";
-        public const string Version = "1.4.4";
+        public const string Version = "1.4.4.1";
 
         private const string FormatStringPlaceholder = "_P_L_A_C_E_H_O_L_D_E_R_";
-
-        private const float NotificationDelay = 12f;
 
         internal static int DumpLevelMax = 1;
         internal static int DumpLevelReady = 1;
         internal static int DumpLevelCompleted;
 
-        internal static readonly bool IsStudio = Application.productName == Constants.StudioProcessName;
-
-        public new static ManualLogSource Logger;
-
         public static readonly string[] TextAssetLineSplitter = {"\r\n", "\r", "\n"};
 
-        private static readonly Dictionary<string, TranslationDictionary> _translationsDict =
-            new Dictionary<string, TranslationDictionary>();
-
-        private static readonly Dictionary<string, ResizerCollection> _resizerDict = 
+        private static readonly Dictionary<string, ResizerCollection> ResizerDict =
             new Dictionary<string, ResizerCollection>();
-
-        protected IEnumerator CheckReadyToDumpDelay = new WaitForSecondsRealtime(1f);
-        private static IEnumerable<string> GetHeaderLines(params string[] extra)
-        {
-            yield return "//";
-            yield return $"// Dumped for {Constants.GameName} v{GetGameVersion()} by {PluginName} v{Version}";
-            foreach (var line in extra)
-            {
-                yield return $"// {line}";
-            }
-            yield return "//";
-        }
 
 #if RAW_DUMP_SUPPORT
         internal static Dictionary<string, Func<IEnumerable<byte>>> RawTranslationsDict =
  new Dictionary<string, Func<IEnumerable<byte>>>();
 #endif
 
-        internal static List<TranslationPostProcessor> TranslationPostProcessors = new List<TranslationPostProcessor>();
-
-        private static string _dumpRoot;
 
         private static List<int> AssetDumpLevels { get; } = new List<int>();
-
-        internal readonly TextResourceHelper TextResourceHelper;
-
-        private float _nextNotify;
-        private bool _writeInProgress;
         internal AssetDumpHelper AssetDumpHelper;
         internal LocalizationDumpHelper LocalizationDumpHelper;
 
@@ -92,63 +57,35 @@ namespace IllusionMods
         protected Func<IEnumerator> CheckReadyToDumpChecker { get; }
         protected Coroutine CheckReadyCoroutine { get; private set; }
 
-        private string _notificationMessage = string.Empty;
-        public string NotificationMessage
+
+        protected override List<string> CreateLines(string filePath, TranslationDictionary translations)
         {
-            get => _notificationMessage;
-            private set
-            {
-                _notificationMessage = value;
-                _nextNotify = 0;
-            }
+            return filePath.StartsWith(AssetsRoot)
+                ? CreateResourceReplacementLines(translations)
+                : CreateLocalizationLines(translations);
         }
 
 
-        public static ConfigEntry<bool> Enabled { get; private set; }
+        public static string AssetsRoot { get; private set; }
+        public static string LocalizationRoot { get; private set; }
 
-        public static string DumpRoot
+        protected override void InitPluginSettings()
         {
-            get
-            {
-                while (_dumpRoot is null)
-                {
-                    _dumpRoot = CombinePaths(Paths.CachePath, $"TextDump-{Path.GetRandomFileName()}");
-                    try
-                    {
-                        Directory.CreateDirectory(_dumpRoot);
-                    }
-                    catch { }
-
-                    if (!Directory.Exists(_dumpRoot)) _dumpRoot = null;
-                }
-
-                return _dumpRoot;
-            }
+            base.InitPluginSettings(PluginName, Version);
+            AssetsRoot = CombinePaths(DumpRoot, "RedirectedResources", "assets", "abdata");
+            LocalizationRoot = CombinePaths(DumpRoot, "Text", "Localizations");
         }
-
-        public static string DumpDestination => CombinePaths(Paths.GameRootPath, "TextDump");
-        public static string AssetsRoot => CombinePaths(DumpRoot, "RedirectedResources", "assets", "abdata");
-        public static string LocalizationRoot => CombinePaths(DumpRoot, "Text", "Localizations");
 
         public static ExecutionMode CurrentExecutionMode { get; internal set; } = ExecutionMode.Startup;
         public static AssetDumpMode CurrentAssetDumpMode { get; internal set; } = AssetDumpMode.Always;
         public static bool WriteAfterEachDump { get; internal set; } = false;
         public static bool WriteAfterFinalDump { get; internal set; } = true;
 
-        public static bool ReleaseOnWrite { get; internal set; } = true;
-        public bool DumpStarted { get; private set; }
-        public bool DumpCompleted { get; private set; }
-
-
-        public static void LogWithMessage(BepInExLogLevel logLevel, object data)
-        {
-            Logger?.Log(BepInExLogLevel.Message | logLevel, data);
-        }
 
         internal static bool IsReadyToDump()
         {
             return DumpLevelReady > DumpLevelCompleted ||
-                   (CurrentExecutionMode <= ExecutionMode.Startup && DumpLevelCompleted == 0);
+                   CurrentExecutionMode <= ExecutionMode.Startup && DumpLevelCompleted == 0;
         }
 
         internal static bool IsReadyForFinalDump()
@@ -161,10 +98,9 @@ namespace IllusionMods
             return DumpLevelCompleted >= DumpLevelMax;
         }
 
-        private void InitPluginSettings()
+        protected override bool IsSafeToRelease()
         {
-            Logger = base.Logger;
-            Enabled = Enabled ?? Config.Bind("Settings", "Enabled", false, "Whether the plugin is enabled");
+            return base.IsSafeToRelease() && AreAllDumpsComplete();
         }
 
         public event TextDumpEventHandler TextDumpAwake;
@@ -231,7 +167,7 @@ namespace IllusionMods
 
             if (AreAllDumpsComplete())
             {
-                if (_writeInProgress) HandleNotification();
+                if (WriteInProgress) HandleNotification();
                 return;
             }
 
@@ -245,13 +181,6 @@ namespace IllusionMods
 
 
             HandleNotification();
-        }
-
-        private void HandleNotification()
-        {
-            if (string.IsNullOrEmpty(NotificationMessage) || !(Time.unscaledTime > _nextNotify)) return;
-            LogWithMessage(BepInExLogLevel.Warning, $"[TextDump] {NotificationMessage}");
-            _nextNotify = Time.unscaledTime + NotificationDelay;
         }
 
 
@@ -274,10 +203,6 @@ namespace IllusionMods
             return BaseHelperFactory<T>.Create<T>(this);
         }
 
-        protected T CreateHelper<T>() where T : IHelper
-        {
-            return BaseHelperFactory<T>.Create<T>();
-        }
         private void DumpText(string from)
         {
             if (string.IsNullOrEmpty(from))
@@ -325,13 +250,13 @@ namespace IllusionMods
 
                 try
                 {
-                    IllusionMods.AssetLoader.UnloadBundles();
+                    AssetLoader.UnloadBundles();
                 }
                 catch { }
             }
 
             if (!WriteAfterEachDump && (!WriteAfterFinalDump || !AreAllDumpsComplete())) return;
-            if (_writeInProgress) return;
+            if (WriteInProgress) return;
             StartCoroutine(WriteTranslations());
         }
 
@@ -361,10 +286,12 @@ namespace IllusionMods
                     case StringTranslationDumper stringDumper:
                     {
                         IDictionary<string, string> results;
+#pragma warning disable CA1031 // Do not catch general exception types
                         try
                         {
                             results = stringDumper.Collector();
                         }
+
                         catch (Exception e)
                         {
                             results = new Dictionary<string, string>();
@@ -373,11 +300,13 @@ namespace IllusionMods
                             Logger.LogDebug($"[TextDump] Asset {output}:\n{e.StackTrace}");
                         }
 
+
                         try
                         {
-                            IllusionMods.AssetLoader.UnloadBundles();
+                            AssetLoader.UnloadBundles();
                         }
                         catch { }
+#pragma warning restore CA1031 // Do not catch general exception types
 
                         var filePath = Path.Combine(folderPath, $"{output}.txt");
 
@@ -432,7 +361,6 @@ namespace IllusionMods
                 {
                     case StringTranslationDumper stringDumper:
                     {
-
                         IDictionary<string, string> results;
                         try
                         {
@@ -444,7 +372,7 @@ namespace IllusionMods
                             Logger.LogError(
                                 $"[TextDump] Localization {output}: Error executing {entry.Collector.Method.Name}(): {e.Message}");
                         }
-                        
+
                         var filePath = Path.Combine(folderPath, $"{output}.txt");
 
                         var translations = GetTranslationsForPath(filePath);
@@ -473,11 +401,11 @@ namespace IllusionMods
 
                         try
                         {
-                            IllusionMods.AssetLoader.UnloadBundles();
+                            AssetLoader.UnloadBundles();
                         }
                         catch { }
 
-                            var filePath = Path.Combine(folderPath, $"{output}_resizer.txt");
+                        var filePath = Path.Combine(folderPath, $"{output}_resizer.txt");
 
                         var resizers = GetResizersForPath(filePath);
 
@@ -487,55 +415,39 @@ namespace IllusionMods
                         //LogDumpResults("Localization", output, beforeCount, afterCount);
                         //_localizationTotal += afterCount - beforeCount;
 
-                            break;
+                        break;
                     }
                     default:
                         Logger.LogError($"[TextDump] Localization {output}: {entry} is unsupported dumper type");
                         break;
-
                 }
             }
 
             var totalDelta = _localizationTotal - origCount;
-            Logger.LogInfo($"[TextDump] Total Localization lines (translated): {_localizationTotal} (change {totalDelta})");
+            Logger.LogInfo(
+                $"[TextDump] Total Localization lines (translated): {_localizationTotal} (change {totalDelta})");
             return totalDelta;
-        }
-
-        public static IEnumerable<string> GetTranslationPaths()
-        {
-            return _translationsDict.Keys;
-        }
-
-        public static TranslationDictionary GetTranslationsForPath(string filePath)
-        {
-            if (!_translationsDict.TryGetValue(filePath, out var translations))
-            {
-                _translationsDict[filePath] = translations = new TranslationDictionary();
-            }
-
-            Assert.IsTrue(_translationsDict.ContainsKey(filePath));
-            return translations;
         }
 
         public static ResizerCollection GetResizersForPath(string filePath)
         {
-            if (!_resizerDict.TryGetValue(filePath, out var translations))
+            if (!ResizerDict.TryGetValue(filePath, out var translations))
             {
-                _resizerDict[filePath] = translations = new ResizerCollection();
+                ResizerDict[filePath] = translations = new ResizerCollection();
             }
 
-            Assert.IsTrue(_resizerDict.ContainsKey(filePath));
+            Assert.IsTrue(ResizerDict.ContainsKey(filePath));
             return translations;
         }
 
-        private void RemapTranslations()
+        protected override void RemapTranslations()
         {
             var remapNeeded = true;
             while (remapNeeded)
             {
                 remapNeeded = false;
 
-                foreach (var entry in _translationsDict.ToList())
+                foreach (var entry in TranslationsDict.ToList())
                 {
                     var filePath = entry.Key.Replace('/', '\\');
                     var mapPath = filePath;
@@ -553,50 +465,16 @@ namespace IllusionMods
                     var mappedTranslations = GetTranslationsForPath(mapPath);
 
                     mappedTranslations.Merge(entry.Value, TextResourceHelper);
-                    _translationsDict.Remove(entry.Key);
+                    TranslationsDict.Remove(entry.Key);
                     remapNeeded = true;
                 }
             }
         }
 
-        private IEnumerator WriteTranslations()
+        protected override IEnumerator WriteAdditionalTranslations(int initialCount)
         {
-            if (_writeInProgress) yield break;
-            NotificationMessage = "Writing translation files, please wait.";
-            _writeInProgress = true;
-            LogWithMessage(BepInExLogLevel.Warning, $"[TextDump] Writing translation files to {DumpRoot}");
-            yield return null;
-            PostProcessTranslations();
-
-            yield return null;
-            var count = 0;
-            foreach (var entry in _translationsDict.ToArray())
-            {
-                count++;
-                if (count % 100 == 0) yield return null;
-                var filePath = entry.Key;
-                var translations = entry.Value;
-
-                var lines = filePath.StartsWith(AssetsRoot)
-                    ? CreateResourceReplacementLines(translations)
-                    : CreateLocalizationLines(translations);
-
-                if (ReleaseOnWrite && AreAllDumpsComplete())
-                {
-                    entry.Value.Clear();
-                    _translationsDict.Remove(entry.Key);
-                }
-
-                if (lines.Count <= 0)
-                {
-                    Logger.LogDebug($"[TextDump] No lines to dump for {filePath}, skipping.");
-                    continue;
-                }
-
-                DumpToFile(filePath, lines);
-            }
-
-            foreach (var entry in _resizerDict.ToArray())
+            var count = initialCount;
+            foreach (var entry in ResizerDict.ToArray())
             {
                 count++;
                 if (count % 100 == 0) yield return null;
@@ -608,7 +486,7 @@ namespace IllusionMods
                 if (ReleaseOnWrite && AreAllDumpsComplete())
                 {
                     entry.Value.Clear();
-                    _resizerDict.Remove(entry.Key);
+                    ResizerDict.Remove(entry.Key);
                 }
 
                 if (lines.Count > 0) DumpToFile(filePath, lines);
@@ -640,156 +518,6 @@ namespace IllusionMods
                 DumpToFile(filePath, bytes);
             }
 #endif
-
-            NotificationMessage = $"Moving translation files to {DumpDestination}, please wait.";
-            if (ReleaseOnWrite) _translationsDict.Clear();
-            LogWithMessage(BepInExLogLevel.Info,
-                $"[TextDump] Completed writing translation files, moving to {DumpDestination}");
-
-            var moveSuccess = false;
-            var retryCount = 0;
-            float retryDelay = 0f;
-            while (retryCount < 10)
-            {
-                yield return new WaitForSeconds(retryDelay);
-                retryCount++;
-                retryDelay = retryCount * 1.5f;
-
-                try
-                {
-                    if (Directory.Exists(DumpDestination)) Directory.Delete(DumpDestination, true);
-                    break;
-                }
-                catch (Exception err)
-                {
-                    Logger.LogWarning(
-                        $"[TextDump] Unable to remove existing {DumpDestination}, will attempt to retry in {retryDelay}s: {err.Message}");
-                }
-            }
-
-            // try using move, then try with copy
-            foreach (var useCopy in new[] {false, true})
-            {
-                if (moveSuccess) break;
-                if (!useCopy && Directory.Exists(DumpDestination)) continue;
-                retryCount = 0;
-                while (retryCount < 10)
-                {
-                    yield return new WaitForSeconds(retryDelay);
-                    retryCount++;
-                    retryDelay = retryCount * 1.5f;
-                    try
-                    {
-                        MoveDumpToDestination(useCopy);
-                        moveSuccess = true;
-                        break;
-                    }
-                    catch (Exception err)
-                    {
-                        Logger.LogWarning(
-                            $"[TextDump] Unable to move {DumpRoot} to {DumpDestination}, will attempt to retry in {retryDelay}s: {err}");
-                    }
-                }
-            }
-
-            if (moveSuccess)
-            {
-                LogWithMessage(BepInExLogLevel.Info,
-                    $"[TextDump] Dump can be found in {DumpDestination}");
-            }
-            else
-            {
-                LogWithMessage(BepInExLogLevel.Error,
-                    $"[TextDump] Unable to write dump to {DumpDestination}, dump can be found in {DumpRoot}");
-            }
-
-            _writeInProgress = false;
-            NotificationMessage = string.Empty;
-        }
-
-        private void PostProcessTranslations()
-        {
-            var postProcessors = TranslationPostProcessors.ToList();
-
-            var tryCount = 0;
-            var retryPostProcessors = new List<TranslationPostProcessor>();
-            while (postProcessors.Count > 0)
-            {
-                tryCount++;
-                if (tryCount > 3) break;
-                while (postProcessors.Count > 0)
-                {
-                    var postProcessor = postProcessors.PopFront();
-                    var retry = false;
-                    foreach (var _ in _translationsDict.Where(e => !postProcessor(e.Key, e.Value)))
-                    {
-                        retry = true;
-                    }
-
-                    if (retry)
-                    {
-                        retryPostProcessors.Add(postProcessor);
-                    }
-                }
-
-                postProcessors.AddRange(retryPostProcessors);
-            }
-
-            RemapTranslations();
-        }
-
-        private static void CopyDirectory(string sourceDirectory, string destinationDirectory)
-        {
-            if (sourceDirectory == null) throw new ArgumentNullException(nameof(sourceDirectory));
-            if (destinationDirectory == null) throw new ArgumentNullException(nameof(destinationDirectory));
-
-            if (!Directory.Exists(sourceDirectory)) return;
-
-            if (!Directory.Exists(destinationDirectory)) Directory.CreateDirectory(destinationDirectory);
-
-            var sourceInfo = new DirectoryInfo(sourceDirectory);
-
-            foreach (var file in sourceInfo.GetFiles())
-            {
-                file.CopyTo(Path.Combine(destinationDirectory, file.Name), false);
-            }
-
-            foreach (var subDir in sourceInfo.GetDirectories())
-            {
-                CopyDirectory(subDir.FullName, Path.Combine(destinationDirectory, subDir.Name));
-            }
-        }
-
-        private void MoveDumpToDestination(bool useCopy = false)
-        {
-            if (useCopy)
-            {
-                if (Directory.Exists(DumpDestination)) Directory.Delete(DumpDestination, true);
-
-                CopyDirectory(DumpRoot, DumpDestination);
-                Directory.Delete(DumpRoot, true);
-            }
-            else
-            {
-                Directory.Move(DumpRoot, DumpDestination);
-            }
-        }
-
-        private void DumpToFile<T>(string filePath, IEnumerable<T> value, Action<string, T[]> writeAction)
-        {
-            Logger.LogDebug($"[TextDump] writing {filePath}");
-            if (filePath == null) throw new ArgumentNullException(nameof(filePath));
-            var parent = Path.GetDirectoryName(filePath);
-            if (parent != null && !Directory.Exists(parent))
-            {
-                Directory.CreateDirectory(parent);
-            }
-
-            if (File.Exists(filePath))
-            {
-                File.Delete(filePath);
-            }
-            writeAction(filePath, value.ToArray());
         }
 
 #if RAW_DUMP_SUPPORT
@@ -798,11 +526,6 @@ namespace IllusionMods
             DumpToFile(filePath, bytes, File.WriteAllBytes);
         }
 #endif
-        private void DumpToFile(string filePath, IEnumerable<string> lines)
-        {
-            var allLines = new[] {GetHeaderLines().AsEnumerable(), lines}.SelectMany(s => s);
-            DumpToFile(filePath, allLines, File.WriteAllLines);
-        }
 
         private List<string> CreateResizerLines(ResizerCollection resizers)
         {
@@ -820,6 +543,7 @@ namespace IllusionMods
                         scopeLines.Add($"{resizer.Key}={rule}");
                     }
                 }
+
                 if (scopeLines.Count <= 0) continue;
                 if (lines.Count > 0) lines.Add("");
                 if (scope != -1) lines.Add($"#set level {scope}");
@@ -829,6 +553,8 @@ namespace IllusionMods
 
             return lines;
         }
+
+
         private List<string> CreateLocalizationLines(TranslationDictionary translations)
         {
             var formatStringRegex = LocalizationDumpHelper.FormatStringRegex;

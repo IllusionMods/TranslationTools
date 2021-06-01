@@ -18,13 +18,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextDump.Enums.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextDump.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.LocalizationDumpHelper.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core.TranslationCount.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextDump.InitialDumpHook.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextDump.Helpers.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core.TranslationDictionary.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core.XuaHelper.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core.IScopedTranslations.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core.ResizerCollection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.ResizerDumper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.UIDumpHelper.cs" />
   </ItemGroup>

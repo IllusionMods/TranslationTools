@@ -46,11 +46,10 @@ namespace IllusionMods
                 return cultureParts.Length > 0 ? cultureParts[0] : culture;
             }
 
-            var result = -1;
             var tmp = GameSystem.IsInstance()
                 ? Singleton<GameSystem>.Instance.cultureNames.ToList()
                 : new List<string> {"ja-JP", "en-US", "zh-CN", "zh-TW"};
-            result = tmp.IndexOf(xUnityLanguage);
+            var result = tmp.IndexOf(xUnityLanguage);
 
             if (result != -1) return result;
             tmp = tmp.Select(ShortCulture).ToList();

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace IllusionMods
+namespace IllusionMods.Shared.TextDumpBase
 {
     public class ResizerCollection : TranslationDictionary<string, List<string>>
     {

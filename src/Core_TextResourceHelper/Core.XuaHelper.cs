@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using JetBrains.Annotations;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace IllusionMods
 {
+    [PublicAPI]
     internal static class XuaHelper
     {
         public static IEnumerable<string> GetPathSegments(this GameObject obj)
@@ -118,23 +120,22 @@ namespace IllusionMods
             if (HorizontalOverflow != original.HorizontalOverflow) result.HorizontalOverflow = HorizontalOverflow;
             if (VerticalOverflow != original.VerticalOverflow) result.VerticalOverflow = VerticalOverflow;
 
-            if (FontSize != original.FontSize)
+            if (FontSize == original.FontSize) return result;
+
+            if (FontSize.HasValue)
             {
-                if (FontSize.HasValue)
-                {
-                    if (decimal.Round(FontSize.Value, 0) == FontSize.Value)
-                    {
-                        result.FontSize = FontSize;
-                    }
-                    else
-                    {
-                        result.ChangeFontSize = FontSize / original.FontSize;
-                    }
-                }
-                else
+                if (decimal.Round(FontSize.Value, 0) == FontSize.Value)
                 {
                     result.FontSize = FontSize;
                 }
+                else
+                {
+                    result.ChangeFontSize = FontSize / original.FontSize;
+                }
+            }
+            else
+            {
+                result.FontSize = FontSize;
             }
 
             return result;

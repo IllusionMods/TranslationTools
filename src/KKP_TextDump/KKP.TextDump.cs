@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using BepInEx;
 using Manager;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using IllusionMods.Shared;
 using BepInEx.Configuration;
+using IllusionMods.Shared.TextDumpBase;
 using Scene = UnityEngine.SceneManagement.Scene;
 
 namespace IllusionMods
@@ -17,7 +19,7 @@ namespace IllusionMods
     /// </remarks>
     [BepInProcess(Constants.MainGameProcessNameSteam)]
     [BepInPlugin(GUID, PluginName, Version)]
-    public partial class TextDump : BaseUnityPlugin
+    public partial class TextDump 
     {
         public const string PluginNameInternal = "KKP_TextDump";
 
@@ -33,6 +35,8 @@ namespace IllusionMods
             Manual = 4,
         }
 
+        [SuppressMessage("Performance", "CA1810:Initialize reference type static fields inline",
+            Justification = "Dynamic initialization")]
         static TextDump()
         {
             DumpLevelMax = (int) DumpLevels.Manual;
@@ -42,8 +46,7 @@ namespace IllusionMods
 
         public TextDump()
         {
-            Logger = base.Logger;
-            TextResourceHelper = CreateHelper<KK_TextResourceHelper>();
+            SetTextResourceHelper(CreateHelper<KK_TextResourceHelper>());
             AssetDumpHelper = CreatePluginHelper<KKP_AssetDumpHelper>();
             LocalizationDumpHelper = CreatePluginHelper<KKP_LocalizationDumpHelper>();
 
@@ -53,7 +56,7 @@ namespace IllusionMods
             TextDumpLevelComplete += KKP_TextDumpLevelComplete;
         }
 
-        private void KKP_TextDumpLevelComplete(TextDump sender, EventArgs eventArgs)
+        private void KKP_TextDumpLevelComplete(BaseTextDumpPlugin sender, EventArgs eventArgs)
         {
             _waitForTitleUnload |= (DumpLevelCompleted > 0 && DumpLevelCompleted < (int) DumpLevels.Main);
 
@@ -89,7 +92,7 @@ namespace IllusionMods
             TextDumpUpdate -= TextDump_TextDumpUpdate;
         }
 
-        private void TextDump_TextDumpUpdate(TextDump sender, EventArgs eventArgs)
+        private void TextDump_TextDumpUpdate(BaseTextDumpPlugin sender, EventArgs eventArgs)
         {
             if (Enabled.Value && DumpLevelCompleted == (int) DumpLevels.Main &&
                 DumpLevelReady < DumpLevelMax &&
@@ -99,7 +102,7 @@ namespace IllusionMods
             }
         }
 
-        private void KKP_TextDumpAwake(TextDump sender, EventArgs eventArgs)
+        private void KKP_TextDumpAwake(BaseTextDumpPlugin sender, EventArgs eventArgs)
         {
             ManualDumpHotkey = Config.Bind("Keyboard Shortcuts", "Dump Translations",
                 new KeyboardShortcut(KeyCode.F9, KeyCode.LeftControl, KeyCode.LeftAlt),
@@ -117,7 +120,7 @@ namespace IllusionMods
             }
         }
 
-        private void KKP_TextDumpUpdate(TextDump sender, EventArgs eventArgs) { }
+        private void KKP_TextDumpUpdate(BaseTextDumpPlugin sender, EventArgs eventArgs) { }
 
 
         private IEnumerator KKP_CheckReadyToDump()
@@ -194,13 +197,13 @@ namespace IllusionMods
                 }
 
                 Logger.LogDebug("CheckReadyToDump: waiting on Manager.Game");
-                while (!Singleton<Game>.IsInstance()) yield return CheckReadyToDumpDelay;
+                while (!Singleton<Game>.IsInstance() && Singleton<Game>.Instance != null) yield return CheckReadyToDumpDelay;
 
                 Logger.LogDebug("CheckReadyToDump: waiting on Manager.Game.actScene");
-                while (Singleton<Game>.Instance?.actScene == null) yield return CheckReadyToDumpDelay;
+                while (Singleton<Game>.Instance.actScene == null) yield return CheckReadyToDumpDelay;
 
                 Logger.LogDebug("CheckReadyToDump: waiting on Manager.Game.actScene.Player");
-                while (Singleton<Game>.Instance?.actScene?.Player == null) yield return CheckReadyToDumpDelay;
+                while (Singleton<Game>.Instance.actScene.Player == null) yield return CheckReadyToDumpDelay;
 
                 Logger.LogDebug("CheckReadyToDump: waiting on Manager.Game.Player.isActive");
                 while (!Singleton<Game>.Instance.actScene.Player.isActive) yield return CheckReadyToDumpDelay;

@@ -10,7 +10,7 @@ namespace IllusionMods
         protected AI_TextResourceHelper()
         {
             // Format commands with a key of `セリフ` can be handled by TextDump/TextResourceRedirector
-            // others are used to make programatic labels and should be untouched
+            // others are used to make programmatic labels and should be untouched
             SupportedCommands.Add(Command.Format);
             FormatKeys.Add("セリフ");
 

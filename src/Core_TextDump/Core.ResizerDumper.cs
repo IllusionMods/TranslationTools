@@ -1,4 +1,6 @@
-﻿namespace IllusionMods
+﻿using IllusionMods.Shared.TextDumpBase;
+
+namespace IllusionMods
 {
     public class ResizerDumper : TranslationDumper<ResizerCollection>
     {

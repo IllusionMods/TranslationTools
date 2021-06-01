@@ -3,16 +3,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using BepInEx.Logging;
+using JetBrains.Annotations;
 using UnityEngine;
 
 namespace IllusionMods
 {
+    // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
     public class TextAssetTableHelper
     {
+        public delegate bool CellTransform(int rowIndex, int colIndex, string cellText, out string newCellText);
+
+        public delegate bool CellVisitor(int rowIndex, int colIndex, string cellText);
+
+        private readonly string[] _colSplitStrings;
+        private readonly string[] _invalidColStrings;
+
+        private readonly string[] _rowSplitStrings;
         private ManualLogSource _logger;
 
-        public delegate bool CellTransform(int rowIndex, int colIndex, string cellText, out string newCellText);
-        public delegate bool CellVisitor(int rowIndex, int colIndex, string cellText);
         public TextAssetTableHelper(IEnumerable<string> rowSplitStrings = null,
             IEnumerable<string> colSplitStrings = null, Encoding encoding = null)
         {
@@ -51,13 +59,10 @@ namespace IllusionMods
             get
             {
                 if (_logger != null) return _logger;
-                return (_logger = BepInEx.Logging.Logger.CreateLogSource(GetType().Name));
+                return _logger = BepInEx.Logging.Logger.CreateLogSource(GetType().Name);
             }
         }
 
-        private readonly string[] _rowSplitStrings;
-        private readonly string[] _colSplitStrings;
-        private readonly string[] _invalidColStrings;
         public bool Enabled { get; }
         public IEnumerable<string> RowSplitStrings => _rowSplitStrings;
         public IEnumerable<string> ColSplitStrings => _colSplitStrings;
@@ -65,7 +70,7 @@ namespace IllusionMods
 
         public List<int> HTextColumns { get; } = new List<int>();
 
-        public Encoding TextAssetEncoding { get; }
+        [UsedImplicitly] public Encoding TextAssetEncoding { get; }
 
         public virtual bool TryTranslateTextAsset(ref TextAsset textAsset, CellTransform translator, out string result)
         {
@@ -144,7 +149,6 @@ namespace IllusionMods
 
             return table.Split(_rowSplitStrings, StringSplitOptions.None)
                 .Select(r => r.Split(_colSplitStrings, StringSplitOptions.None)).ToArray();
-
         }
 
         public void ActOnCells(TextAsset textAsset, Action<string> cellAction, out TextAssetTableResult tableResult)
@@ -184,17 +188,20 @@ namespace IllusionMods
             return tableResult.CellsActedOn > 0;
         }
 
-        public bool ActOnCells(TextAsset textAsset, Func<string, bool> cellVisitor, out TextAssetTableResult tableResult)
+        public bool ActOnCells(TextAsset textAsset, Func<string, bool> cellVisitor,
+            out TextAssetTableResult tableResult)
         {
             bool CellVisitorWrapper(int i, int j, string cellContents)
             {
-                var _ = (i == j);
+                var _ = i == j;
                 return cellVisitor(cellContents);
             }
 
             return ActOnCells(textAsset, CellVisitorWrapper, out tableResult);
         }
-        public string ProcessTable(TextAsset textAsset, CellTransform columnTransform, out TextAssetTableResult tableResult)
+
+        public string ProcessTable(TextAsset textAsset, CellTransform columnTransform,
+            out TextAssetTableResult tableResult)
         {
             tableResult = new TextAssetTableResult();
             var colJoin = ColSplitStrings.First();
@@ -217,7 +224,7 @@ namespace IllusionMods
             var table = SplitTable(textAsset);
             tableResult.Rows = table.Length;
             tableResult.Cols = 0;
-            for(var r = 0; r < table.Length; r++)
+            for (var r = 0; r < table.Length; r++)
             {
                 var rowUpdated = false;
                 tableResult.Cols = Math.Max(tableResult.Cols, table[r].Length);
@@ -231,10 +238,12 @@ namespace IllusionMods
                         tableResult.CellsUpdated++;
                         rowUpdated = true;
                         result.Append(newCol);
-                    } else
+                    }
+                    else
                     {
                         result.Append(col);
                     }
+
                     result.Append(colJoin);
                 }
 
@@ -255,6 +264,6 @@ namespace IllusionMods
             return tableResult.Updated ? result.ToString() : textAsset.text;
         }
 
-#endregion
+        #endregion
     }
 }

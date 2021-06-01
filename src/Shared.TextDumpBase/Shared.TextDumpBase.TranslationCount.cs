@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace IllusionMods
+namespace IllusionMods.Shared.TextDumpBase
 {
     public class TranslationCount : IComparable<TranslationCount>, IEquatable<TranslationCount>
     {
@@ -109,7 +109,7 @@ namespace IllusionMods
         public int CompareTo(TranslationCount other)
         {
             if (ReferenceEquals(this, other)) return 0;
-            if (ReferenceEquals(null, other)) return 1;
+            if (other is null) return 1;
             var linesComparison = Lines.CompareTo(other.Lines);
             return linesComparison != 0 ? linesComparison : TranslatedLines.CompareTo(other.TranslatedLines);
         }

@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using BepInEx.Logging;
+using JetBrains.Annotations;
 
 namespace IllusionMods
 {
+    [PublicAPI]
     public class AssetDumpColumnInfo
     {
         protected static ManualLogSource Logger;
@@ -38,7 +40,7 @@ namespace IllusionMods
             this(new KeyValuePair<string, string>(srcCol, destCol ?? string.Empty), missingMappingOk) { }
 
         public bool MissingMappingOk { get; }
-        public bool CombineWithParentBundle { get; set; } = false;
+        public bool CombineWithParentBundle { get; set; }
         public IEnumerable<KeyValuePair<int, int>> NumericMappings { get; }
 
         public IEnumerable<KeyValuePair<string, string>> NameMappings { get; }

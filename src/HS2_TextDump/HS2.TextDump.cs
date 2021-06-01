@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using BepInEx;
 using IllusionMods.Shared;
+using IllusionMods.Shared.TextDumpBase;
 using Manager;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -12,7 +14,7 @@ namespace IllusionMods
 {
     [BepInProcess(Constants.MainGameProcessName)]
     [BepInPlugin(GUID, PluginName, Version)]
-    public partial class TextDump : BaseUnityPlugin
+    public partial class TextDump 
     {
         public const string PluginNameInternal = "HS2_TextDump";
 
@@ -32,6 +34,8 @@ namespace IllusionMods
         private int _stableCount;
         private bool _waitOnRetry;
 
+        [SuppressMessage("Performance", "CA1810:Initialize reference type static fields inline",
+            Justification = "Dynamic initialization")]
         static TextDump()
         {
             CurrentExecutionMode = ExecutionMode.BeforeFirstLoad;
@@ -40,7 +44,7 @@ namespace IllusionMods
 
         public TextDump()
         {
-            TextResourceHelper = CreateHelper<HS2_TextResourceHelper>();
+            SetTextResourceHelper(CreateHelper<HS2_TextResourceHelper>());
             AssetDumpHelper = CreatePluginHelper<HS2_AssetDumpHelper>();
             LocalizationDumpHelper = CreatePluginHelper<HS2_LocalizationDumpHelper>();
 
@@ -50,7 +54,7 @@ namespace IllusionMods
             TextDumpLevelComplete += TextDump_TextDumpLevelComplete;
         }
 
-        private void TextDump_TextDumpLevelComplete(TextDump sender, EventArgs eventArgs)
+        private void TextDump_TextDumpLevelComplete(BaseTextDumpPlugin sender, EventArgs eventArgs)
         {
             var delta = _total - _lastTotal;
 
@@ -96,7 +100,7 @@ namespace IllusionMods
             }
         }
 
-        private void HS2_TextDumpAwake(TextDump sender, EventArgs eventArgs)
+        private void HS2_TextDumpAwake(BaseTextDumpPlugin sender, EventArgs eventArgs)
         {
             SceneManager.sceneLoaded += HS2_sceneLoaded;
         }

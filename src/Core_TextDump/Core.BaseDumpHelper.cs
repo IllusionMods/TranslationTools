@@ -42,8 +42,27 @@ namespace IllusionMods
 
         protected TextDump Plugin { get; set; }
 
-        protected TextResourceHelper ResourceHelper => Plugin?.TextResourceHelper;
-        protected TextAssetTableHelper TableHelper => Plugin?.TextResourceHelper?.TableHelper;
+        protected TextResourceHelper ResourceHelper
+        {
+            get
+            {
+                TextResourceHelper result = null;
+                Plugin.SafeProc(p => result = p.TextResourceHelper);
+                return result;
+            }
+
+
+        }
+
+        protected TextAssetTableHelper TableHelper
+        {
+            get
+            {
+                TextAssetTableHelper result = null;
+                Plugin.SafeProc(p => p.TextResourceHelper.SafeProc(t => result = t.TableHelper));
+                return result;
+            }
+        }
 
 
         public virtual void InitializeHelper() { }

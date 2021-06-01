@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
+using ActionGame;
 using ActionGame.Point;
 using HarmonyLib;
 using IllusionMods.Shared;
+using IllusionMods.Shared.TextDumpBase;
 using Localize.Translate;
 using Manager;
 using UnityEngine;
@@ -30,6 +33,8 @@ namespace IllusionMods
 
         private static readonly Dictionary<string, Type> SupportedEnumerationTypeMap;
 
+        [SuppressMessage("Performance", "CA1810:Initialize reference type static fields inline",
+            Justification = "Dynamic initialization")]
         static KKP_LocalizationDumpHelper()
         {
             FormatStringRegex = new Regex(@"(\{[0-9]\}|\[[PH][^\]]*\])");
@@ -49,7 +54,7 @@ namespace IllusionMods
 
                 if (type == null)
                 {
-                    TextDump.Logger.LogDebug(
+                    BaseTextDumpPlugin.Logger.LogDebug(
                         $"SupportedEnumerationTypes: Unable to find type {typeName} {type}, skipping.");
                 }
 
@@ -202,13 +207,12 @@ namespace IllusionMods
         {
             var result = new XuaResizerResult();
             var componentType = component.GetType();
-            Type matchType;
 
             if (component is Text textComponent)
             {
                 result.AutoResize = textComponent.resizeTextForBestFit;
                 result.FontSize = textComponent.fontSize;
-                result.LineSpacing = (decimal) textComponent.lineSpacing;
+                result.LineSpacing = (decimal)textComponent.lineSpacing;
                 result.HorizontalOverflow = textComponent.horizontalOverflow == HorizontalWrapMode.Overflow
                     ? XuaResizerResult.HorizontalOverflowValue.Overflow
                     : XuaResizerResult.HorizontalOverflowValue.Wrap;
@@ -227,7 +231,7 @@ namespace IllusionMods
             }
             */
 
-            else if (SupportedEnumerationTypeMap.TryGetValue("TMPro.TextMeshPro", out matchType) &&
+            else if (SupportedEnumerationTypeMap.TryGetValue("TMPro.TextMeshPro", out var matchType) &&
                      matchType.IsAssignableFrom(componentType) ||
                      SupportedEnumerationTypeMap.TryGetValue("TMPro.TextMeshProUGUI", out matchType) &&
                      matchType.IsAssignableFrom(componentType))
@@ -239,21 +243,21 @@ namespace IllusionMods
                     var propInfo = AccessTools.Property(matchType, name);
                     if (propInfo != null)
                     {
-                        return (T) propInfo.GetValue(component, nullArgs);
+                        return (T)propInfo.GetValue(component, nullArgs);
                     }
 
                     var fieldInfo = AccessTools.Field(matchType, name);
                     if (fieldInfo != null)
                     {
-                        return (T) fieldInfo.GetValue(component);
+                        return (T)fieldInfo.GetValue(component);
                     }
 
                     return default;
                 }
 
                 result.AutoResize = GetComponentPropertyValue<bool?>("enableAutoSizing");
-                result.FontSize = (decimal?) GetComponentPropertyValue<float?>("fontSize");
-                result.LineSpacing = (decimal?) GetComponentPropertyValue<float?>("lineSpacing");
+                result.FontSize = (decimal?)GetComponentPropertyValue<float?>("fontSize");
+                result.LineSpacing = (decimal?)GetComponentPropertyValue<float?>("lineSpacing");
 
                 /*
                 yield return new KeyValuePair<string, string>(path,
@@ -500,9 +504,10 @@ namespace IllusionMods
         {
             var results = new Dictionary<string, string>();
             if (!Localize.Translate.Manager.initialized) return results;
-            if (!Singleton<Game>.IsInstance()) return results;
+            if (!Game.IsInstance()) return results;
 
-            var cycle = Singleton<Game>.Instance?.actScene?.Cycle;
+            Cycle cycle = null;
+            Game.Instance.SafeProc(gi => gi.actScene.SafeProc(scene => cycle = scene.Cycle));
 
             if (cycle == null) return results;
 

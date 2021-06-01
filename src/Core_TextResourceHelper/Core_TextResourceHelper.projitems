@@ -20,6 +20,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core.ITranslationDumper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.StringTranslationDumper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.BaseHelperFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.XuaHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)HelperFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IHelper.cs" />
   </ItemGroup>

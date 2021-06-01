@@ -1,17 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using BepInEx;
+using System;
 using System.IO;
-using System.Text;
 
 namespace IllusionMods
 {
-    public partial class TextDump
+    [BepInPlugin(GUID, PluginName, Version)]
+    public partial class ModTextDump
     {
+        public const string PluginNameInternal = "AI_ModTextDump";
+
         private static Version _gameVersion;
 
-        /// <summary>
-        /// Get current version of the game.
-        /// </summary>
+        public ModTextDump()
+        {
+            SetTextResourceHelper(CreateHelper<AI_TextResourceHelper>());
+        }
+
+        
         protected override Version GetGameVersion()
         {
             if (_gameVersion == null)
@@ -22,9 +27,12 @@ namespace IllusionMods
                 {
                     var version = File.ReadAllText(versionFile);
                     if (!string.IsNullOrWhiteSpace(version))
+                    {
                         _gameVersion = new Version(version);
+                    }
                 }
             }
+
             return _gameVersion;
         }
     }

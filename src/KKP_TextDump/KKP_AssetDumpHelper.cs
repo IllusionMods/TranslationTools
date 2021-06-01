@@ -15,7 +15,6 @@ namespace IllusionMods
     {
         protected KKP_AssetDumpHelper(TextDump plugin) : base(plugin)
         {
-            this.AssetDumpGenerators.Clear(); // FIXME: delete
 #if RAW_DUMP_SUPPORT
             AssetDumpGenerators.Add(GetFixCharaDumpers);
 #endif

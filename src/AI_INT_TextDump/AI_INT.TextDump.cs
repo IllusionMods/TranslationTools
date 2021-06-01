@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using AIProject.Player;
 using BepInEx;
 using HarmonyLib;
 using IllusionMods.Shared;
+using IllusionMods.Shared.TextDumpBase;
 using Manager;
 using UnityEngine.SceneManagement;
 using UploaderSystem;
@@ -18,12 +20,14 @@ namespace IllusionMods
     [BepInProcess(Constants.MainGameProcessNameSteam)]
     [BepInProcess(Constants.MainGameProcessName)] // IllusionFixes may have changed it
     [BepInPlugin(GUID, PluginName, Version)]
-    public partial class TextDump : BaseUnityPlugin
+    public partial class TextDump
     {
         public const string PluginNameInternal = "AI_INT_TextDump";
 
         private bool _dataLoaded;
 
+        [SuppressMessage("Performance", "CA1810:Initialize reference type static fields inline",
+            Justification = "Dynamic initialization")]
         static TextDump()
         {
             if (typeof(DownloadScene).GetProperty("isSteam", AccessTools.all) != null)
@@ -48,7 +52,7 @@ namespace IllusionMods
                     "[TextDump] Incorrect plugin for this application. Remove AI_INT_TextDump and use AI_TextDump.");
             }
 
-            TextResourceHelper = CreateHelper<AI_TextResourceHelper>();
+            SetTextResourceHelper(CreateHelper<AI_TextResourceHelper>());
             LocalizationDumpHelper = CreatePluginHelper<AI_INT_LocalizationDumpHelper>();
             AssetDumpHelper = CreatePluginHelper<AI_INT_AssetDumpHelper>();
 
@@ -58,7 +62,7 @@ namespace IllusionMods
             TextDumpLevelComplete += AI_INT_TextDumpLevelComplete;
         }
 
-        private void AI_INT_TextDumpLevelComplete(TextDump sender, EventArgs eventArgs)
+        private void AI_INT_TextDumpLevelComplete(BaseTextDumpPlugin sender, EventArgs eventArgs)
         {
             if (DumpLevelCompleted >= DumpLevelMax)
             {
@@ -72,7 +76,7 @@ namespace IllusionMods
         }
 
 
-        private void AI_INT_TextDumpAwake(TextDump sender, EventArgs eventArgs)
+        private void AI_INT_TextDumpAwake(BaseTextDumpPlugin sender, EventArgs eventArgs)
         {
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
         }
@@ -88,7 +92,10 @@ namespace IllusionMods
 
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources");
             while (!Singleton<Resources>.IsInstance() || Singleton<Resources>.Instance is null)
+            {
                 yield return CheckReadyToDumpDelay;
+            }
+
             while (!Singleton<Resources>.Instance.isActiveAndEnabled) yield return CheckReadyToDumpDelay;
             var resources = Singleton<Resources>.Instance;
             Logger.LogDebug("CheckReadyToDump: waiting on Manager.Resources.AgentProfile");

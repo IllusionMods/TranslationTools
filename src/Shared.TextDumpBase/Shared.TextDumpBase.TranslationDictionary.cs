@@ -5,7 +5,7 @@ using System.Linq;
 using IllusionMods.Shared;
 using UnityEngine;
 
-namespace IllusionMods
+namespace IllusionMods.Shared.TextDumpBase
 {
     public class TranslationDictionary<TKey, TValue> : IScopedTranslations<IDictionary<TKey, TValue>>,
         IDictionary<TKey, TValue>

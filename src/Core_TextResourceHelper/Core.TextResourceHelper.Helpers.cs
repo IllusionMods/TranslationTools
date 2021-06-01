@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using JetBrains.Annotations;
 
 namespace IllusionMods
 {
+    [PublicAPI]
     public partial class TextResourceHelper
     {
         public static class Helpers

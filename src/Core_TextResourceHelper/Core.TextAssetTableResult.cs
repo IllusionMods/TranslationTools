@@ -1,5 +1,8 @@
-﻿namespace IllusionMods
+﻿using JetBrains.Annotations;
+
+namespace IllusionMods
 {
+    [PublicAPI]
     public class TextAssetTableResult
     {
         public int CellsActedOn;

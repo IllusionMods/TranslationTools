@@ -5,7 +5,7 @@ namespace IllusionMods
 {
     public partial class TextDump
     {
-        public static Version GetGameVersion()
+        protected override Version GetGameVersion()
         {
             return Game.Version;
         }

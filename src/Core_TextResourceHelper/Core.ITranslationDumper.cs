@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 
 namespace IllusionMods
 {
@@ -7,6 +8,7 @@ namespace IllusionMods
 
     public delegate IEnumerable<T> TranslationCollector<T>();
 
+    [UsedImplicitly]
     public delegate IEnumerable<ITranslationDumper> TranslationGenerator();
 
     public interface ITranslationDumper

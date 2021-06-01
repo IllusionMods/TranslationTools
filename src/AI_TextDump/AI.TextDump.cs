@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using AIProject.Player;
 using BepInEx;
 using HarmonyLib;
 using IllusionMods.Shared;
+using IllusionMods.Shared.TextDumpBase;
 using Manager;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -21,7 +23,7 @@ namespace IllusionMods
     /// </remarks>
     [BepInProcess(Constants.MainGameProcessName)]
     [BepInPlugin(GUID, PluginName, Version)]
-    public partial class TextDump : BaseUnityPlugin
+    public partial class TextDump 
     {
         public const string PluginNameInternal = "AI_TextDump";
 
@@ -40,6 +42,8 @@ namespace IllusionMods
         private bool _startupLoaded;
         private bool _waitOnRetry;
 
+        [SuppressMessage("Performance", "CA1810:Initialize reference type static fields inline",
+            Justification = "Dynamic initialization")]
         static TextDump()
         {
             if (typeof(DownloadScene).GetProperty("isSteam", AccessTools.all) == null)
@@ -64,7 +68,7 @@ namespace IllusionMods
                     "[TextDump] Incorrect plugin for this application. Remove AI_TextDump and use AI_INT_TextDump.");
             }
 
-            TextResourceHelper = CreateHelper<AI_TextResourceHelper>();
+            SetTextResourceHelper(CreateHelper<AI_TextResourceHelper>());
             AssetDumpHelper = CreatePluginHelper<AI_AssetDumpHelper>();
             LocalizationDumpHelper = CreatePluginHelper<AI_LocalizationDumpHelper>();
 
@@ -186,10 +190,12 @@ namespace IllusionMods
                     {
                         count = GetAssetBundleNameListFromPath(pth).Count;
                     }
+#pragma warning disable CA1031 // Do not catch general exception types
                     catch
                     {
                         count = 0;
                     }
+#pragma warning restore CA1031 // Do not catch general exception types
 
                     if (count != 0) break;
 
@@ -197,10 +203,12 @@ namespace IllusionMods
                     {
                         count = GetAssetBundleNameListFromPath(pth, true).Count;
                     }
+#pragma warning disable CA1031 // Do not catch general exception types
                     catch
                     {
                         count = 0;
                     }
+#pragma warning restore CA1031 // Do not catch general exception types
 
                     if (count != 0) break;
 
@@ -225,7 +233,7 @@ namespace IllusionMods
             Logger.LogDebug($"Language = {Singleton<GameSystem>.Instance.language}");
         }
 
-        private void AI_TextDumpAwake(TextDump sender, EventArgs eventArgs)
+        private void AI_TextDumpAwake(BaseTextDumpPlugin sender, EventArgs eventArgs)
         {
             SceneManager.sceneLoaded += AI_sceneLoaded;
         }
@@ -250,7 +258,7 @@ namespace IllusionMods
             }
         }
 
-        private void AI_TextDumpLevelComplete(TextDump sender, EventArgs eventArgs)
+        private void AI_TextDumpLevelComplete(BaseTextDumpPlugin sender, EventArgs eventArgs)
         {
             var delta = _total - _lastTotal;
             if (DumpLevelCompleted >= DumpLevelMax)

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using ADV;
 using IllusionMods.Shared;
+using JetBrains.Annotations;
 using MessagePack;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -82,7 +83,8 @@ namespace IllusionMods
 
         protected List<TryDumpListEntry> ListEntryDumpers { get; }
 
-        protected LocalizationDumpHelper LocalizationDumpHelper => Plugin?.LocalizationDumpHelper;
+        [UsedImplicitly]
+        protected LocalizationDumpHelper LocalizationDumpHelper => Plugin == null ? null : Plugin.LocalizationDumpHelper;
 
         public virtual IEnumerable<ITranslationDumper> GetAssetDumpers()
         {
@@ -363,6 +365,7 @@ namespace IllusionMods
 
         private string BuildReplacementKey(string assetBundleName, string key)
         {
+            Assert.IsNotNull(this);
             return JoinStrings("|", Path.GetDirectoryName(assetBundleName), key);
         }
 

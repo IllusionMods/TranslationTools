@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using BepInEx.Logging;
@@ -232,18 +233,16 @@ namespace IllusionMods
         // displayed section (otherwise just returns the passed translation)
         public virtual string GetSpecializedTranslation(ScenarioData.Param param, int i, string translation)
         {
-            if (param.Command == Command.Choice)
+            if (param.Command != Command.Choice) return translation;
+            try
             {
-                try
-                {
-                    return Helpers.JoinStrings(ChoiceDelimiter,
-                        translation.Replace(ChoiceDelimiter[0], OptionSafeComma),
-                        param.Args[i].Split(ChoiceDelimiter.ToCharArray(), 2)[1]);
-                }
-                catch
-                {
-                    // something went wrong, return original below
-                }
+                return Helpers.JoinStrings(ChoiceDelimiter,
+                    translation.Replace(ChoiceDelimiter[0], OptionSafeComma),
+                    param.Args[i].Split(ChoiceDelimiter.ToCharArray(), 2)[1]);
+            }
+            catch
+            {
+                // something went wrong, return original below
             }
 
             return translation;

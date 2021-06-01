@@ -1,6 +1,7 @@
 ﻿using System;
 using BepInEx.Harmony;
 using HarmonyLib;
+using IllusionMods.Shared.TextDumpBase;
 
 namespace IllusionMods
 {
@@ -8,7 +9,7 @@ namespace IllusionMods
     {
         internal static class InitialDumpHook
         {
-            private static readonly string HarmonyId = "TextDump.InitialDumpHook.HarmonyID";
+            private const string HarmonyId = "TextDump.InitialDumpHook.HarmonyID";
             private static TextDump _pluginInstance;
             private static Harmony _harmony;
             private static readonly object InitialDumpLock = new object();
@@ -30,7 +31,7 @@ namespace IllusionMods
                 }
             }
 
-            private static void Unpatch(TextDump sender, EventArgs eventArgs)
+            private static void Unpatch(BaseTextDumpPlugin sender, EventArgs eventArgs)
             {
                 if (_harmony == null) return;
                 lock (InitialDumpLock)
@@ -39,7 +40,7 @@ namespace IllusionMods
                     if (tmp == null) return;
                     _harmony = null;
                     tmp.UnpatchAll(HarmonyId);
-                    sender.TextDumpUpdate -= Unpatch;
+                    if (sender is TextDump textDump) textDump.TextDumpUpdate -= Unpatch;
                 }
             }
 
