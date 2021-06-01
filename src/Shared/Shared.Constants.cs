@@ -1,7 +1,9 @@
 ﻿using System.Text.RegularExpressions;
+using JetBrains.Annotations;
 
 namespace IllusionMods.Shared
 {
+    [PublicAPI]
     internal static class Constants
     {
 #if AI

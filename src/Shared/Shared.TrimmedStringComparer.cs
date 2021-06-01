@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using JetBrains.Annotations;
 
 // Keep code .NET 3.5 friendly and free of Unity/BepInEx
 namespace IllusionMods.Shared
 {
+    [PublicAPI]
     internal class TrimmedStringComparer : IEqualityComparer<string>
     {
         private readonly char[] _extraTrimChars;

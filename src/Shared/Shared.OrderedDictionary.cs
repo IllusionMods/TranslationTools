@@ -2,11 +2,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using JetBrains.Annotations;
 
 
 // Keep code .NET 3.5 friendly
 namespace IllusionMods.Shared
 {
+    [PublicAPI]
     public class OrderedDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     {
         private readonly Dictionary<TKey, TValue> _dictionary;

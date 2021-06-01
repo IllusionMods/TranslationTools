@@ -9,7 +9,9 @@ using System.Threading;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using JetBrains.Annotations;
 using UnityEngine;
+using UnityEngine.Assertions;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUAPluginData = XUnity.AutoTranslator.Plugin.Core.Constants.PluginData;
 

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 
 namespace IllusionMods.Shared
 {
+    [PublicAPI]
     public static class Extensions
     {
         public static IEnumerable<KeyValuePair<int, T>> Enumerate<T>(this IEnumerable<T> self, int start = 0)

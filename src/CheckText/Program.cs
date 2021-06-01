@@ -16,8 +16,8 @@ namespace CheckText
 
         internal static IEnumerable<Regex> ResourcePrefixes = new[]
         {
-            new Regex(@"^CHOICE:", RegexOptions.Compiled),
-            new Regex(@"^OPTION[\d+]:", RegexOptions.Compiled)
+            new Regex(@"^(CHOICE|CALC|SPECIAL|HATTRIBUTE|MIND|STATE|TRAIT):", RegexOptions.Compiled),
+            new Regex(@"^(OPTION|NAME)[\d+]:", RegexOptions.Compiled)
         };
 
         internal static ConsoleColor OrigConsoleColor;
@@ -273,7 +273,7 @@ namespace CheckText
                         WriteLine(match, ConsoleColor.Yellow);
                     }
                 }
-                
+
                 foreach (var subTextEntry in textEntry.OrderBy(e => e.Key))
                 {
                     WritePrefix(1);

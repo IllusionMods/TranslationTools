@@ -40,8 +40,8 @@ namespace TranslationStyleCheck
             result = new CheckResult
             {
                 Line = input,
-                Message = this.Message,
-                Severity = this.Severity
+                Message = Message,
+                Severity = Severity
             };
             return false;
         }
