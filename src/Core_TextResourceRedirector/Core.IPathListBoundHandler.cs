@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using JetBrains.Annotations;
+using UnityEngine;
 using XUnity.ResourceRedirector;
 
 namespace IllusionMods
@@ -9,6 +10,7 @@ namespace IllusionMods
         PathList BlackListPaths { get; }
     }
 
+    [PublicAPI]
     public static class PathListBoundHandlerExtensions
     {
         public static bool IsPathWhitelisted(this IPathListBoundHandler handler, string path,

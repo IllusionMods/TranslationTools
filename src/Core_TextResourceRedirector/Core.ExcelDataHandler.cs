@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using JetBrains.Annotations;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using BepInEx.Logging;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
@@ -11,13 +11,14 @@ namespace IllusionMods
 {
     public class ExcelDataHandler : RedirectorAssetLoadedHandlerBase<ExcelData>, IPathListBoundHandler
     {
-        public ExcelDataHandler(TextResourceRedirector plugin, bool allowTranslationRegistration = false) : 
+        public ExcelDataHandler(TextResourceRedirector plugin, bool allowTranslationRegistration = false) :
             base(plugin, null, allowTranslationRegistration) { }
 
 
         /// <summary>
         ///     List of column names handler will replace. If empty attempts to replace any translatable column.
         /// </summary>
+        [UsedImplicitly]
         public List<string> SupportedColumnNames { get; } = new List<string>();
 
         protected override bool DumpAsset(string calculatedModificationPath, ExcelData asset,

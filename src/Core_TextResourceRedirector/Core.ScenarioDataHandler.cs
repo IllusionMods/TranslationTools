@@ -214,25 +214,21 @@ namespace IllusionMods
             string calculatedModificationPath)
         {
             var key = TextResourceHelper.GetSpecializedKey(param, i, out var value);
-            if (!string.IsNullOrEmpty(key))
+            if (string.IsNullOrEmpty(key)) return false;
+            if (cache.TryGetTranslation(key, true, out var translated))
             {
-                if (cache.TryGetTranslation(key, true, out var translated))
-                {
-                    var result = TextResourceHelper.GetSpecializedTranslation(param, i, translated);
-                    TranslationHelper.RegisterRedirectedResourceTextToPath(result, calculatedModificationPath);
-                    param.Args[i] = result;
-                    Logger.DebugLogDebug($"{GetType()} handled {calculatedModificationPath}");
-                    return true;
-                }
+                var result = TextResourceHelper.GetSpecializedTranslation(param, i, translated);
+                TranslationHelper.RegisterRedirectedResourceTextToPath(result, calculatedModificationPath);
+                param.Args[i] = result;
+                Logger.DebugLogDebug($"{GetType()} handled {calculatedModificationPath}");
+                return true;
+            }
 
-                if (LanguageHelper.IsTranslatable(key))
-                {
-                    TranslationHelper.RegisterRedirectedResourceTextToPath(key, calculatedModificationPath);
-                    if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled)
-                    {
-                        cache.AddTranslationToCache(key, value);
-                    }
-                }
+            if (!LanguageHelper.IsTranslatable(key)) return false;
+            TranslationHelper.RegisterRedirectedResourceTextToPath(key, calculatedModificationPath);
+            if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled)
+            {
+                cache.AddTranslationToCache(key, value);
             }
 
             return false;

@@ -29,17 +29,11 @@ namespace IllusionMods
         public virtual bool CanHandleAsset(TextAsset textAsset, IAssetOrResourceLoadedContext context)
         {
             var pth = context.GetUniqueFileSystemAssetPath(textAsset).Replace(".unity3d", string.Empty);
-            if (ObjectMark != null && this.IsPathAllowed(pth, true))
-            {
-                var searchLength = SearchLength != -1 ? SearchLength : ObjectMark.Count() * 3;
-                var haystack = textAsset?.bytes?.Take(searchLength);
-                if (haystack != null)
-                {
-                    return TextResourceHelper.Helpers.ArrayContains(haystack, ObjectMark);
-                }
-            }
-
-            return false;
+            if (ObjectMark == null || !this.IsPathAllowed(pth, true)) return false;
+            var searchLength = SearchLength != -1 ? SearchLength : ObjectMark.Count() * 3;
+            IEnumerable<byte> haystack = null;
+            textAsset.SafeProc(a => a.bytes.SafeProc(b => haystack = b.Take(searchLength)));
+            return haystack != null && TextResourceHelper.Helpers.ArrayContains(haystack, ObjectMark);
         }
 
         public virtual T LoadFromAsset(TextAsset textAsset)

@@ -2,6 +2,7 @@
 using System.Linq;
 using BepInEx.Configuration;
 using HarmonyLib;
+using JetBrains.Annotations;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,8 +11,9 @@ namespace IllusionMods
     // ReSharper disable PartialTypeWithSinglePart
     internal static partial class TextFormatter
     {
-        internal static string[] ParagraphBreak = {"\n\n"};
+        internal static readonly string[] ParagraphBreak = {"\n\n"};
         internal static bool Initialized;
+        [UsedImplicitly]
         internal static ConfigEntry<bool> EnableTextReflow { get; private set; }
 
         internal static void Init(TextResourceRedirector plugin)

@@ -10,7 +10,7 @@ namespace IllusionMods
         where T : Object
     {
 
-        public ConfigEntry<bool> EnableInternalAssetTranslation;
+        public readonly ConfigEntry<bool> EnableInternalAssetTranslation;
         protected StringArrayParamAssetLoadedHandler(TextResourceRedirector plugin, int translatedIndex = -1,
             bool allowTranslationRegistration = true) :
             base(plugin, allowTranslationRegistration)

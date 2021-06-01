@@ -5,9 +5,8 @@ namespace IllusionMods
 {
     public class PlanNameInfoHandler : StringArrayParamAssetLoadedHandler<PlanNameInfo, PlanNameInfo.Param>
     {
+        private static readonly char[] TrimChars = {'～', '~', ' '};
         public PlanNameInfoHandler(TextResourceRedirector plugin) : base(plugin) { }
-
-        private static readonly char[] TrimChars = new[] {'～', '~', ' '};
 
         public override bool DumpParam(SimpleTextTranslationCache cache, PlanNameInfo.Param param)
         {
@@ -25,13 +24,14 @@ namespace IllusionMods
             return UpdateParamField(calculatedModificationPath, cache, ref param.name);
         }
 
-        protected override void TrackReplacement(string calculatedModificationPath, string orig, string translated)
+        protected override void TrackReplacement(string calculatedModificationPath, string orig, string translated,
+            HashSet<int> scopes)
         {
-            base.TrackReplacement(calculatedModificationPath, orig, translated);
+            base.TrackReplacement(calculatedModificationPath, orig, translated, scopes);
             var trimmedOrig = orig.Trim(TrimChars);
             if (orig != trimmedOrig)
             {
-                base.TrackReplacement(calculatedModificationPath, trimmedOrig, translated.Trim(TrimChars));
+                base.TrackReplacement(calculatedModificationPath, trimmedOrig, translated.Trim(TrimChars), scopes);
             }
         }
     }

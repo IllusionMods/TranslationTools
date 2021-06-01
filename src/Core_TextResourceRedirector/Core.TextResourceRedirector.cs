@@ -27,7 +27,7 @@ namespace IllusionMods
 
         public const string PluginName = "Text Resource Redirector";
         public const string GUID = "com.deathweasel.bepinex.textresourceredirector";
-        public const string Version = "1.4.4";
+        public const string Version = "1.4.4.1";
         internal new static ManualLogSource Logger;
 #if !HS
         internal ChaListDataHandler ChaListDataHandler;
@@ -52,10 +52,20 @@ namespace IllusionMods
 
         protected ConfigEntry<bool> EnableTracing { get; private set; }
 
+        internal static TextResourceRedirector Instance => _instance;
+
         internal void Awake()
         {
             _instance = this;
             Logger = Logger ?? base.Logger;
+
+            EnableTracing = Config.Bind("Settings", "Enable Tracing", false, new ConfigDescription(
+                "Enable additional low level debug log messages", null, "Advanced"));
+
+            EnableTracing.SettingChanged += EnableTracing_SettingChanged;
+
+            XuaHooks.Init();
+
             TextResourceHelper = GetTextResourceHelper();
 
             TextFormatter.Init(this);
@@ -72,12 +82,9 @@ namespace IllusionMods
 #if !HS
             ChaListDataHandler = new ChaListDataHandler(this);
 #endif
-            XuaHooks.Init();
-
-            EnableTracing = Config.Bind("Settings", "Enable Tracing", false, new ConfigDescription(
-                "Enable additional low level debug log messages", null, "Advanced"));
-            EnableTracing.SettingChanged += EnableTracing_SettingChanged;
             EnableTracing_SettingChanged(this, EventArgs.Empty);
+
+            AdvCommandHelper.Init();
             OnTextResourceRedirectorAwake(EventArgs.Empty);
             LogTextResourceHelperSettings();
         }
@@ -130,7 +137,7 @@ namespace IllusionMods
 
         public virtual void AddTranslationToTextCache(string key, string value, int scope = -1)
         {
-            XuaHooks.AddTranslationDelegate?.Invoke(key, value, scope);
+            XuaHooks.AddTranslation(key, value, scope);
         }
 
         public int GetCurrentGameLanguage()
@@ -142,6 +149,22 @@ namespace IllusionMods
             }
 
             return _currentGameLanguage.Value;
+        }
+
+        public static int GetCurrentTranslationScope()
+        {
+            try
+            {
+                return XUnity.AutoTranslator.Plugin.Core.Features.SupportsSceneManager
+                    ? UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex
+#pragma warning disable CS0618 // Type or member is obsolete - code only used in older engines
+                    : UnityEngine.Application.loadedLevel;
+#pragma warning restore CS0618 // Type or member is obsolete
+            }
+            catch
+            {
+                return -1;
+            }
         }
 
 #if false

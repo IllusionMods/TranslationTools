@@ -1,12 +1,14 @@
 ﻿using System.Collections.Generic;
 using BepInEx.Configuration;
 using HarmonyLib;
+using JetBrains.Annotations;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
 using XUnity.ResourceRedirector;
 
 namespace IllusionMods
 {
+    [PublicAPI]
     public static class Extensions
     {
         public static Dictionary<string, string> BuildReverseDictionary(this SimpleTextTranslationCache cache)

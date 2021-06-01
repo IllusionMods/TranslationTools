@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using BepInEx.Harmony;
-using BepInEx.Logging;
 using HarmonyLib;
+using UnityEngine.SceneManagement;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
@@ -13,32 +12,38 @@ using XUnity.ResourceRedirector;
 namespace IllusionMods
 {
     /// <summary>
-    ///     <c>NickName</c> assets can not be modified in place without error, but they can be modified after they're all
-    ///     loaded.
+    ///     <c>NickName</c> assets can not be modified in place without error, but they can be modified after
+    ///     they're all loaded.
     ///     <para>
-    ///         Caches translations where replacement would normally occur, then hook
-    ///         <c>SaveData.LoadNickNames</c> to apply them.
+    ///         Caches translations where replacement would normally occur, hooks specific methods used to get
+    ///         names for display. Special handling needed for the page where you set the callname for a girl
+    ///         in the classroom view.
     ///     </para>
     /// </summary>
     /// <seealso cref="XUnity.AutoTranslator.Plugin.Core.AssetRedirection.AssetLoadedHandlerBaseV2{T}" />
     /// <seealso cref="NickName" />
-    public class NickNameHandler : RedirectorAssetLoadedHandlerBase<NickName>
+    /// <seealso cref="NickNameSceneHelper" />
+    public partial class NickNameHandler : RedirectorAssetLoadedHandlerBase<NickName>
     {
-        internal static NickNameHandler Instance;
+        private const string SupportedSceneName = "NickNameSetting";
+        private static NickNameHandler Instance;
 
         private static bool _hooksInitialized;
         private static readonly object HookLock = new object();
 
+
+        private readonly HashSet<string> _matched = new HashSet<string>();
+
         private readonly Dictionary<string, Dictionary<string, string>> _replacements =
             new Dictionary<string, Dictionary<string, string>>();
-        public NickNameHandler(TextResourceRedirector plugin) : base(plugin)
+
+        public NickNameHandler(TextResourceRedirector plugin) : base(plugin, allowTranslationRegistration: true)
         {
             Instance = this;
-           
-            /*
-            // replacement fires INSIDE the function we need to postfix, so init hooks up front
+            plugin.TranslatorTranslationsLoaded += Plugin_TranslatorTranslationsLoaded;
             InitHooks();
-            */
+            SceneManager.sceneLoaded += SceneManager_sceneLoaded;
+            SceneManager.sceneUnloaded += SceneManager_sceneUnloaded;
         }
 
 
@@ -47,8 +52,7 @@ namespace IllusionMods
         protected override bool ReplaceOrUpdateAsset(string calculatedModificationPath, ref NickName asset,
             IAssetOrResourceLoadedContext context)
         {
-            // updating the NickName assets directly causes issues, but after SaveData.LoadNickNameParam() they
-            // are safe to manipulate
+            // updating the NickName assets directly causes issues, save off a lookup table.
 
             var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
             var redirectedResources = RedirectedDirectory.GetFilesInDirectory(calculatedModificationPath, ".txt");
@@ -64,9 +68,8 @@ namespace IllusionMods
             var personalityKey = calculatedModificationPath
                 .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                 .LastOrDefault();
-            // don't touch "player" entry
-            if (string.IsNullOrEmpty(personalityKey) ||
-                personalityKey.Equals("player", StringComparison.OrdinalIgnoreCase))
+
+            if (string.IsNullOrEmpty(personalityKey))
             {
                 return true;
             }
@@ -78,13 +81,17 @@ namespace IllusionMods
 
             foreach (var entry in asset.param)
             {
-                //if (!entry.isSpecial) continue;
                 var key = TextResourceHelper.GetSpecializedKey(entry, entry.Name);
                 if (string.IsNullOrEmpty(key)) continue;
                 if (cache.TryGetTranslation(key, true, out var translated))
                 {
                     replacements[key] = translated;
+
+                    // Scope 15 for the class nickname editor
+                    TrackReplacement(calculatedModificationPath, entry.Name, translated, 15, -1);
                     TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
+                    Logger.DebugLogDebug(
+                        $"{GetType().FullName}.{nameof(ReplaceOrUpdateAsset)}: {personalityKey}: {key} => {translated}");
                 }
                 else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
                          LanguageHelper.IsTranslatable(key))
@@ -93,7 +100,6 @@ namespace IllusionMods
                 }
             }
 
-            if (replacements.Count > 0) InitHooks();
             return true;
         }
 
@@ -107,7 +113,6 @@ namespace IllusionMods
 
             foreach (var entry in asset.param)
             {
-                //if (!entry.isSpecial) continue;
                 var key = TextResourceHelper.GetSpecializedKey(entry, entry.Name);
                 if (!string.IsNullOrEmpty(key) && LanguageHelper.IsTranslatable(key))
                 {
@@ -117,6 +122,37 @@ namespace IllusionMods
 
             return true;
         }
+
+        private static string GetPersonalityKey(int personality)
+        {
+            return personality < 0 ? "player" : $"c{personality:00}";
+        }
+
+        private static bool TryGetReplacementsByPersonality(int personality,
+            out Dictionary<string, string> replacements)
+        {
+            replacements = null;
+            return Instance != null &&
+                   Instance._replacements.TryGetValue(GetPersonalityKey(personality), out replacements);
+        }
+
+        private void SceneManager_sceneUnloaded(Scene scene)
+        {
+            if (scene.name != SupportedSceneName) return;
+            NickNameSceneHelper.Enabled = false;
+        }
+
+        private void SceneManager_sceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (scene.name != SupportedSceneName) return;
+            NickNameSceneHelper.Enabled = true;
+        }
+
+        private void Plugin_TranslatorTranslationsLoaded(TextResourceRedirector sender, EventArgs eventArgs)
+        {
+            _matched.Clear();
+        }
+
         private void InitHooks()
         {
             if (_hooksInitialized) return;
@@ -130,21 +166,61 @@ namespace IllusionMods
 
         internal static class Hooks
         {
+            // static void SaveData.CallNormalize(SaveData.CharaData charaData)
             [HarmonyPostfix]
-            [HarmonyPatch(typeof(SaveData), "LoadNickNameParam")]
-            internal static void SaveDataLoadNickNameParamPostfix(ref Dictionary<string, List<NickName.Param>> __result)
+            [HarmonyPatch(typeof(SaveData), nameof(SaveData.CallNormalize))]
+            internal static void SaveDataCallNormalizePostfix(ref SaveData.CharaData charaData)
             {
-                if (Instance == null) return;
-                foreach (var nicks in __result)
+                var orig = charaData.callName;
+                try
                 {
-                    if (!Instance._replacements.TryGetValue(nicks.Key, out var replacements)) continue;
-                    foreach (var entry in nicks.Value)
+                    if (Instance == null ||
+                        Instance._matched.Contains(orig) ||
+                        !TryGetReplacementsByPersonality(charaData.personality, out var replacements))
                     {
-                        //if (!entry.isSpecial) continue;
-                        var key = Instance.TextResourceHelper.GetSpecializedKey(entry, entry.Name);
-                        if (!replacements.TryGetValue(key, out var translated)) continue;
-                        entry.Name = translated;
+                        return;
                     }
+
+                    var nickParam = SaveData.GetCallName(charaData);
+                    var key = Instance.TextResourceHelper.GetSpecializedKey(nickParam, nickParam.Name);
+                    if (!replacements.TryGetValue(key, out var translatedName)) return;
+                    charaData.callName = translatedName;
+                    Instance._matched.Add(translatedName);
+                }
+                catch (Exception err)
+                {
+                    Logger.LogWarning($"{nameof(SaveDataCallNormalizePostfix)}: {err.Message}");
+                    UnityEngine.Debug.LogException(err);
+                }
+            }
+
+
+            // static SaveData.CallFileData SaveData.FindCallFileData(int personality, int id)
+            [HarmonyPostfix]
+            [HarmonyPatch(typeof(SaveData), nameof(SaveData.FindCallFileData), typeof(int), typeof(int))]
+            internal static void SaveDataFindCallFileDataPostfix(SaveData.CallFileData __result, int personality,
+                int id)
+            {
+                var orig = __result.name;
+                try
+                {
+                    if (Instance == null ||
+                        Instance._matched.Contains(orig) ||
+                        !TryGetReplacementsByPersonality(personality, out var replacements))
+                    {
+                        return;
+                    }
+
+                    var nickParam = SaveData.GetCallName(personality, id);
+
+                    var key = Instance.TextResourceHelper.GetSpecializedKey(nickParam, nickParam.Name);
+                    if (!replacements.TryGetValue(key, out var translatedName)) return;
+                    Traverse.Create(__result).Property<string>(nameof(__result.name)).Value = translatedName;
+                }
+                catch (Exception err)
+                {
+                    Logger.LogWarning($"{nameof(SaveDataFindCallFileDataPostfix)}: {err.Message}");
+                    UnityEngine.Debug.LogException(err);
                 }
             }
         }

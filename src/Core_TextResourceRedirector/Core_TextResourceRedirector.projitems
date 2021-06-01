@@ -28,5 +28,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceRedirector.XuaHooks.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.MapInfoHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextFormatter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.AdvCommandHelper.cs" />
   </ItemGroup>
 </Project>

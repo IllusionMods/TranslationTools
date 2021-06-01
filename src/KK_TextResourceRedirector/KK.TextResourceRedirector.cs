@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using BepInEx;
-using HarmonyLib;
+using JetBrains.Annotations;
 using UnityEngine;
 using XUnity.ResourceRedirector;
 
@@ -12,16 +12,22 @@ namespace IllusionMods
     {
         public const string PluginNameInternal = "KK_TextResourceRedirector";
 
-        public NickNameHandler NickNameHandler { get; private set; }
-        public MapInfoHandler MapInfoHandler { get; private set; }
-        public EventInfoHandler EventInfoHandler { get; private set; }
-
-        public MakerCustomDataHandler MakerCustomDataHandler { get; private set; }
-
         public TextResourceRedirector()
         {
             TextResourceRedirectorAwake += ConfigureHandlersForKK;
         }
+
+        [UsedImplicitly] 
+        public NickNameHandler NickNameHandler { get; private set; }
+
+        [UsedImplicitly] 
+        public MapInfoHandler MapInfoHandler { get; private set; }
+
+        [UsedImplicitly] 
+        public EventInfoHandler EventInfoHandler { get; private set; }
+
+        [UsedImplicitly] 
+        public MakerCustomDataHandler MakerCustomDataHandler { get; private set; }
 
         private TextResourceHelper GetTextResourceHelper()
         {
@@ -61,7 +67,9 @@ namespace IllusionMods
             */
         }
 
-        protected bool HTextRulesGetter(string calculatedModificationPath, TextAsset asset, IAssetOrResourceLoadedContext context, out HashSet<int> rowWhitelist, out HashSet<int> rowBlacklist, out HashSet<int> colWhitelist, out HashSet<int> colBlacklist)
+        protected bool HTextRulesGetter(string calculatedModificationPath, TextAsset asset,
+            IAssetOrResourceLoadedContext context, out HashSet<int> rowWhitelist, out HashSet<int> rowBlacklist,
+            out HashSet<int> colWhitelist, out HashSet<int> colBlacklist)
         {
             rowWhitelist = null;
             rowBlacklist = null;

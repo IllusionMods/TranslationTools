@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using BepInEx;
 using HarmonyLib;
 
@@ -9,13 +8,13 @@ namespace IllusionMods
     public partial class TextResourceRedirector
     {
         public const string PluginNameInternal = "AI_TextResourceRedirector";
-        
+
+        // ReSharper disable once NotAccessedField.Global
         internal TitleSkillNameHandler TitleSkillNameHandler;
 
         public TextResourceRedirector()
         {
             TextResourceRedirectorAwake += ConfigureHandlersForAI;
-            Harmony.CreateAndPatchAll(typeof(Hooks));
         }
 
         private TextResourceHelper GetTextResourceHelper()
@@ -46,18 +45,6 @@ namespace IllusionMods
             };
 
             foreach (var path in excelSkipPaths) sender.ExcelDataHandler.BlackListPaths.Add(path);
-        }
-
-        internal static class Hooks
-        {
-            [HarmonyPrefix]
-            [HarmonyPatch(typeof(Manager.Resources), nameof(Manager.Resources.LoadMapIK),
-                new[] {typeof(AIProject.DefinePack)})]
-            internal static void LoadMapIKPrefix(AIProject.DefinePack definePack)
-            {
-                Logger.LogFatal($"THIS IS IT: {definePack.ABDirectories.MapIKList}");
-            }
-
         }
     }
 }

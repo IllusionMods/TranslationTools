@@ -1,9 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using BepInEx.Logging;
 using XUnity.AutoTranslator.Plugin.Core;
-using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
 using XUnity.ResourceRedirector;
 

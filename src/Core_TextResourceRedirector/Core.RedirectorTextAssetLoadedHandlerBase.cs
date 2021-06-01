@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using UnityEngine;
@@ -16,7 +17,8 @@ namespace IllusionMods
         private readonly HashSet<string> _excludedTranslationRegistrationPaths =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        private readonly Dictionary<string, string> _loadedReplacements = new Dictionary<string, string>();
+        private readonly Dictionary<int, Dictionary<string, string>> _loadedReplacements =
+            new Dictionary<int, Dictionary<string, string>>();
 
         protected RedirectorTextAssetLoadedHandlerBase(TextResourceRedirector plugin, string extraEnableHelp = null,
             bool allowTranslationRegistration = false)
@@ -74,21 +76,51 @@ namespace IllusionMods
             return AllowTranslationRegistration && !_excludedTranslationRegistrationPaths.Contains(path);
         }
 
-        protected virtual void TrackReplacement(string calculatedModificationPath, string orig, string translated,
-            bool? translationRegistrationExcludedForPath = null)
-        {
 
-            if (!IsTranslationRegistrationAllowed(calculatedModificationPath) || orig == translated) return;
-            _loadedReplacements[orig] = translated;
-            if (EnableRegisterAsTranslations) Plugin.AddTranslationToTextCache(orig, translated);
+            
+
+        protected virtual void TrackReplacement(string calculatedModificationPath, string orig, string translated,
+            HashSet<int> scopes)
+        {
+            if (orig == translated || !IsTranslationRegistrationAllowed(calculatedModificationPath)) return;
+
+            if (scopes == null) scopes = new HashSet<int> {-1};
+            if (scopes.Count == 0) scopes.Add(-1);
+        
+            var enableRegisterAsTranslations = EnableRegisterAsTranslations;
+            foreach (var scope in scopes)
+            {
+                if (!_loadedReplacements.TryGetValue(scope, out var scopedReplacements))
+                {
+                    scopedReplacements = _loadedReplacements[scope] = new Dictionary<string, string>();
+                }
+
+                scopedReplacements[orig] = translated;
+                if (enableRegisterAsTranslations) Plugin.AddTranslationToTextCache(orig, translated, scope);
+            }
+        }
+
+        protected void TrackReplacement(string calculatedModificationPath, string orig, string translated,
+            IEnumerable<int> scopes)
+        {
+            TrackReplacement(calculatedModificationPath, orig, translated, new HashSet<int>(scopes));
+        }
+
+        protected void TrackReplacement(string calculatedModificationPath, string orig, string translated,
+            params int[] scopes)
+        {
+            TrackReplacement(calculatedModificationPath, orig, translated, new HashSet<int>(scopes));
         }
 
         protected void RegisterAsTranslations()
         {
             if (!EnableRegisterAsTranslations) return;
-            foreach (var entry in _loadedReplacements)
+            foreach (var scopeEntry in _loadedReplacements)
             {
-                Plugin.AddTranslationToTextCache(entry.Key, entry.Value);
+                foreach (var entry in scopeEntry.Value)
+                {
+                    Plugin.AddTranslationToTextCache(entry.Key, entry.Value, scopeEntry.Key);
+                }
             }
         }
 
@@ -96,7 +128,10 @@ namespace IllusionMods
         {
             var path = asset.DefaultCalculateModificationFilePath(context);
             if (AllowTranslationRegistration && TextResourceHelper.IsRandomNameListAsset(asset.name))
+            {
                 ExcludePathFromTranslationRegistration(path);
+            }
+
             return path;
         }
 

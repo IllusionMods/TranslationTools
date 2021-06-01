@@ -1,5 +1,4 @@
 ﻿using System;
-using BepInEx.Harmony;
 using HarmonyLib;
 using XUnity.AutoTranslator.Plugin.Core;
 
@@ -11,7 +10,12 @@ namespace IllusionMods
         {
             internal static bool Initialized;
 
-            internal static AddTranslation AddTranslationDelegate;
+            private static AddTranslationDelegate _addTranslationDelegate;
+
+            internal static void AddTranslation(string key, string value, int scope)
+            {
+                _addTranslationDelegate?.Invoke(key, value, scope);
+            }
 
             internal static void Init()
             {
@@ -20,24 +24,42 @@ namespace IllusionMods
                 Harmony.CreateAndPatchAll(typeof(XuaHooks));
 
                 var defaultTranslator = AutoTranslator.Default;
-                if (defaultTranslator == null) return;
+                if (defaultTranslator == null)
+                {
+                    Logger.LogWarning(
+                        $"{typeof(XuaHooks).FullName}.{nameof(Init)}: Unable to access {typeof(AutoTranslator).FullName}, some functionality will be disabled");
+                    return;
+                }
+
                 var defaultCache =
                     AccessTools.Field(defaultTranslator.GetType(), "TextCache")?.GetValue(defaultTranslator) ??
                     AccessTools.Property(defaultTranslator.GetType(), "TextCache")
                         ?.GetValue(defaultTranslator, new object[0]);
-                if (defaultCache == null) return;
+                if (defaultCache == null)
+                {
+                    Logger.LogWarning(
+                        $"{typeof(XuaHooks).FullName}.{nameof(Init)}: Unable to access {defaultTranslator.GetType().FullName}'s translation cache, some functionality will be disabled");
+                    return;
+                }
+
                 var method = AccessTools.Method(defaultCache.GetType(), "AddTranslation");
-                if (method == null) return;
+                if (method == null)
+                {
+                    Logger.LogWarning(
+                        $"{typeof(XuaHooks).FullName}.{nameof(Init)}: Unable to add entries to {defaultCache.GetType().FullName}'s translation cache, some functionality will be disabled");
+                    return;
+                }
+
                 try
                 {
-                    AddTranslationDelegate = (AddTranslation) Delegate.CreateDelegate(
-                        typeof(AddTranslation), defaultCache, method);
+                    _addTranslationDelegate = (AddTranslationDelegate) Delegate.CreateDelegate(
+                        typeof(AddTranslationDelegate), defaultCache, method);
                 }
 #pragma warning disable CA1031 // non-issue in this case
                 catch (ArgumentException)
                 {
                     //  mono versions fallback to this
-                    AddTranslationDelegate = (key, value, scope) =>
+                    _addTranslationDelegate = (key, value, scope) =>
                         method.Invoke(defaultCache, new object[] {key, value, scope});
                 }
 #pragma warning restore CA1031
@@ -51,7 +73,7 @@ namespace IllusionMods
                 _instance.SafeProc(i => i.OnTranslatorTranslationsLoaded(EventArgs.Empty));
             }
 
-            internal delegate void AddTranslation(string key, string value, int scope);
+            internal delegate void AddTranslationDelegate(string key, string value, int scope);
         }
     }
 }

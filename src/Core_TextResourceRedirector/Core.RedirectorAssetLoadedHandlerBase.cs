@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using UnityEngine.SceneManagement;
@@ -13,7 +15,8 @@ namespace IllusionMods
     public abstract class RedirectorAssetLoadedHandlerBase<T> : AssetLoadedHandlerBaseV2<T>, IRedirectorHandler<T>
         where T : Object
     {
-        private readonly Dictionary<string, string> _loadedReplacements = new Dictionary<string, string>();
+        private readonly Dictionary<int, Dictionary<string, string>> _loadedReplacements =
+            new Dictionary<int, Dictionary<string, string>>();
 
         private readonly HashSet<string> _excludedTranslationRegistrationPaths =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -61,20 +64,48 @@ namespace IllusionMods
 
         public string ConfigSectionName { get; }
 
-        protected virtual void TrackReplacement(string calculatedModificationPath, string orig, string translated)
+        protected virtual void TrackReplacement(string calculatedModificationPath, string orig, string translated,
+            HashSet<int> scopes)
         {
-            if (!IsTranslationRegistrationAllowed(calculatedModificationPath) || orig == translated) return;
+            if (orig == translated || !IsTranslationRegistrationAllowed(calculatedModificationPath)) return;
 
-            _loadedReplacements[orig] = translated;
-            if (EnableRegisterAsTranslations) Plugin.AddTranslationToTextCache(orig, translated);
+            if (scopes == null) scopes = new HashSet<int> {-1};
+            if (scopes.Count == 0) scopes.Add(-1);
+        
+            var enableRegisterAsTranslations = EnableRegisterAsTranslations;
+            foreach (var scope in scopes)
+            {
+                if (!_loadedReplacements.TryGetValue(scope, out var scopedReplacements))
+                {
+                    scopedReplacements = _loadedReplacements[scope] = new Dictionary<string, string>();
+                }
+
+                scopedReplacements[orig] = translated;
+                if (enableRegisterAsTranslations) Plugin.AddTranslationToTextCache(orig, translated, scope);
+            }
+        }
+
+        protected void TrackReplacement(string calculatedModificationPath, string orig, string translated,
+            IEnumerable<int> scopes)
+        {
+            TrackReplacement(calculatedModificationPath, orig, translated, new HashSet<int>(scopes));
+        }
+
+        protected void TrackReplacement(string calculatedModificationPath, string orig, string translated,
+            params int[] scopes)
+        {
+            TrackReplacement(calculatedModificationPath, orig, translated, new HashSet<int>(scopes));
         }
 
         protected void RegisterAsTranslations()
         {
             if (!EnableRegisterAsTranslations) return;
-            foreach (var entry in _loadedReplacements)
+            foreach (var scopeEntry in _loadedReplacements)
             {
-                Plugin.AddTranslationToTextCache(entry.Key, entry.Value);
+                foreach (var entry in scopeEntry.Value)
+                {
+                    Plugin.AddTranslationToTextCache(entry.Key, entry.Value, scopeEntry.Key);
+                }
             }
         }
 

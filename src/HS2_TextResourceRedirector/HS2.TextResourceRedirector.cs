@@ -1,5 +1,6 @@
 ﻿using System;
 using BepInEx;
+using JetBrains.Annotations;
 
 namespace IllusionMods
 {
@@ -14,12 +15,19 @@ namespace IllusionMods
             TextResourceRedirectorAwake += ConfigureHandlersForHS2;
         }
 
+        [UsedImplicitly]
         public VoiceInfoHandler VoiceInfoHandler { get; private set; }
+        [UsedImplicitly]
         public BGMNameInfoHandler BGMNameInfoHandler { get; private set; }
+        [UsedImplicitly]
         public EventContentInfoDataHandler EventContentInfoDataHandler { get; private set; }
+        [UsedImplicitly]
         public MapInfoHandler MapInfoHandler { get; private set; }
+        [UsedImplicitly]
         public ParameterNameInfoHandler ParameterNameInfoHandler { get; private set; }
+        [UsedImplicitly]
         public AchievementInfoDataHandler AchievementInfoDataHandler { get; private set; }
+        [UsedImplicitly]
         public object PlanNameInfoHandler { get; private set; }
 
         private TextResourceHelper GetTextResourceHelper()

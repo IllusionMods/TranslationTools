@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using IllusionMods.Shared;
@@ -10,6 +11,9 @@ using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
 using XUnity.ResourceRedirector;
+#if AI || HS2
+using AIProject;
+#endif
 
 namespace IllusionMods
 {
@@ -24,8 +28,17 @@ namespace IllusionMods
         public TextAssetTableHandler(TextResourceRedirector plugin) : base(plugin, "containing tables") { }
 
 
-        public TextAssetTableHelper TextAssetTableHelper => Plugin?.TextResourceHelper?.TableHelper;
+        public TextAssetTableHelper TextAssetTableHelper
+        {
+            get
+            {
+                TextAssetTableHelper result = null;
+                Plugin.SafeProc(p => p.TextResourceHelper.SafeProc(t => result = t.TableHelper));
+                return result;
+            }
+        }
 
+        // ReSharper disable once CollectionNeverUpdated.Global
         public List<TableRulesGetter> TableRulesGetters { get; } = new List<TableRulesGetter>();
 
 
