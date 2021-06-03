@@ -35,7 +35,7 @@ namespace IllusionMods
     {
         public const string GUID = "com.illusionmods.translationtools.mod_text_dump";
         public const string PluginName = "Mod Text Dump";
-        public const string Version = "0.1.0";
+        public const string Version = "0.5.0";
 
         private const string FilePattern = "_-_-_-_-_-_";
 

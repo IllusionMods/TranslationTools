@@ -1,13 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using AIProject;
-using HarmonyLib;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEx;
-using static IllusionMods.TextResourceHelper.Helpers;
 using Resources = Manager.Resources;
 
 namespace IllusionMods
@@ -17,7 +13,7 @@ namespace IllusionMods
         protected static readonly string[] AssetBundleRequired = {"/"};
         protected static readonly string[] AssetBundleForbidden = {"<", ">", ":"};
         protected static readonly string[] AssetForbidden = {"/"};
-        
+
 
         protected bool GetAssetInfo(List<string> address, ref int idx, out AssetBundleInfo assetBundleInfo)
         {
@@ -123,39 +119,44 @@ namespace IllusionMods
         protected GameObject[] LoadGameObjects(params AssetBundleInfo[] assetBundleInfos)
         {
             var results = new GameObject[0];
-            var gameObjects = ListPool<GameObject>.Get();
-            foreach (var abi in assetBundleInfos)
+            var gameObjects = AIProject.ListPool<GameObject>.Get();
+            try
             {
-                GameObject gameObject;
+                foreach (var abi in assetBundleInfos)
+                {
+                    GameObject gameObject;
 
-                //Logger.LogError($"LoadGameObjects: assetbundle={abi.assetbundle}, asset={abi.asset}, manifest={abi.manifest}");
-                try
-                {
-                    gameObject = ManualLoadAsset<GameObject>(abi);
-                }
-                catch
-                {
-                    gameObject = null;
+                    //Logger.LogError($"LoadGameObjects: assetbundle={abi.assetbundle}, asset={abi.asset}, manifest={abi.manifest}");
+                    try
+                    {
+                        gameObject = ManualLoadAsset<GameObject>(abi);
+                    }
+                    catch
+                    {
+                        gameObject = null;
+                    }
+
+                    if (gameObject != null)
+                    {
+                        //Singleton<Manager.Resources>.Instance.AddLoadAssetBundle(abi.assetbundle, abi.manifest);
+                        //Logger.LogFatal($"LoadGameObjects: {gameObject.name}");
+                        gameObjects.Add(gameObject);
+                    }
                 }
 
-                if (gameObject != null)
+                if (!gameObjects.IsNullOrEmpty())
                 {
-                    //Singleton<Manager.Resources>.Instance.AddLoadAssetBundle(abi.assetbundle, abi.manifest);
-                    //Logger.LogFatal($"LoadGameObjects: {gameObject.name}");
-                    gameObjects.Add(gameObject);
+                    results = new GameObject[gameObjects.Count];
+                    for (var l = 0; l < gameObjects.Count; l++)
+                    {
+                        results[l] = gameObjects[l];
+                    }
                 }
             }
-
-            if (!gameObjects.IsNullOrEmpty())
+            finally
             {
-                results = new GameObject[gameObjects.Count];
-                for (var l = 0; l < gameObjects.Count; l++)
-                {
-                    results[l] = gameObjects[l];
-                }
+                AIProject.ListPool<GameObject>.Release(gameObjects);
             }
-
-            ListPool<GameObject>.Release(gameObjects);
 
             return results;
         }
@@ -279,7 +280,6 @@ namespace IllusionMods
 
         protected IEnumerable<AssetBundleInfo> GetAssetTables(AssetBundleInfo assetBundleInfo)
         {
-            
             if (IsAssetTable(assetBundleInfo, out _, out _))
             {
                 yield return assetBundleInfo;
@@ -407,10 +407,10 @@ namespace IllusionMods
                         var name = string.Empty;
                         var explanation = string.Empty;
 
-                        #if LOCALIZE
+#if LOCALIZE
                         Singleton<Resources>.Instance.Localize.ConvertTranslateItem(itemInfo.CategoryID, itemInfo.ID,
                             ref name, ref explanation);
-                            #endif
+#endif
                         AddLocalizationToResults(results, itemInfo.Name, name);
                         AddLocalizationToResults(results, itemInfo.Explanation, explanation);
                     }
