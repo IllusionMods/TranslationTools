@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using JetBrains.Annotations;
 
 namespace IllusionMods
 {
-    
     // ReSharper disable once PartialTypeWithSinglePart
     public partial class BaseHelperFactory<T> where T : IHelper
     {

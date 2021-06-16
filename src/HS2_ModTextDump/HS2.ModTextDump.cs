@@ -1,23 +1,22 @@
-﻿using BepInEx;
-using System;
+﻿using System;
 using System.IO;
+using BepInEx;
 
 namespace IllusionMods
 {
     [BepInPlugin(GUID, PluginName, Version)]
     public partial class ModTextDump
     {
-        public const string PluginNameInternal = "AI_ModTextDump";
+        public const string PluginNameInternal = "HS2_ModTextDump";
 
         private static Version _gameVersion;
 
         public ModTextDump()
         {
             SetTextResourceHelper(CreateHelper<HS2_TextResourceHelper>());
-            if (!IsStudio) TranslationScopes.Add(3);
         }
 
-        
+
         protected override Version GetGameVersion()
         {
             if (_gameVersion == null)

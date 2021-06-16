@@ -1,5 +1,4 @@
 ﻿using BepInEx.Logging;
-using System.Diagnostics;
 
 namespace IllusionMods
 {
@@ -9,7 +8,7 @@ namespace IllusionMods
 
 
         /// <summary>
-        /// Logs via <c>LogDebug</c> on DEBUG builds or if <c>EnableTraces</c> is <c>true</c>
+        ///     Logs via <c>LogDebug</c> on DEBUG builds or if <c>EnableTraces</c> is <c>true</c>
         /// </summary>
         /// <param name="logger">The logger.</param>
         /// <param name="data">The data.</param>

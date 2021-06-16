@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using JetBrains.Annotations;
 
 namespace IllusionMods
@@ -12,6 +13,9 @@ namespace IllusionMods
         public static class Helpers
         {
             private static char[] _directorySeparatorsToReplace;
+
+            private static readonly Encoding Latin1Encoding = Encoding.GetEncoding("ISO-8859-1",
+                new EncoderExceptionFallback(), new DecoderExceptionFallback());
 
             private static IEnumerable<char> DirectorySeparatorsToReplace
             {
@@ -39,9 +43,32 @@ namespace IllusionMods
                 }
             }
 
+            public static bool ContainsOnlyAscii(string input)
+            {
+                return !ContainsNonAscii(input);
+            }
+
             public static bool ContainsNonAscii(string input)
             {
                 return input.ToCharArray().Any(c => c > sbyte.MaxValue);
+            }
+
+            public static bool ContainsOnlyLatin1(string input)
+            {
+                try
+                {
+                    var check = Latin1Encoding.GetString(Latin1Encoding.GetBytes(input));
+                    return input == check;
+                }
+                catch (EncoderFallbackException)
+                {
+                    return false;
+                }
+            }
+
+            public static bool ContainsNonLatin1(string input)
+            {
+                return !ContainsOnlyLatin1(input);
             }
 
             public static string NormalizePathSeparators(string path)

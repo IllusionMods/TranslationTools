@@ -35,6 +35,12 @@ namespace IllusionMods.Shared
         internal const string StudioProcessName = "StudioNEOV2";
         internal const string MainGameProcessName = "HoneySelect2";
         internal const RegexOptions DefaultRegexOptions = RegexOptions.Compiled;
+#else
+        // generic
+        internal const string GameName = "Illusion Games";
+        internal const RegexOptions DefaultRegexOptions = RegexOptions.None;
 #endif
+
     }
+
 }

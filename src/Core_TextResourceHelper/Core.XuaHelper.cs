@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using JetBrains.Annotations;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace IllusionMods
 {
@@ -61,6 +59,7 @@ namespace IllusionMods
         public bool? AutoResize { get; set; }
 
         public decimal? ChangeFontSize { get; private set; }
+
         public decimal? FontSize
         {
             get => _fontSize;
@@ -114,7 +113,7 @@ namespace IllusionMods
             var result = new XuaResizerResult();
             if (Equals(original)) return result;
 
-            
+
             if (AutoResize != original.AutoResize) result.AutoResize = AutoResize;
             if (LineSpacing != original.LineSpacing) result.LineSpacing = LineSpacing;
             if (HorizontalOverflow != original.HorizontalOverflow) result.HorizontalOverflow = HorizontalOverflow;
@@ -148,9 +147,14 @@ namespace IllusionMods
             if (AutoResize.HasValue) yield return $"AutoResize({AutoResize.Value.ToString().ToLowerInvariant()})";
             if (LineSpacing.HasValue) yield return $"UGUI_ChangeLineSpacing({LineSpacing.Value})";
             if (HorizontalOverflow.HasValue)
+            {
                 yield return $"UGUI_HorizontalOverflow({HorizontalOverflow.Value.ToString().ToLowerInvariant()}";
+            }
+
             if (VerticalOverflow.HasValue)
+            {
                 yield return $"UGUI_VerticalOverflow({VerticalOverflow.Value.ToString().ToLowerInvariant()}";
+            }
         }
 
         public override int GetHashCode()
@@ -162,12 +166,14 @@ namespace IllusionMods
         public override string ToString()
         {
             var result = new StringBuilder();
+
             void AddFieldString<T>(string name, T field)
             {
                 if (field == null) return;
                 if (result[result.Length - 1] != '(') result.Append(", ");
                 result.Append(name).Append("=").Append(field);
             }
+
             result.Append(GetType()).Append("(");
             AddFieldString(nameof(FontSize), FontSize);
             AddFieldString(nameof(ChangeFontSize), ChangeFontSize);
@@ -177,7 +183,6 @@ namespace IllusionMods
             AddFieldString(nameof(VerticalOverflow), VerticalOverflow);
             result.Append(")");
             return result.ToString();
-
         }
     }
 }

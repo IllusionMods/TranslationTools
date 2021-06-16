@@ -6,9 +6,11 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using BepInEx;
+using BepInEx.Configuration;
 using HarmonyLib;
 using IllusionMods.Shared;
 using IllusionMods.Shared.TextDumpBase;
+using JetBrains.Annotations;
 using KKAPI;
 using KKAPI.Studio;
 using Manager;
@@ -20,10 +22,10 @@ using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.Constants;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
 using static IllusionMods.TextResourceHelper.Helpers;
+using UnityDebug = UnityEngine.Debug;
 
 #if AI||HS2
 using AIChara;
-
 #endif
 
 namespace IllusionMods
@@ -35,7 +37,7 @@ namespace IllusionMods
     {
         public const string GUID = "com.illusionmods.translationtools.mod_text_dump";
         public const string PluginName = "Mod Text Dump";
-        public const string Version = "0.5.0";
+        public const string Version = "0.6.0";
 
         private const string FilePattern = "_-_-_-_-_-_";
 
@@ -45,6 +47,7 @@ namespace IllusionMods
             ChaListDefine.KeyType.ThumbAB
         };
 
+        [UsedImplicitly]
         private static readonly List<int> TranslationScopes = new List<int>();
 
         private static readonly HashSet<int> HandledScopes = new HashSet<int>();
@@ -60,6 +63,8 @@ namespace IllusionMods
 
         private bool _readyToDump;
 
+        internal static ConfigEntry<DumpMode> ActiveDumpMode { get; private set; }
+
         public static string StudioRoot { get; private set; }
 
         public static string MakerRoot { get; private set; }
@@ -67,10 +72,119 @@ namespace IllusionMods
         protected override string DumpDestination =>
             string.Concat(base.DumpDestination, IsStudio ? "-Studio" : "-MainGame");
 
+        public static string GetCurrentExecutableName()
+
+        {
+            var process = Process.GetCurrentProcess();
+
+            if (process.MainModule == null) return string.Empty;
+            try
+            {
+                return Path.GetFileNameWithoutExtension(process.MainModule.FileName);
+            }
+            catch { }
+
+            try
+            {
+                return process.ProcessName;
+            }
+            catch { }
+
+            return string.Empty;
+        }
+
         public void Awake()
         {
             InitPluginSettings();
             //if (!IsStudio) MakerAPI.MakerFinishedLoading += MakerAPI_MakerFinishedLoading;
+        }
+
+        public void DumpText()
+        {
+            if (DumpCompleted || !Enabled.Value) return;
+            DumpStarted = true;
+            StartCoroutine(IsStudio ? ExecuteDump(StudioDump()) : ExecuteDump(MakerDump()));
+        }
+
+        protected override void InitPluginSettings()
+        {
+            base.InitPluginSettings(PluginName, Version);
+            ActiveDumpMode = Config.Bind("Settings", "Dump Mode", DumpMode.TranslatorLanguageSettings,
+                "Determines which strings to include in dump");
+            StudioRoot = StudioRoot ?? CombinePaths(DumpRoot, "Text", "Mods", "Studio");
+            MakerRoot = MakerRoot ?? CombinePaths(DumpRoot, "Text", "Mods", "Maker");
+        }
+
+        protected override void DumpToFile(string filePath, IEnumerable<string> lines)
+        {
+            var dumpLines = lines;
+
+            if (IsStudio)
+            {
+                var tmpLines = dumpLines.ToList();
+                if (tmpLines.Count > 0)
+                {
+                    var tmp = new[]
+                    {
+                        StudioDumpPrefix.AsEnumerable(),
+                        tmpLines.AsEnumerable()
+                    }.SelectMany(s => s);
+                    dumpLines = tmp.ToList();
+                }
+                else
+                {
+                    dumpLines = tmpLines;
+                }
+            }
+
+            base.DumpToFile(filePath, dumpLines);
+        }
+
+        protected override List<string> CreateLines(string filePath, TranslationDictionary translations)
+        {
+            var lines = new List<string>();
+            var scopeLines = new List<string>();
+            foreach (var scope in translations.Scopes)
+            {
+                scopeLines.Clear();
+                foreach (var localization in translations.GetScope(scope))
+                {
+                    var key = localization.Key;
+                    var value = localization.Value;
+                    value = value.IsNullOrWhiteSpace() ? string.Empty : value.FixRedirected();
+
+                    if (key.Trim() == value.Trim()) continue;
+
+                    if (key.StartsWith(FilePattern) && value.EndsWith(FilePattern))
+                    {
+                        scopeLines.Add(string.Empty);
+                        scopeLines.Add($"// {key.Substring(FilePattern.Length)}");
+                        continue;
+                    }
+
+                    if (string.IsNullOrEmpty(key) || key == value ||
+                        string.IsNullOrEmpty(value) && !EntryNeedsTranslation(key))
+                    {
+                        continue;
+                    }
+
+                    // comment out potential partial entries
+                    if (string.IsNullOrEmpty(value) || LanguageHelper.IsTranslatable(value))
+                    {
+                        key = $"//{key}";
+                    }
+
+                    scopeLines.Add(JoinStrings("=", key, value));
+                }
+
+                if (scopeLines.Count <= 0) continue;
+                if (lines.Count > 0) lines.Add("");
+                if (scope != -1) lines.Add($"#set level {scope}");
+                lines.AddRange(scopeLines);
+                if (scope != -1) lines.Add($"#unset level {scope}");
+            }
+
+            return lines;
         }
 
         internal void Update()
@@ -96,38 +210,32 @@ namespace IllusionMods
             HandleNotification();
         }
 
-        public static string GetCurrentExecutableName()
-
+        private static bool IsMod(ListInfoBase listInfo)
         {
-            var process = Process.GetCurrentProcess();
-
-            if (process.MainModule == null) return string.Empty;
-            try
-            {
-                return Path.GetFileNameWithoutExtension(process.MainModule.FileName);
-            }
-            catch { }
-
-            try
-            {
-                return process.ProcessName;
-            }
-            catch { }
-
-            return string.Empty;
+            return IsMod(listInfo.Id);
         }
 
-        public void DumpText()
+        private static bool IsMod(int id)
         {
-            if (DumpCompleted || !Enabled.Value) return;
-            DumpStarted = true;
-            if (IsStudio)
+            return id >= UniversalAutoResolver.BaseSlotID;
+        }
+
+
+        private static bool EntryNeedsTranslation(string untranslatedText)
+        {
+            if (string.IsNullOrEmpty(untranslatedText)) return false;
+            switch (ActiveDumpMode.Value)
             {
-                StartCoroutine(ExecuteDump(StudioDump()));
-            }
-            else
-            {
-                StartCoroutine(ExecuteDump(MakerDump()));
+                case DumpMode.All:
+                    return true;
+                case DumpMode.AllNonAscii:
+                    return ContainsNonAscii(untranslatedText);
+                case DumpMode.AllNonLatin1:
+                    return ContainsNonLatin1(untranslatedText);
+                case DumpMode.TranslatorLanguageSettings:
+                    return LanguageHelper.IsTranslatable(untranslatedText);
+                default:
+                    return false;
             }
         }
 
@@ -138,23 +246,6 @@ namespace IllusionMods
             _currentTranslationCache = null;
             yield return WriteTranslations();
             DumpCompleted = true;
-        }
-
-        protected override void InitPluginSettings()
-        {
-            base.InitPluginSettings(PluginName, Version);
-            StudioRoot = StudioRoot ?? CombinePaths(DumpRoot, "Text", "Mods", "Studio");
-            MakerRoot = MakerRoot ?? CombinePaths(DumpRoot, "Text", "Mods", "Maker");
-        }
-
-        private static bool IsMod(ListInfoBase listInfo)
-        {
-            return IsMod(listInfo.Id);
-        }
-
-        private static bool IsMod(int id)
-        {
-            return id >= UniversalAutoResolver.BaseSlotID;
         }
 
         private IEnumerator CheckReadyToDump()
@@ -300,30 +391,6 @@ namespace IllusionMods
             return result;
         }
 
-        protected override void DumpToFile(string filePath, IEnumerable<string> lines)
-        {
-            var dumpLines = lines;
-
-            if (IsStudio)
-            {
-                var tmpLines = dumpLines.ToList();
-                if (tmpLines.Count > 0)
-                {
-                    var tmp = new[]
-                    {
-                        StudioDumpPrefix.AsEnumerable(),
-                        tmpLines.AsEnumerable()
-                    }.SelectMany(s => s);
-                    dumpLines = tmp.ToList();
-                }
-                else
-                {
-                    dumpLines = tmpLines;
-                }
-            }
-
-            base.DumpToFile(filePath, dumpLines);
-        }
 
         private IEnumerator StudioDump()
         {
@@ -343,10 +410,8 @@ namespace IllusionMods
                 var groupInfo = GetStudioGroupInfo(group.Key);
                 var groupName = groupInfo?.name ?? string.Empty;
 
-                if (!string.IsNullOrEmpty(groupName) && ContainsNonAscii(groupName))
+                if (ShouldIncludeEntry(groupName, out var groupNameTrans))
                 {
-                    var groupNameTrans = string.Empty;
-                    if (TryGetTranslation(groupName, out var result)) groupNameTrans = result;
                     TextResourceHelper.AddLocalizationToResults(groupResults, groupName, groupNameTrans);
                 }
 
@@ -358,28 +423,31 @@ namespace IllusionMods
                         ? GetStudioCategoryName(groupInfo, category.Key)
                         : GetStudioCategoryName(group.Key, category.Key);
 
-                    if (!string.IsNullOrEmpty(categoryName) && ContainsNonAscii(categoryName))
+                    if (ShouldIncludeEntry(categoryName, out var categoryNameTrans))
                     {
-                        var categoryNameTrans = string.Empty;
-                        if (TryGetTranslation(categoryName, out var result)) categoryNameTrans = result;
                         TextResourceHelper.AddLocalizationToResults(categoryResults, categoryName, categoryNameTrans);
                     }
 
                     foreach (var grouping in category.Value.Where(entry => IsMod(entry.Key))
                         .Select(entry => entry.Value).GroupBy(GetStudioGrouping))
                     {
-                        var names = grouping.Select(i => i.name)
-                            .Where(n => !results.ContainsKey(n) && ContainsNonAscii(n)).ToList();
+                        var names = grouping.Select(i => i.name).Where(n => !results.ContainsKey(n)).Select(
+                                origName =>
+                                {
+                                    var shouldInclude = ShouldIncludeEntry(origName, out var translatedName);
+                                    var result = new {origName, translatedName};
+                                    return new {shouldInclude, result};
+                                }).Where(r => r.shouldInclude && r.result.origName != r.result.translatedName)
+                            .Select(r => r.result)
+                            .ToList();
 
                         if (names.Count < 1) continue;
                         TextResourceHelper.AddLocalizationToResults(results, $"{FilePattern}{grouping.Key}",
                             FilePattern);
 
-                        foreach (var itemName in names)
+                        foreach (var entry in names)
                         {
-                            var translation = string.Empty;
-                            if (TryGetTranslation(itemName, out var result)) translation = result;
-                            TextResourceHelper.AddLocalizationToResults(results, itemName, translation);
+                            TextResourceHelper.AddLocalizationToResults(results, entry.origName, entry.translatedName);
                         }
                     }
                 }
@@ -401,6 +469,14 @@ namespace IllusionMods
             }
 
             if (HandledScopes.Count == 0) yield return -1;
+        }
+
+        private bool ShouldIncludeEntry(string input, out string translatedText)
+        {
+            translatedText = string.Empty;
+            if (string.IsNullOrEmpty(input)) return false;
+            if (TryGetTranslation(input, out translatedText)) return input != translatedText;
+            return EntryNeedsTranslation(input);
         }
 
         private bool TryGetTranslation(string input, out string translatedText)
@@ -474,91 +550,41 @@ namespace IllusionMods
                     {
                         try
                         {
-                            var names = grouping.Select(i => i.Name)
-                                .Where(n => !results.ContainsKey(n) && ContainsNonAscii(n)).ToList();
+                            var names = grouping.Select(i => i.Name).Where(n => !results.ContainsKey(n)).Select(
+                                    origName =>
+                                    {
+                                        var shouldInclude = ShouldIncludeEntry(origName, out var translatedName);
+                                        var result = new {origName, translatedName};
+                                        return new {shouldInclude, result};
+                                    }).Where(r => r.shouldInclude && r.result.origName != r.result.translatedName)
+                                .Select(r => r.result)
+                                .ToList();
 
                             if (names.Count < 1) continue;
 
                             TextResourceHelper.AddLocalizationToResults(results, $"{FilePattern}{grouping.Key}",
                                 FilePattern);
-                            foreach (var itemName in names)
+                            foreach (var entry in names)
                             {
-                                try
-                                {
-                                    var translation = string.Empty;
-                                    if (TryGetTranslation(itemName, out var result)) translation = result;
-
-                                    TextResourceHelper.AddLocalizationToResults(results, itemName, translation);
-                                }
-                                catch (Exception err)
-                                {
-                                    Logger.LogError($"Looping {names}: {err.Message}");
-                                    UnityEngine.Debug.LogException(err);
-                                }
+                                TextResourceHelper.AddLocalizationToResults(results, entry.origName,
+                                    entry.translatedName);
                             }
                         }
                         catch (Exception err)
                         {
                             Logger.LogError($"Looping {grouping}: {err.Message}");
-                            UnityEngine.Debug.LogException(err);
+                            UnityDebug.LogException(err);
                         }
                     }
                 }
                 catch (Exception err)
                 {
                     Logger.LogError($"Looping {category}: {err.Message}");
-                    UnityEngine.Debug.LogException(err);
+                    UnityDebug.LogException(err);
                 }
             }
 
             DumpCompleted = true;
-        }
-
-        protected override List<string> CreateLines(string filePath, TranslationDictionary translations)
-        {
-            var lines = new List<string>();
-            var scopeLines = new List<string>();
-            foreach (var scope in translations.Scopes)
-            {
-                scopeLines.Clear();
-                foreach (var localization in translations.GetScope(scope))
-                {
-                    var key = localization.Key;
-                    var value = localization.Value;
-                    value = value.IsNullOrWhiteSpace() ? string.Empty : value.FixRedirected();
-
-                    if (key.Trim() == value.Trim()) continue;
-
-                    if (key.StartsWith(FilePattern) && value.EndsWith(FilePattern))
-                    {
-                        scopeLines.Add(string.Empty);
-                        scopeLines.Add($"// {key.Substring(FilePattern.Length)}");
-                        continue;
-                    }
-
-                    if (string.IsNullOrEmpty(key) || key == value ||
-                        string.IsNullOrEmpty(value) && !ContainsNonAscii(key))
-                    {
-                        continue;
-                    }
-
-                    // comment out potential partial entries
-                    if (string.IsNullOrEmpty(value) || LanguageHelper.IsTranslatable(value))
-                    {
-                        key = $"//{key}";
-                    }
-
-                    scopeLines.Add(JoinStrings("=", key, value));
-                }
-
-                if (scopeLines.Count <= 0) continue;
-                if (lines.Count > 0) lines.Add("");
-                if (scope != -1) lines.Add($"#set level {scope}");
-                lines.AddRange(scopeLines);
-                if (scope != -1) lines.Add($"#unset level {scope}");
-            }
-
-            return lines;
         }
     }
 }
