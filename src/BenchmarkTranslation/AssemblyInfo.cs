@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using IllusionMods.Shared;
 using static IllusionMods.BenchmarkTranslation;
 
 [assembly: AssemblyTitle(PluginNameInternal)]

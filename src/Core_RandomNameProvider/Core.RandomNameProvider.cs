@@ -15,7 +15,7 @@ namespace IllusionMods
     {
         public const string GUID = "com.illusionmods.translationtools.random_name_provider";
         public const string PluginName = "Random Name Provider";
-        public const string Version = "2.0.1.2";
+        public const string Version = "2.0.1.3";
 
         internal new static ManualLogSource Logger;
 

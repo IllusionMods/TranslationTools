@@ -11,7 +11,7 @@ namespace IllusionMods
     {
         public const string PluginNameInternal = "KK_RandomNameProvider";
 
-        public static bool IsRandomNameAsset(string assetBunndlePath, string assetName)
+        public static bool IsRandomNameAsset(string assetBundlePath, string assetName)
         {
             return assetName == "random_name";
         }

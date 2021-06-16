@@ -70,7 +70,7 @@ namespace IllusionMods
             internal static void TranslationsLoadedPostfix()
             {
                 Logger.LogWarning($"{typeof(XuaHooks)} {nameof(TranslationsLoadedPostfix)} fired");
-                _instance.SafeProc(i => i.OnTranslatorTranslationsLoaded(EventArgs.Empty));
+                Instance.SafeProc(i => i.OnTranslatorTranslationsLoaded(EventArgs.Empty));
             }
 
             internal delegate void AddTranslationDelegate(string key, string value, int scope);

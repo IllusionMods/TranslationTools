@@ -9,9 +9,7 @@ using System.Threading;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
-using JetBrains.Annotations;
 using UnityEngine;
-using UnityEngine.Assertions;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUAPluginData = XUnity.AutoTranslator.Plugin.Core.Constants.PluginData;
 
@@ -23,7 +21,7 @@ namespace IllusionMods
     {
         public const string GUID = "com.illusionmods.translationtools.benchmarktranslation";
         public const string PluginName = "Benchmark Translation";
-        public const string Version = "0.3.0.2";
+        public const string Version = "0.3.0.3";
         public const string PluginNameInternal = PluginName;
 
         private const int MaxOutstandingJobs = 500;
@@ -47,20 +45,6 @@ namespace IllusionMods
 
         public static ConfigEntry<int> TranslationScope { get; private set; }
         public static ConfigEntry<KeyboardShortcut> BenchmarkHotkey { get; private set; }
-
-        internal void Main()
-        {
-            Enabled = Config.Bind("Settings", "Enabled", true, "Whether the plugin is enabled");
-            TranslationScope = Config.Bind("Config", "Scope", -1,
-                "Translation scope to use during benchmark (-1 to disable)");
-            CorpusPath = Config.Bind("Config", "Corpus Path", string.Empty,
-                "Directory containing files to use for benchmarking");
-            LoopCount = Config.Bind("Config", "Loop Count", 3,
-                "Number of times to process corpus");
-            BenchmarkHotkey = Config.Bind("Keyboard Shortcuts", "Benchmark Hotkey",
-                new KeyboardShortcut(KeyCode.LeftBracket, KeyCode.LeftAlt),
-                "Press to start benchmark (may take some time, application may appear to freeze up)");
-        }
 
         internal void Update()
         {
@@ -90,6 +74,20 @@ namespace IllusionMods
             }
 
             StartCoroutine(RunBenchmark());
+        }
+
+        internal void Main()
+        {
+            Enabled = Config.Bind("Settings", "Enabled", true, "Whether the plugin is enabled");
+            TranslationScope = Config.Bind("Config", "Scope", -1,
+                "Translation scope to use during benchmark (-1 to disable)");
+            CorpusPath = Config.Bind("Config", "Corpus Path", string.Empty,
+                "Directory containing files to use for benchmarking");
+            LoopCount = Config.Bind("Config", "Loop Count", 3,
+                "Number of times to process corpus");
+            BenchmarkHotkey = Config.Bind("Keyboard Shortcuts", "Benchmark Hotkey",
+                new KeyboardShortcut(KeyCode.LeftBracket, KeyCode.LeftAlt),
+                "Press to start benchmark (may take some time, application may appear to freeze up)");
         }
 
         internal IEnumerable<string> GetLinesFromCorpus()
@@ -202,14 +200,13 @@ namespace IllusionMods
         private IEnumerator PrimeTranslationEngine()
         {
             yield return null;
-            bool stillRunning = true;
+            var stillRunning = true;
 
             Logger.LogDebug("Priming translator");
             AutoTranslator.Default.TranslateAsync("こんにちは", -1, _ => stillRunning = false);
-            yield return new WaitUntil(()=>!stillRunning);
+            yield return new WaitUntil(() => !stillRunning);
             yield return null;
             Logger.LogDebug("Translator ready");
-
         }
 
         private bool CanStartJob()
@@ -289,7 +286,7 @@ namespace IllusionMods
             Logger.LogInfo($"Unchanged: {_results.Percent(x => x.Unchanged)}%");
             Logger.LogInfo($"Total Time: {totalTime}");
             Logger.LogInfo($"Average Time: {avgTime}");
-            
+
             // reset
             _results.Clear();
         }

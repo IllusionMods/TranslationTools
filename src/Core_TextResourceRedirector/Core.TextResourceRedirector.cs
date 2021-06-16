@@ -4,6 +4,8 @@ using System.Text;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.ResourceRedirector.Constants;
 
@@ -27,7 +29,7 @@ namespace IllusionMods
 
         public const string PluginName = "Text Resource Redirector";
         public const string GUID = "com.deathweasel.bepinex.textresourceredirector";
-        public const string Version = "1.4.4.2";
+        public const string Version = "1.4.4.3";
         internal new static ManualLogSource Logger;
 #if !HS
         internal ChaListDataHandler ChaListDataHandler;
@@ -47,16 +49,15 @@ namespace IllusionMods
         public event TextResourceRedirectorAwakeHandler TextResourceRedirectorAwake;
         public event TranslatorTranslationsLoadedHandler TranslatorTranslationsLoaded;
 
-        private static TextResourceRedirector _instance;
         private static int? _currentGameLanguage;
 
         protected ConfigEntry<bool> EnableTracing { get; private set; }
 
-        internal static TextResourceRedirector Instance => _instance;
+        internal static TextResourceRedirector Instance { get; private set; }
 
         internal void Awake()
         {
-            _instance = this;
+            Instance = this;
             Logger = Logger ?? base.Logger;
 
             EnableTracing = Config.Bind("Settings", "Enable Tracing", false, new ConfigDescription(
@@ -121,7 +122,7 @@ namespace IllusionMods
 
         internal void Main()
         {
-            _instance = this;
+            Instance = this;
             Logger = Logger ?? base.Logger;
         }
 
@@ -155,10 +156,10 @@ namespace IllusionMods
         {
             try
             {
-                return XUnity.AutoTranslator.Plugin.Core.Features.SupportsSceneManager
-                    ? UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex
+                return Features.SupportsSceneManager
+                    ? SceneManager.GetActiveScene().buildIndex
 #pragma warning disable CS0618 // Type or member is obsolete - code only used in older engines
-                    : UnityEngine.Application.loadedLevel;
+                    : Application.loadedLevel;
 #pragma warning restore CS0618 // Type or member is obsolete
             }
             catch
