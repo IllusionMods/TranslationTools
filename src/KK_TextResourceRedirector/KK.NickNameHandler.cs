@@ -20,7 +20,7 @@ namespace IllusionMods
     ///         in the classroom view.
     ///     </para>
     /// </summary>
-    /// <seealso cref="XUnity.AutoTranslator.Plugin.Core.AssetRedirection.AssetLoadedHandlerBaseV2{T}" />
+    /// <seealso cref="AssetLoadedHandlerBaseV2{T}" />
     /// <seealso cref="NickName" />
     /// <seealso cref="NickNameSceneHelper" />
     public partial class NickNameHandler : RedirectorAssetLoadedHandlerBase<NickName>

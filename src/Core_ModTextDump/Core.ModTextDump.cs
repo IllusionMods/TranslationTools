@@ -284,7 +284,6 @@ namespace IllusionMods
 #if HS2
             while (Scene.initialized != true || Scene.IsNowLoading || Scene.IsNowLoadingFade)
             {
-                Logger.LogFatal($"{Scene.initialized} {Scene.IsNowLoading} {Scene.IsNowLoadingFade}");
                 yield return CheckReadyToDumpDelay;
             }
 #else

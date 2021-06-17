@@ -69,7 +69,6 @@ namespace IllusionMods
             [HarmonyPatch(typeof(AutoTranslationPlugin), "LoadTranslations")]
             internal static void TranslationsLoadedPostfix()
             {
-                Logger.LogWarning($"{typeof(XuaHooks)} {nameof(TranslationsLoadedPostfix)} fired");
                 Instance.SafeProc(i => i.OnTranslatorTranslationsLoaded(EventArgs.Empty));
             }
 
