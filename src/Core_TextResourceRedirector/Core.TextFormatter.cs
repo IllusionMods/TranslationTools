@@ -49,7 +49,7 @@ namespace IllusionMods
 
         internal static partial class Hooks
         {
-#if KK||AI||HS2
+#if KK||AI||HS2 ||KKS
 
             [HarmonyPrefix]
             [HarmonyPatch(typeof(HyphenationJpn), "GetFormatedText")]
