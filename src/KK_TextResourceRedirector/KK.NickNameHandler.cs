@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using HarmonyLib;
+using IllusionMods.Shared;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
@@ -52,55 +54,62 @@ namespace IllusionMods
         protected override bool ReplaceOrUpdateAsset(string calculatedModificationPath, ref NickName asset,
             IAssetOrResourceLoadedContext context)
         {
-            // updating the NickName assets directly causes issues, save off a lookup table.
-
-            var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-            var redirectedResources = RedirectedDirectory.GetFilesInDirectory(calculatedModificationPath, ".txt");
-            var streams = redirectedResources.Select(x => x.OpenStream());
-            var cache = new SimpleTextTranslationCache(
-                defaultTranslationFile,
-                streams,
-                false,
-                true);
-
-            if (cache.IsEmpty) return true;
-
-            var personalityKey = calculatedModificationPath
-                .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                .LastOrDefault();
-
-            if (string.IsNullOrEmpty(personalityKey))
+            var result = false;
+            var start = UnityEngine.Time.realtimeSinceStartup;
+            try
             {
-                return true;
-            }
+                // updating the NickName assets directly causes issues, save off a lookup table.
 
-            if (!_replacements.TryGetValue(personalityKey, out var replacements))
-            {
-                _replacements[personalityKey] = replacements = new Dictionary<string, string>();
-            }
+                var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
+                var streams =
+                    HandlerHelper.GetRedirectionStreams(calculatedModificationPath, asset, context, EnableFallbackMapping);
+                var cache = new SimpleTextTranslationCache(
+                    defaultTranslationFile,
+                    streams,
+                    false,
+                    true);
 
-            foreach (var entry in asset.param)
-            {
-                var key = TextResourceHelper.GetSpecializedKey(entry, entry.Name);
-                if (string.IsNullOrEmpty(key)) continue;
-                if (cache.TryGetTranslation(key, true, out var translated))
+                if (cache.IsEmpty) return (result = true);
+
+                var personalityKey = calculatedModificationPath
+                    .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                    .LastOrDefault();
+
+                if (string.IsNullOrEmpty(personalityKey))
                 {
-                    replacements[key] = translated;
+                    return (result = true);
+                }
 
-                    // Scope 15 for the class nickname editor
-                    TrackReplacement(calculatedModificationPath, entry.Name, translated, 15, -1);
-                    TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
-                    Logger.DebugLogDebug(
-                        $"{GetType().FullName}.{nameof(ReplaceOrUpdateAsset)}: {personalityKey}: {key} => {translated}");
-                }
-                else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
-                         LanguageHelper.IsTranslatable(key))
+                var replacements = _replacements.GetOrInit(personalityKey);
+
+                foreach (var entry in asset.param)
                 {
-                    cache.AddTranslationToCache(key, entry.Name);
+                    var key = TextResourceHelper.GetSpecializedKey(entry, entry.Name);
+                    if (string.IsNullOrEmpty(key)) continue;
+                    if (cache.TryGetTranslation(key, true, out var translated))
+                    {
+                        replacements[key] = translated;
+
+                        // Scope 15 for the class nickname editor
+                        TrackReplacement(calculatedModificationPath, entry.Name, translated, 15, -1);
+                        TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
+                        Logger.DebugLogDebug(
+                            $"{GetType().FullName}.{nameof(ReplaceOrUpdateAsset)}: {personalityKey}: {key} => {translated}");
+                    }
+                    else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
+                             LanguageHelper.IsTranslatable(key))
+                    {
+                        cache.AddTranslationToCache(key, entry.Name);
+                    }
                 }
+
+                return (result = true);
+            }
+            finally
+            {
+                Logger.LogDebug($"{GetType()}.{nameof(ReplaceOrUpdateAsset)}: {calculatedModificationPath} => {result} ({Time.realtimeSinceStartup - start} seconds)");
             }
 
-            return true;
         }
 
         protected override bool DumpAsset(string calculatedModificationPath, NickName asset,

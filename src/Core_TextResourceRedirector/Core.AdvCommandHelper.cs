@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using HarmonyLib;
+using IllusionMods.Shared;
+
 #if !HS
 using ADV;
 using ADV.Commands.Base;
@@ -44,17 +46,7 @@ namespace IllusionMods
             Justification = "Depends on build target")]
         private static void AddToFormatDoCache(string name, int scope, string key, string value)
         {
-            if (!FormatDoCache.TryGetValue(name, out var nameCache))
-            {
-                FormatDoCache[name] = nameCache = new Dictionary<int, Dictionary<string, string>>();
-            }
-
-            if (!nameCache.TryGetValue(scope, out var scopeCache))
-            {
-                nameCache[scope] = scopeCache = new Dictionary<string, string>();
-            }
-
-            scopeCache[key] = value;
+            FormatDoCache.GetOrInit(name).GetOrInit(scope)[key] = value;
         }
 
         private static void TranslatorTranslationsLoaded(TextResourceRedirector sender, EventArgs eventArgs)

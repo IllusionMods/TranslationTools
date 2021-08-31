@@ -31,6 +31,7 @@ namespace IllusionMods.Shared.TextDumpBase
 
         private string _pluginName;
         private string _pluginVersion;
+        private string _pluginNameInternal;
 
         private static string _dumpRoot;
 
@@ -96,10 +97,11 @@ namespace IllusionMods.Shared.TextDumpBase
                                             (_dumpDestination = CombinePaths(Paths.GameRootPath,
                                                 _pluginName.Replace(" ", "")));
 
-        protected void InitPluginSettings(string pluginName, string pluginVersion)
+        protected void InitPluginSettings(string pluginName, string pluginVersion, string pluginNameInternal)
         {
             _pluginName = pluginName;
             _pluginVersion = pluginVersion;
+            _pluginNameInternal = pluginNameInternal;
             Logger = Logger ?? base.Logger;
             Enabled = Enabled ?? Config.Bind("Settings", "Enabled", false, "Whether the plugin is enabled");
         }
@@ -277,7 +279,7 @@ namespace IllusionMods.Shared.TextDumpBase
         {
             yield return "//";
             yield return
-                $"// Dumped for {Constants.GameName} v{GetGameVersion()} by {_pluginName} v{_pluginVersion}";
+                $"// Dumped for {Constants.GameName} v{GetGameVersion()} ({Utilities.GetCurrentExecutableName()}) by {_pluginNameInternal} v{_pluginVersion}";
             foreach (var line in extra)
             {
                 yield return $"// {line}";
@@ -359,10 +361,7 @@ namespace IllusionMods.Shared.TextDumpBase
 
         public static TranslationDictionary GetTranslationsForPath(string filePath)
         {
-            if (!TranslationsDict.TryGetValue(filePath, out var translations))
-            {
-                TranslationsDict[filePath] = translations = new TranslationDictionary();
-            }
+            var translations = TranslationsDict.GetOrInit(filePath);
 
             Assert.IsTrue(TranslationsDict.ContainsKey(filePath));
             return translations;

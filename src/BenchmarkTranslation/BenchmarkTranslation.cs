@@ -9,6 +9,7 @@ using System.Threading;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using IllusionMods.Shared;
 using UnityEngine;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUAPluginData = XUnity.AutoTranslator.Plugin.Core.Constants.PluginData;
@@ -94,8 +95,7 @@ namespace IllusionMods
         {
             var path = CorpusPath.Value;
 
-            foreach (var file in Directory.GetFiles(CorpusPath.Value, "*.txt", SearchOption.AllDirectories)
-                .OrderBy(x => x))
+            foreach (var file in Directory.GetFiles(CorpusPath.Value, "*.txt", SearchOption.AllDirectories).Ordered())
             {
                 using (var reader = new StreamReader(file))
                 {

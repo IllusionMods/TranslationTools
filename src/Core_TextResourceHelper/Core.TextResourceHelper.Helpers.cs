@@ -14,6 +14,10 @@ namespace IllusionMods
         {
             private static char[] _directorySeparatorsToReplace;
 
+            private const int NormalizedPathLimit = 200;
+            private static readonly HashSet<string> _alreadyNormalizedPaths = new HashSet<string>();
+            private static readonly Dictionary<string, string> _recentlyNormalizedPaths = new Dictionary<string, string>();
+
             private static readonly Encoding Latin1Encoding = Encoding.GetEncoding("ISO-8859-1",
                 new EncoderExceptionFallback(), new DecoderExceptionFallback());
 
@@ -71,17 +75,49 @@ namespace IllusionMods
                 return !ContainsOnlyLatin1(input);
             }
 
+            private static bool TryGetCachedNormalizedPath(string path, out string normalizedPath)
+            {
+                normalizedPath = path;
+                return _alreadyNormalizedPaths.Contains(path) ||
+                       _recentlyNormalizedPaths.TryGetValue(path, out normalizedPath);
+            }
+
+
+            private static void CacheNormalizePathResult(string path, string normalizedPath)
+            {
+
+                if (_alreadyNormalizedPaths.Count >= NormalizedPathLimit) _alreadyNormalizedPaths.Clear();
+                _alreadyNormalizedPaths.Add(normalizedPath);
+
+                if (path == normalizedPath) return;
+                if (_recentlyNormalizedPaths.Count >= NormalizedPathLimit) _recentlyNormalizedPaths.Clear();
+                _recentlyNormalizedPaths[path] = normalizedPath;
+            }
+
+            private static string PathSelectHelper(string input, int i)
+            {
+                // ensure drive letters remain absolute paths
+                return (i == 0 && input != null && input.Length >= 2 && input.EndsWith(":"))
+                    ? string.Concat(input, Path.DirectorySeparatorChar.ToString())
+                    : input;
+            }
+
             public static string NormalizePathSeparators(string path)
             {
-                //return path?.Split((char[])DirectorySeparatorsToReplace).Aggregate(Path.Combine);
+                if (TryGetCachedNormalizedPath(path, out var result)) return result;
                 var parts = path?.Split((char[]) DirectorySeparatorsToReplace);
-                return parts == null || parts.Length <= 1 ? path : parts.Aggregate(Path.Combine);
+                result = parts == null || parts.Length <= 1
+                    ? path
+                    : parts.Select(PathSelectHelper).Aggregate(Path.Combine);
+                CacheNormalizePathResult(path, result);
+                return result;
             }
+
 
             public static string CombinePaths(params string[] parts)
             {
                 var splitChars = (char[]) DirectorySeparatorsToReplace;
-                return parts?.SelectMany(i=>i.Split(splitChars)).Aggregate(Path.Combine);
+                return parts?.SelectMany(i => i.Split(splitChars)).Select(PathSelectHelper).Aggregate(Path.Combine);
             }
 
             public static string[] SplitPath(string path) => path?.Split(Path.DirectorySeparatorChar,Path.AltDirectorySeparatorChar);

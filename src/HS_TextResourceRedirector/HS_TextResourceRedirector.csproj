@@ -24,6 +24,7 @@
     <DefineConstants>TRACE;DEBUG;HS</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
@@ -33,22 +34,19 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DebugSymbols>false</DebugSymbols>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="0Harmony, Version=2.3.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\IllusionLibs.BepInEx.Harmony.2.3.2\lib\net35\0Harmony.dll</HintPath>
+    <Reference Include="0Harmony, Version=2.5.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\IllusionLibs.BepInEx.Harmony.2.5.4\lib\net35\0Harmony.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\IllusionLibs.HoneySelect.Assembly-CSharp.2017.6.30.2\lib\net35\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="BepInEx, Version=5.4.8.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\IllusionLibs.BepInEx.5.4.8\lib\net35\BepInEx.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="BepInEx.Harmony, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\IllusionLibs.BepInEx.Harmony.2.3.2\lib\net35\BepInEx.Harmony.dll</HintPath>
+    <Reference Include="BepInEx, Version=5.4.15.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\IllusionLibs.BepInEx.5.4.15\lib\net35\BepInEx.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -61,12 +59,12 @@
       <HintPath>..\..\packages\IllusionLibs.HoneySelect.UnityEngine.5.3.5.2\lib\net35\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="XUnity.AutoTranslator.Plugin.Core, Version=4.16.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.16.0\lib\net35\XUnity.AutoTranslator.Plugin.Core.dll</HintPath>
+    <Reference Include="XUnity.AutoTranslator.Plugin.Core, Version=4.18.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.18.0\lib\net35\XUnity.AutoTranslator.Plugin.Core.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="XUnity.ResourceRedirector, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\IllusionLibs.XUnity.ResourceRedirector.4.16.0\lib\net35\XUnity.ResourceRedirector.dll</HintPath>
+      <HintPath>..\..\packages\IllusionLibs.XUnity.ResourceRedirector.4.18.0\lib\net35\XUnity.ResourceRedirector.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
@@ -100,16 +98,16 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\..\packages\IllusionLibs.HoneySelect.Assembly-CSharp.2017.6.30.2\build\IllusionLibs.HoneySelect.Assembly-CSharp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\IllusionLibs.HoneySelect.Assembly-CSharp.2017.6.30.2\build\IllusionLibs.HoneySelect.Assembly-CSharp.targets'))" />
     <Error Condition="!Exists('..\..\packages\IllusionLibs.HoneySelect.UnityEngine.5.3.5.2\build\IllusionLibs.HoneySelect.UnityEngine.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\IllusionLibs.HoneySelect.UnityEngine.5.3.5.2\build\IllusionLibs.HoneySelect.UnityEngine.targets'))" />
-    <Error Condition="!Exists('..\..\packages\IllusionLibs.BepInEx.Harmony.2.3.2\build\IllusionLibs.BepInEx.Harmony.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\IllusionLibs.BepInEx.Harmony.2.3.2\build\IllusionLibs.BepInEx.Harmony.targets'))" />
-    <Error Condition="!Exists('..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.16.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.16.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets'))" />
-    <Error Condition="!Exists('..\..\packages\IllusionLibs.XUnity.ResourceRedirector.4.16.0\build\IllusionLibs.XUnity.ResourceRedirector.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\IllusionLibs.XUnity.ResourceRedirector.4.16.0\build\IllusionLibs.XUnity.ResourceRedirector.targets'))" />
     <Error Condition="!Exists('..\..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.2\build\Microsoft.CodeAnalysis.Analyzers.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.2\build\Microsoft.CodeAnalysis.Analyzers.props'))" />
     <Error Condition="!Exists('..\..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.2\build\Microsoft.CodeAnalysis.Analyzers.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.2\build\Microsoft.CodeAnalysis.Analyzers.targets'))" />
+    <Error Condition="!Exists('..\..\packages\IllusionLibs.BepInEx.Harmony.2.5.4\build\IllusionLibs.BepInEx.Harmony.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\IllusionLibs.BepInEx.Harmony.2.5.4\build\IllusionLibs.BepInEx.Harmony.targets'))" />
+    <Error Condition="!Exists('..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.18.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.18.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets'))" />
+    <Error Condition="!Exists('..\..\packages\IllusionLibs.XUnity.ResourceRedirector.4.18.0\build\IllusionLibs.XUnity.ResourceRedirector.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\IllusionLibs.XUnity.ResourceRedirector.4.18.0\build\IllusionLibs.XUnity.ResourceRedirector.targets'))" />
   </Target>
   <Import Project="..\..\packages\IllusionLibs.HoneySelect.Assembly-CSharp.2017.6.30.2\build\IllusionLibs.HoneySelect.Assembly-CSharp.targets" Condition="Exists('..\..\packages\IllusionLibs.HoneySelect.Assembly-CSharp.2017.6.30.2\build\IllusionLibs.HoneySelect.Assembly-CSharp.targets')" />
   <Import Project="..\..\packages\IllusionLibs.HoneySelect.UnityEngine.5.3.5.2\build\IllusionLibs.HoneySelect.UnityEngine.targets" Condition="Exists('..\..\packages\IllusionLibs.HoneySelect.UnityEngine.5.3.5.2\build\IllusionLibs.HoneySelect.UnityEngine.targets')" />
-  <Import Project="..\..\packages\IllusionLibs.BepInEx.Harmony.2.3.2\build\IllusionLibs.BepInEx.Harmony.targets" Condition="Exists('..\..\packages\IllusionLibs.BepInEx.Harmony.2.3.2\build\IllusionLibs.BepInEx.Harmony.targets')" />
-  <Import Project="..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.16.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets" Condition="Exists('..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.16.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets')" />
-  <Import Project="..\..\packages\IllusionLibs.XUnity.ResourceRedirector.4.16.0\build\IllusionLibs.XUnity.ResourceRedirector.targets" Condition="Exists('..\..\packages\IllusionLibs.XUnity.ResourceRedirector.4.16.0\build\IllusionLibs.XUnity.ResourceRedirector.targets')" />
   <Import Project="..\..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.2\build\Microsoft.CodeAnalysis.Analyzers.targets" Condition="Exists('..\..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.2\build\Microsoft.CodeAnalysis.Analyzers.targets')" />
+  <Import Project="..\..\packages\IllusionLibs.BepInEx.Harmony.2.5.4\build\IllusionLibs.BepInEx.Harmony.targets" Condition="Exists('..\..\packages\IllusionLibs.BepInEx.Harmony.2.5.4\build\IllusionLibs.BepInEx.Harmony.targets')" />
+  <Import Project="..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.18.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets" Condition="Exists('..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.18.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets')" />
+  <Import Project="..\..\packages\IllusionLibs.XUnity.ResourceRedirector.4.18.0\build\IllusionLibs.XUnity.ResourceRedirector.targets" Condition="Exists('..\..\packages\IllusionLibs.XUnity.ResourceRedirector.4.18.0\build\IllusionLibs.XUnity.ResourceRedirector.targets')" />
 </Project>

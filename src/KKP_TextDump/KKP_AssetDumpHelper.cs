@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Remoting.Messaging;
 using ActionGame;
+using IllusionMods.Shared;
 using Manager;
 using MessagePack;
 using UnityEngine;
@@ -179,10 +180,7 @@ namespace IllusionMods
                     {
                         var key = chaListData.GetInfo(id, "Name");
                         if (string.IsNullOrEmpty(key)) continue;
-                        if (!lookupDict.TryGetValue($"{chaListData.GetInfo(id, "Kind")}_{id}", out var val))
-                        {
-                            val = string.Empty;
-                        }
+                        var val = lookupDict.GetOrInit($"{chaListData.GetInfo(id, "Kind")}_{id}", string.Empty);
 
                         yield return new KeyValuePair<string, string>(key, val);
                     }

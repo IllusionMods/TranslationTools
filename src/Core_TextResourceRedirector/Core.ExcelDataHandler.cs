@@ -1,9 +1,9 @@
-﻿using JetBrains.Annotations;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using JetBrains.Annotations;
+using UnityEngine;
 using XUnity.AutoTranslator.Plugin.Core;
-using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
 using XUnity.ResourceRedirector;
 
@@ -54,75 +54,79 @@ namespace IllusionMods
         protected override bool ReplaceOrUpdateAsset(string calculatedModificationPath, ref ExcelData asset,
             IAssetOrResourceLoadedContext context)
         {
-            Logger.DebugLogDebug($"{GetType()} attempt to handle {calculatedModificationPath}");
-            var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-            var redirectedResources = RedirectedDirectory.GetFilesInDirectory(calculatedModificationPath, ".txt");
-            var streams = redirectedResources.Select(x => x.OpenStream());
-            var cache = new SimpleTextTranslationCache(
-                defaultTranslationFile,
-                streams,
-                false,
-                true);
-
             var result = false;
-
-            if (cache.IsEmpty)
+            var start = Time.realtimeSinceStartup;
+            try
             {
-                Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath} (no cache)");
-                return false;
-            }
+                Logger.DebugLogDebug($"{GetType()} attempt to handle {calculatedModificationPath}");
+                var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
+                var streams =
+                    HandlerHelper.GetRedirectionStreams(calculatedModificationPath, asset, context, EnableFallbackMapping);
+                var cache = new SimpleTextTranslationCache(
+                    defaultTranslationFile,
+                    streams,
+                    false,
+                    true);
 
-            var columnsToTranslate =
-                new HashSet<int>(TextResourceHelper.GetSupportedExcelColumns(calculatedModificationPath, asset));
-
-            var filter = columnsToTranslate.Count > 0;
-
-            var row = -1;
-
-            var shouldTrack = IsTranslationRegistrationAllowed(calculatedModificationPath);
-            foreach (var param in asset.list)
-            {
-                row++;
-                if (param.list == null || param.list.Count < 1 || param.list[0] == "no") continue;
-
-                for (var i = 0; i < param.list.Count; i++)
+                if (cache.IsEmpty)
                 {
-                    if (filter && !columnsToTranslate.Contains(i)) continue;
+                    Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath} (no cache)");
+                    return false;
+                }
 
-                    foreach (var key in TextResourceHelper.GetExcelRowTranslationKeys(asset.name, param.list, i))
+                var columnsToTranslate =
+                    new HashSet<int>(TextResourceHelper.GetSupportedExcelColumns(calculatedModificationPath, asset));
+
+                var filter = columnsToTranslate.Count > 0;
+
+                var row = -1;
+
+                var shouldTrack = IsTranslationRegistrationAllowed(calculatedModificationPath);
+                foreach (var param in asset.list)
+                {
+                    row++;
+                    if (param.list == null || param.list.Count < 1 || param.list[0] == "no") continue;
+
+                    for (var i = 0; i < param.list.Count; i++)
                     {
-                        if (string.IsNullOrEmpty(key)) continue;
-                        Logger.DebugLogDebug(
-                            $"Attempting excel replacement [{row}, {i}]: Searching for replacement key={key}");
-                        if (cache.TryGetTranslation(key, true, out var translated))
+                        if (filter && !columnsToTranslate.Contains(i)) continue;
+
+                        foreach (var key in TextResourceHelper.GetExcelRowTranslationKeys(asset.name, param.list, i))
                         {
-                            result = true;
-                            translated = TextResourceHelper.PrepareTranslationForReplacement(asset, translated);
-                            if (shouldTrack) TrackReplacement(calculatedModificationPath, key, translated);
-                            TranslationHelper.RegisterRedirectedResourceTextToPath(translated,
-                                calculatedModificationPath);
+                            if (string.IsNullOrEmpty(key)) continue;
                             Logger.DebugLogDebug(
-                                $"Replacing [{row}, {i}]: key={key}: {param.list[i]} => {translated}");
+                                $"Attempting excel replacement [{row}, {i}]: Searching for replacement key={key}");
+                            if (cache.TryGetTranslation(key, true, out var translated))
+                            {
+                                result = true;
+                                translated = TextResourceHelper.PrepareTranslationForReplacement(asset, translated);
+                                if (shouldTrack) TrackReplacement(calculatedModificationPath, key, translated);
+                                TranslationHelper.RegisterRedirectedResourceTextToPath(translated,
+                                    calculatedModificationPath);
+                                Logger.DebugLogDebug(
+                                    $"Replacing [{row}, {i}]: key={key}: {param.list[i]} => {translated}");
 
-                            param.list[i] = translated;
-                            break;
-                        }
+                                param.list[i] = translated;
+                                break;
+                            }
 
-                        if (!LanguageHelper.IsTranslatable(key)) continue;
+                            if (!LanguageHelper.IsTranslatable(key)) continue;
 
-                        TranslationHelper.RegisterRedirectedResourceTextToPath(key, calculatedModificationPath);
-                        if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled)
-                        {
-                            cache.AddTranslationToCache(key, key);
+                            TranslationHelper.RegisterRedirectedResourceTextToPath(key, calculatedModificationPath);
+                            if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled)
+                            {
+                                cache.AddTranslationToCache(key, key);
+                            }
                         }
                     }
                 }
+                return result;
+            }
+            finally
+            {
+                Logger.LogDebug($"{GetType()}.{nameof(ReplaceOrUpdateAsset)}: {calculatedModificationPath} => {result} ({Time.realtimeSinceStartup - start} seconds)");
             }
 
-            Logger.DebugLogDebug(result
-                ? $"{GetType()} handled {calculatedModificationPath}"
-                : $"{GetType()} unable to handle {calculatedModificationPath}");
-            return result;
         }
 
         protected override bool ShouldHandleAsset(ExcelData asset, IAssetOrResourceLoadedContext context)

@@ -98,17 +98,10 @@ namespace CheckText
                         }
                     }
 
-                    if (!result.TryGetValue(key, out var entries))
-                    {
-                        result[key] =
-                            entries = new Dictionary<string, IList<string>>(new TrimmedStringComparer());
-                    }
+                    var entries = result.GetOrInit(key,
+                        () => new Dictionary<string, IList<string>>(new TrimmedStringComparer()));
 
-                    if (!entries.TryGetValue(entry.Value, out var subEntries))
-                    {
-                        entries[entry.Value] = subEntries = new List<string>();
-                    }
-
+                    var subEntries = entries.GetOrInit(entry.Value, () => new List<string>());
 
                     subEntries.Add(GetRelativePath(parent, pth.FullName));
                 }
@@ -204,7 +197,7 @@ namespace CheckText
                     Write(subEntry.Key, ConsoleColor.Green);
                     WriteLine($" ({subEntry.Value.Count} files)", ConsoleColor.DarkGray);
 
-                    foreach (var match in subEntry.Value.OrderBy(e => e))
+                    foreach (var match in subEntry.Value.Ordered())
                     {
                         WritePrefix(2);
                         WriteLine(match, ConsoleColor.Yellow);
@@ -245,7 +238,7 @@ namespace CheckText
             IDictionary<string, IDictionary<string, IList<string>>> resourceKeys)
         {
             var first = true;
-            foreach (var key in textKeys.Keys.OrderBy(k => k))
+            foreach (var key in textKeys.Keys.Ordered())
             {
                 if (!resourceKeys.TryGetValue(key, out var resourceEntry)) continue;
                 if (first)
@@ -267,7 +260,7 @@ namespace CheckText
                     WriteLine($" ({subResourceEntry.Value.Count} files)", ConsoleColor.DarkGray);
 
 
-                    foreach (var match in subResourceEntry.Value.OrderBy(e => e))
+                    foreach (var match in subResourceEntry.Value.Ordered())
                     {
                         WritePrefix(2);
                         WriteLine(match, ConsoleColor.Yellow);
@@ -293,7 +286,7 @@ namespace CheckText
                         WriteLine("no matching translation in resource file(s)", ConsoleColor.Red);
                     }
 
-                    foreach (var match in subTextEntry.Value.OrderBy(e => e))
+                    foreach (var match in subTextEntry.Value.Ordered())
                     {
                         WritePrefix(2);
                         WriteLine(match, ConsoleColor.Yellow);

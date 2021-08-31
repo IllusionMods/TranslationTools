@@ -26,6 +26,7 @@ namespace IllusionMods
             [HarmonyPatch(typeof(LobbyMainUI), "LoadMapImage")]
             internal static void LoadMapImagePostfix(LobbyMainUI __instance)
             {
+                if (Instance == null) return;
                 var txtMap = Traverse.Create(__instance).Field<Text>("txtMap").Value;
                 if (txtMap != null && Instance._mapLookup.TryGetValue(txtMap.text, out var translation))
                 {

@@ -59,33 +59,44 @@ namespace IllusionMods
         public override TextAndEncoding TranslateTextAsset(string calculatedModificationPath, TextAsset asset,
             IAssetOrResourceLoadedContext context)
         {
-
-            Logger.DebugLogDebug($"{GetType()} attempt to handle {calculatedModificationPath}");
-            var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-            var redirectedResources = RedirectedDirectory.GetFilesInDirectory(calculatedModificationPath, ".txt");
-            var streams = redirectedResources.Select(x => x.OpenStream());
-            var cache = new SimpleTextTranslationCache(
-                defaultTranslationFile,
-                streams,
-                false,
-                true);
-
-            if (cache.IsEmpty)
+            var start = Time.realtimeSinceStartup;
+            var handled = false;
+            try
             {
-                Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath} (no cache)");
+
+                Logger.DebugLogDebug($"{GetType()} attempt to handle {calculatedModificationPath}");
+                var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
+                var streams =
+                    HandlerHelper.GetRedirectionStreams(calculatedModificationPath, asset, context, EnableFallbackMapping);
+                var cache = new SimpleTextTranslationCache(
+                    defaultTranslationFile,
+                    streams,
+                    false,
+                    true);
+
+                if (cache.IsEmpty)
+                {
+                    Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath} (no cache)");
+                    return null;
+                }
+
+                var obj = LoadFromAsset(asset);
+
+                if (obj != null && TranslateObject(ref obj, cache, calculatedModificationPath))
+                {
+                    handled = true;
+                    Logger.DebugLogDebug($"{GetType()} handled {calculatedModificationPath}");
+                    return StoreAsset(obj);
+                }
+
+                Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath}");
                 return null;
             }
-
-            var obj = LoadFromAsset(asset);
-
-            if (obj != null && TranslateObject(ref obj, cache, calculatedModificationPath))
+            finally
             {
-                Logger.DebugLogDebug($"{GetType()} handled {calculatedModificationPath}");
-                return StoreAsset(obj);
+                Logger.LogDebug(
+                    $"{GetType()}.{nameof(TranslateTextAsset)}: {calculatedModificationPath} => {handled} ({Time.realtimeSinceStartup - start} seconds)");
             }
-
-            Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath}");
-            return null;
         }
 
 

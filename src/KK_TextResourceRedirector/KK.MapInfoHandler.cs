@@ -21,6 +21,7 @@ namespace IllusionMods
             return mapInfoParam.MapName;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter")]
         protected static string GetMapNameTranslation(MapInfo.Param mapInfoParam)
         {
             return string.Empty;

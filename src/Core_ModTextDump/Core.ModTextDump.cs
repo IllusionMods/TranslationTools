@@ -37,7 +37,7 @@ namespace IllusionMods
     {
         public const string GUID = "com.illusionmods.translationtools.mod_text_dump";
         public const string PluginName = "Mod Text Dump";
-        public const string Version = "0.6.0";
+        public const string Version = "0.6.1";
 
         private const string FilePattern = "_-_-_-_-_-_";
 
@@ -72,27 +72,6 @@ namespace IllusionMods
         protected override string DumpDestination =>
             string.Concat(base.DumpDestination, IsStudio ? "-Studio" : "-MainGame");
 
-        public static string GetCurrentExecutableName()
-
-        {
-            var process = Process.GetCurrentProcess();
-
-            if (process.MainModule == null) return string.Empty;
-            try
-            {
-                return Path.GetFileNameWithoutExtension(process.MainModule.FileName);
-            }
-            catch { }
-
-            try
-            {
-                return process.ProcessName;
-            }
-            catch { }
-
-            return string.Empty;
-        }
-
         public void Awake()
         {
             InitPluginSettings();
@@ -108,7 +87,7 @@ namespace IllusionMods
 
         protected override void InitPluginSettings()
         {
-            base.InitPluginSettings(PluginName, Version);
+            base.InitPluginSettings(PluginName, Version, PluginNameInternal);
             ActiveDumpMode = Config.Bind("Settings", "Dump Mode", DumpMode.TranslatorLanguageSettings,
                 "Determines which strings to include in dump");
             StudioRoot = StudioRoot ?? CombinePaths(DumpRoot, "Text", "Mods", "Studio");
@@ -281,7 +260,7 @@ namespace IllusionMods
             Logger.LogDebug($"{nameof(CheckReadyToDump)}: waiting for scene to finish loading");
 
 
-#if HS2
+#if HS2 || KKS
             while (Scene.initialized != true || Scene.IsNowLoading || Scene.IsNowLoadingFade)
             {
                 yield return CheckReadyToDumpDelay;
@@ -359,7 +338,7 @@ namespace IllusionMods
                 {
                     if (dic.TryGetValue(categoryId, out var category))
                     {
-#if KK
+#if KK || KKS
                         result = category;
 #elif AI||HS2
                         result = category.name;
@@ -534,7 +513,12 @@ namespace IllusionMods
             while (chaListCtrl == null)
             {
                 yield return null;
+#if !KKS
                 Character.Instance.SafeProc(i => chaListCtrl = i.chaListCtrl);
+#else
+                if (Character.Instance == null || !Character.Instance.isActiveAndEnabled) continue;
+                chaListCtrl = Character.chaListCtrl;
+#endif
             }
 
             var categories = Enum.GetValues(typeof(ChaListDefine.CategoryNo)).Cast<ChaListDefine.CategoryNo>();

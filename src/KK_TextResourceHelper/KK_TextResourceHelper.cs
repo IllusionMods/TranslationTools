@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using ADV;
+using IllusionMods.Shared;
 using JetBrains.Annotations;
 using static IllusionMods.TextResourceHelper.Helpers;
 
@@ -65,7 +66,7 @@ namespace IllusionMods
                 if (!calculatedModificationPath.Contains(mapping.Key)) continue;
 
                 var headers = GetExcelHeaderRow(asset);
-                return mapping.Value.Select(h => headers.IndexOf(h)).Where(i => i != -1).Distinct().OrderBy(x => x);
+                return mapping.Value.Select(h => headers.IndexOf(h)).Where(i => i != -1).Distinct().Ordered();
             }
 
             var result = base.GetSupportedExcelColumns(calculatedModificationPath, asset).ToList();
@@ -76,6 +77,11 @@ namespace IllusionMods
             }
 
             return result;
+        }
+
+        protected override ResourceMappingHelper GetResourceMappingHelper()
+        {
+            return new KK_ResourceMappingHelper();
         }
 
         public override IEnumerable<string> GetRandomNameDirs()

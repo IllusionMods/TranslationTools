@@ -5,7 +5,7 @@ using IllusionMods.Shared;
 using UnityEngine;
 using static IllusionMods.TextResourceHelper.Helpers;
 
-#if AI || HS2
+#if AI || HS2 || KKS
 using Illusion.Extensions;
 #endif
 
@@ -23,21 +23,10 @@ namespace IllusionMods
             new Regex(Regex.Escape("\n"),
                 Constants.DefaultRegexOptions);
 
-        private ManualLogSource _logger;
-
+        
         protected BaseDumpHelper(TextDump plugin)
         {
             Plugin = plugin;
-        }
-
-
-        protected ManualLogSource Logger
-        {
-            get
-            {
-                if (_logger != null) return _logger;
-                return _logger = BepInEx.Logging.Logger.CreateLogSource(GetType().Name);
-            }
         }
 
         protected TextDump Plugin { get; set; }
@@ -145,7 +134,7 @@ namespace IllusionMods
 
         protected static List<GameObject> GetChildrenFromGameObject(GameObject parent)
         {
-#if AI || HS2
+#if AI || HS2 || KKS
             return parent.Children();
 #else
             var gameObjects = new List<GameObject>();

@@ -35,6 +35,11 @@ namespace IllusionMods.Shared
         internal const string StudioProcessName = "StudioNEOV2";
         internal const string MainGameProcessName = "HoneySelect2";
         internal const RegexOptions DefaultRegexOptions = RegexOptions.Compiled;
+#elif KKS
+        internal const string GameName = "Koikatsu Sunshine";
+        internal const string StudioProcessName = "CharaStudioV2";
+        internal const string MainGameProcessName = "Koikatsu Sunshine";
+        internal const RegexOptions DefaultRegexOptions = RegexOptions.Compiled;
 #else
         // generic
         internal const string GameName = "Illusion Games";

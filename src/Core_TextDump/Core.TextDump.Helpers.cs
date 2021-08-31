@@ -27,7 +27,7 @@ namespace IllusionMods
             public static List<string> GetAssetBundleNameListFromPath(string path, bool subdirCheck = false)
             {
                 var normPath = NormalizePathSeparators(path);
-#if HS2
+#if HS2 || KKS
                 normPath = normPath.Replace('\\', '/').Trim('/') + "/";
 #endif
                 return CommonLib.GetAssetBundleNameListFromPath(normPath, subdirCheck);
@@ -70,7 +70,7 @@ namespace IllusionMods
 
 
 
-#if !HS2
+#if !HS2 && !KKS
                 AssetBundle assetBundle = null;
                 try
                 {
@@ -194,7 +194,7 @@ namespace IllusionMods
                 }
                 catch
                 {
-#if HS2
+#if HS2 || KKS
                     throw;
 #else
                     AssetBundleManager.LoadAssetBundleInternal(bundle, false, manifest);

@@ -1,8 +1,10 @@
 ﻿#if !HS
+using System;
 using System.IO;
 using System.Linq;
 using ADV;
 using BepInEx.Logging;
+using UnityEngine;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
@@ -105,73 +107,76 @@ namespace IllusionMods
         protected override bool ReplaceOrUpdateAsset(string calculatedModificationPath, ref ScenarioData asset,
             IAssetOrResourceLoadedContext context)
         {
-            Logger.DebugLogDebug($"{GetType()} attempt to handle {calculatedModificationPath}");
-            var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-            var redirectedResources = RedirectedDirectory.GetFilesInDirectory(calculatedModificationPath, ".txt");
-            var streams = redirectedResources.Select(x => x.OpenStream());
-            var cache = new SimpleTextTranslationCache(
-                defaultTranslationFile,
-                streams,
-                false,
-                true);
-
-            if (cache.IsEmpty)
-            {
-                Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath} (no cache)");
-                return false;
-            }
-
             var result = false;
-            foreach (var param in asset.list)
+            var start = Time.realtimeSinceStartup;
+            try
             {
-                if (!TextResourceHelper.IsSupportedCommand(param.Command))
+                Logger.DebugLogDebug($"{GetType()} attempt to handle {calculatedModificationPath}");
+                var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
+                var streams =
+                    HandlerHelper.GetRedirectionStreams(calculatedModificationPath, asset, context, EnableFallbackMapping);
+                var cache = new SimpleTextTranslationCache(
+                    defaultTranslationFile,
+                    streams,
+                    false,
+                    true);
+
+                if (cache.IsEmpty)
                 {
-                    Logger.DebugLogDebug($"{GetType()} skipping unsupported command: {param.Command}");
-                    continue;
+                    Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath} (no cache)");
+                    return false;
                 }
 
-                switch (param.Command)
+                foreach (var param in asset.list)
                 {
-                    case Command.Text:
-
-                        // Text: 0 - jp speaker (if present), 1 - text
-                        for (var i = 0; i < param.Args.Length && i < 2; i++)
-                        {
-                            var key = param.Args[i];
-                            if (key.IsNullOrEmpty() || TextResourceHelper.TextKeysBlacklist.Contains(key) ||
-                                StringIsSingleReplacement(key)) continue;
-                            if (TryRegisterTranslation(cache, param, i, calculatedModificationPath)) result = true;
-                        }
-
-                        break;
-
-                    case Command.Calc:
+                    if (!TextResourceHelper.IsSupportedCommand(param.Command))
                     {
-                        if (param.Args.Length >= 3 && TextResourceHelper.CalcKeys.Contains(param.Args[0]))
-                        {
-                            if (TryRegisterTranslation(cache, param, 2, calculatedModificationPath)) result = true;
-                        }
-
-                        break;
+                        Logger.DebugLogDebug($"{GetType()} skipping unsupported command: {param.Command}");
+                        continue;
                     }
-                    case Command.Format:
+
+                    switch (param.Command)
                     {
-                        if (param.Args.Length >= 2 && TextResourceHelper.FormatKeys.Contains(param.Args[0]))
-                        {
-                            if (TryRegisterTranslation(cache, param, 1, calculatedModificationPath)) result = true;
-                        }
+                        case Command.Text:
 
-                        break;
-                    }
-                    case Command.Choice:
-                    {
-                        for (var i = 0; i < param.Args.Length; i++)
-                        {
-                            if (TryRegisterTranslation(cache, param, i, calculatedModificationPath)) result = true;
-                        }
+                            // Text: 0 - jp speaker (if present), 1 - text
+                            for (var i = 0; i < param.Args.Length && i < 2; i++)
+                            {
+                                var key = param.Args[i];
+                                if (key.IsNullOrEmpty() || TextResourceHelper.TextKeysBlacklist.Contains(key) ||
+                                    StringIsSingleReplacement(key)) continue;
+                                if (TryRegisterTranslation(cache, param, i, calculatedModificationPath)) result = true;
+                            }
 
-                        break;
-                    }
+                            break;
+
+                        case Command.Calc:
+                        {
+                            if (param.Args.Length >= 3 && TextResourceHelper.CalcKeys.Contains(param.Args[0]))
+                            {
+                                if (TryRegisterTranslation(cache, param, 2, calculatedModificationPath)) result = true;
+                            }
+
+                            break;
+                        }
+                        case Command.Format:
+                        {
+                            if (param.Args.Length >= 2 && TextResourceHelper.FormatKeys.Contains(param.Args[0]))
+                            {
+                                if (TryRegisterTranslation(cache, param, 1, calculatedModificationPath)) result = true;
+                            }
+
+                            break;
+                        }
+                        case Command.Choice:
+                        {
+                            for (var i = 0; i < param.Args.Length; i++)
+                            {
+                                if (TryRegisterTranslation(cache, param, i, calculatedModificationPath)) result = true;
+                            }
+
+                            break;
+                        }
 #if false
                     case ADV.Command.Switch:
                         // TODO
@@ -185,21 +190,27 @@ namespace IllusionMods
                         // TODO
                         break;
 #endif
-                    default:
-                    {
-                        Logger.LogWarning(
-                            $"{GetType()} expected to handle {param.Command}, but support not implemented");
+                        default:
+                        {
+                            Logger.LogWarning(
+                                $"{GetType()} expected to handle {param.Command}, but support not implemented");
 
-                        break;
+                            break;
+                        }
                     }
                 }
+
+                Logger.DebugLogDebug(result
+                    ? $"{GetType()} handled {calculatedModificationPath}"
+                    : $"{GetType()} unable to handle {calculatedModificationPath}");
+
+                return result;
+            }
+            finally
+            {
+                Logger.LogDebug($"{GetType()}.{nameof(ReplaceOrUpdateAsset)}: {calculatedModificationPath} => {result} ({Time.realtimeSinceStartup - start} seconds)");
             }
 
-            Logger.DebugLogDebug(result
-                ? $"{GetType()} handled {calculatedModificationPath}"
-                : $"{GetType()} unable to handle {calculatedModificationPath}");
-
-            return result;
         }
 
         protected override bool ShouldHandleAsset(ScenarioData asset, IAssetOrResourceLoadedContext context)

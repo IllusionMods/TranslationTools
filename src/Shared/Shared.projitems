@@ -14,5 +14,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Shared.OrderedDictionary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Shared.Constants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Shared.TrimmedStringComparer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Shared.Utilities.cs" />
   </ItemGroup>
 </Project>

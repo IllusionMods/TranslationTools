@@ -84,6 +84,7 @@ namespace IllusionMods
         protected List<TryDumpListEntry> ListEntryDumpers { get; }
 
         [UsedImplicitly]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0031:Use null propagation", Justification = "Unity object")]
         protected LocalizationDumpHelper LocalizationDumpHelper => Plugin == null ? null : Plugin.LocalizationDumpHelper;
 
         public virtual IEnumerable<ITranslationDumper> GetAssetDumpers()
@@ -94,12 +95,9 @@ namespace IllusionMods
             while (dumpers.Count > 0)
             {
                 var assetDumpGenerator = dumpers.PopFront();
-                //Logger.DebugLogDebug(assetDumpGenerator.Method.Name);
+                Logger.LogDebug($"{nameof(GetAssetDumpers)}: {assetDumpGenerator.Method.Name}");
                 var entries = new List<ITranslationDumper>();
-                if (!AssetDumpGeneratorTracker.TryGetValue(assetDumpGenerator.Method.Name, out var trackerHit))
-                {
-                    trackerHit = AssetDumpGeneratorTracker[assetDumpGenerator.Method.Name] = false;
-                }
+                var trackerHit = AssetDumpGeneratorTracker.GetOrInit(assetDumpGenerator.Method.Name, false);
 
                 try
                 {
@@ -112,9 +110,10 @@ namespace IllusionMods
                 }
                 catch (Exception err)
                 {
-                    Logger.LogError($"Error dumping: {assetDumpGenerator} : {err}");
+                    Logger.LogError($"Error dumping: {assetDumpGenerator.Method.Name} : {err.Message}\n{err.StackTrace}");
                 }
 
+                Logger.LogDebug($"{assetDumpGenerator.Method.Name} => {entries.Count}");
                 Logger.DebugLogDebug($"{assetDumpGenerator.Method.Name} => {entries.Count}");
 
                 foreach (var entry in entries) yield return entry;
@@ -184,25 +183,19 @@ namespace IllusionMods
                         var entry = row[cellIndex];
                         if (string.IsNullOrEmpty(entry) || entry == "0") continue;
 
-                        if (!translationsByColumn.TryGetValue(cellIndex, out var columnTranslations))
-                        {
-                            translationsByColumn[cellIndex] =
-                                columnTranslations = new OrderedDictionary<string, string>();
-                        }
+                        var columnTranslations =
+                            translationsByColumn.GetOrInit(cellIndex, () => new OrderedDictionary<string, string>());
+
                         AddLocalizationToResults(columnTranslations, entry, string.Empty);
 
                         var key = entry.Trim();
 
-                        if (!nameColumns.TryGetValue(key, out var cols))
-                        {
-                            nameColumns[key] = cols = new HashSet<int>();
-                        }
-                        cols.Add(cellIndex);
+                        nameColumns.GetOrInit(key).Add(cellIndex);
                     }
                 }
 
                 
-                foreach (var colNum in translationsByColumn.Keys.OrderBy(n => n))
+                foreach (var colNum in translationsByColumn.Keys.Ordered())
                 {
                     translations.Add($"// BEGIN COLUMN {colNum}", " --- ");
                     foreach (var transEntry in translationsByColumn[colNum])
@@ -336,15 +329,11 @@ namespace IllusionMods
 
                     var filePath = BuildAssetFilePath(assetBundleName, assetName);
 
-                    if (ResourceHelper.IsOptionDisplayItemAsset(assetName))
+                    foreach (var translationDumper in GetCommunicationTextCollectors(assetBundleName, assetName,
+                        filePath))
                     {
-                        yield return new StringTranslationDumper(filePath,
-                            MakeOptionDisplayItemsCollector(assetBundleName, assetName));
-                    }
-                    else
-                    {
-                        yield return new StringTranslationDumper(filePath,
-                            MakeStandardCommunicationTextCollector(assetBundleName, assetName));
+                        Logger.LogFatal($"{nameof(GetCommunicationTextDumpers)}: {assetBundleName}: {assetName}: {translationDumper}");
+                        yield return translationDumper;
                     }
                 }
 
@@ -356,6 +345,20 @@ namespace IllusionMods
                         return new Dictionary<string, string>();
                     });
                 }
+            }
+        }
+
+        protected virtual IEnumerable<ITranslationDumper> GetCommunicationTextCollectors(string assetBundleName, string assetName, string filePath)
+        {
+            if (ResourceHelper.IsOptionDisplayItemAsset(assetName))
+            {
+                yield return new StringTranslationDumper(filePath,
+                    MakeOptionDisplayItemsCollector(assetBundleName, assetName));
+            }
+            else
+            {
+                yield return new StringTranslationDumper(filePath,
+                    MakeStandardCommunicationTextCollector(assetBundleName, assetName));
             }
         }
 

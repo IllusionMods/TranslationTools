@@ -29,5 +29,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core.MapInfoHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextFormatter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.AdvCommandHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.HandlerHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.ResourceMappingPath.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.UntestedParamAssetLoadedHandler.cs" />
   </ItemGroup>
 </Project>

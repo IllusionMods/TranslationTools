@@ -45,6 +45,11 @@ namespace IllusionMods
             return tableHelper;
         }
 
+        protected override ResourceMappingHelper GetResourceMappingHelper()
+        {
+            return new HS2_ResourceMappingHelper();
+        }
+
         internal override Dictionary<string, IEnumerable<string>> GetSettingsStrings()
         {
             var settingsStrings = base.GetSettingsStrings();

@@ -13,26 +13,20 @@ namespace IllusionMods
     public partial class TextResourceHelper : BaseHelperFactory<TextResourceHelper>, IHelper
     {
         public const char OptionSafeComma = '\u201a';
-        private static ManualLogSource _logger;
         protected static readonly string ChoiceDelimiter = ",";
         protected static readonly string SpecializedKeyDelimiter = ":";
         public readonly char[] WhitespaceCharacters = {' ', '\t'};
 
         private TextAssetTableHelper _tableHelper;
+        private ResourceMappingHelper _resourceMappingHelper;
 
         protected TextResourceHelper() { }
 
-        protected ManualLogSource Logger
-        {
-            get
-            {
-                if (_logger != null) return _logger;
-                return _logger = BepInEx.Logging.Logger.CreateLogSource(GetType().Name);
-            }
-        }
-
         public TextAssetTableHelper TableHelper => _tableHelper ?? (_tableHelper = GetTableHelper());
 
+        public ResourceMappingHelper ResourceMappingHelper =>
+            _resourceMappingHelper ?? (_resourceMappingHelper = GetResourceMappingHelper());
+        
         public virtual void InitializeHelper() { }
 
         public virtual int XUnityLanguageToGameLanguage(string xUnityLanguage)
@@ -137,6 +131,11 @@ namespace IllusionMods
         protected virtual TextAssetTableHelper GetTableHelper()
         {
             return new TextAssetTableHelper(new[] {"\r\n", "\r", "\n"}, new[] {"\t"});
+        }
+
+        protected virtual ResourceMappingHelper GetResourceMappingHelper()
+        {
+            return new ResourceMappingHelper();
         }
 
         protected virtual bool IsValidExcelRowTranslationKey(string key)

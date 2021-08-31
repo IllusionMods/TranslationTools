@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml;
+using IllusionMods.Shared;
 
 namespace IllusionMods
 {
@@ -52,15 +53,12 @@ namespace IllusionMods
 
                     string prefix = AssetSplit[3] == "00" ? "c" + AssetSplit[1] : "BattleArena";
 
-                    if (!AllText.TryGetValue(prefix, out var _))
-                        AllText[prefix] = new Dictionary<string, string>();
-
                     foreach (var param in Asset.list)
                     {
                         if (5 <= param.list.Count && !param.list[5].IsNullOrEmpty() && param.list[5] != "ファイル名")
                         {
                             AllJPText.Add(param.list[3]);
-                            AllText[prefix][param.list[5]] = param.list[3];
+                            AllText.GetOrInit(prefix)[param.list[5]] = param.list[3];
                         }
                     }
                 }
