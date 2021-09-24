@@ -122,6 +122,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="KKS_LocalizationDumpHelper.Hooks.cs" />
     <Compile Include="KKS_LocalizationDumpHelper.cs" />
     <Compile Include="KKS.AssetLoader.cs" />
     <Compile Include="KKS.BaseDumpHelper.cs" />

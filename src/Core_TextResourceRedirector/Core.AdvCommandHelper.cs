@@ -32,8 +32,6 @@ namespace IllusionMods
             TextResourceRedirector.Instance.TranslatorTranslationsLoaded += TranslatorTranslationsLoaded;
         }
 
-        [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members",
-            Justification = "Depends on build target")]
         private static bool TryGetFormatDoCacheValue(string name, int scope, string key, out string value)
         {
             value = null;
@@ -42,8 +40,6 @@ namespace IllusionMods
                    scopeCache.TryGetValue(key, out value);
         }
 
-        [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members",
-            Justification = "Depends on build target")]
         private static void AddToFormatDoCache(string name, int scope, string key, string value)
         {
             FormatDoCache.GetOrInit(name).GetOrInit(scope)[key] = value;
@@ -96,14 +92,12 @@ namespace IllusionMods
                         AddToFormatDoCache(__instance.name, scope, orig, newResult);
                     }
                 }
-#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception err)
                 {
                     TextResourceRedirector.Logger?.LogWarning(
                         $"{nameof(FormatDoPostfix)}: Unexpected error: {err.Message}");
                     UnityEngine.Debug.LogException(err);
                 }
-#pragma warning restore CA1031 // Do not catch general exception types
             }
 #endif
         }

@@ -4,9 +4,9 @@ using XUnity.AutoTranslator.Plugin.Core;
 
 namespace IllusionMods
 {
-    public class ShopInfoHandler : UntestedParamAssetLoadedHandler<ShopInfo, ShopInfo.Param>
+    public class ShopInfoHandler : ParamAssetLoadedHandler<ShopInfo, ShopInfo.Param>
     {
-        public ShopInfoHandler(TextResourceRedirector plugin) : base(plugin, true, false) { }
+        public ShopInfoHandler(TextResourceRedirector plugin) : base(plugin, true) { }
 
         public override IEnumerable<ShopInfo.Param> GetParams(ShopInfo asset)
         {
@@ -22,7 +22,7 @@ namespace IllusionMods
 
         public override bool DumpParam(SimpleTextTranslationCache cache, ShopInfo.Param param)
         {
-            return DefaultDumpParam(cache, param, nameof(param.Name), nameof(param.Explan), nameof(param.NumText));
+            return DefaultDumpParamMembers(cache, param, nameof(param.Name), nameof(param.Explan), nameof(param.NumText));
         }
     }
 }

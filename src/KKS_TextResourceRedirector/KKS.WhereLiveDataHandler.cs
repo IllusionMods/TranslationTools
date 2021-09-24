@@ -5,7 +5,7 @@ using XUnity.AutoTranslator.Plugin.Core.Utilities;
 
 namespace IllusionMods
 {
-    public class WhereLiveDataHandler : UntestedParamAssetLoadedHandler<WhereLiveData, WhereLiveData.Param>
+    public class WhereLiveDataHandler :ParamAssetLoadedHandler<WhereLiveData, WhereLiveData.Param>
     {
         public WhereLiveDataHandler(TextResourceRedirector plugin) : base(plugin, true) { }
 
@@ -14,37 +14,20 @@ namespace IllusionMods
             return asset.param;
         }
 
+        private static void ApplyTranslation(string calculatedModificationPath,  WhereLiveData.Param param, string value)
+        {
+            param.Explan = value;
+        }
 
         public override bool UpdateParam(string calculatedModificationPath, SimpleTextTranslationCache cache,
             WhereLiveData.Param param)
         {
-            var key = param.Explan;
-            var result = false;
-            if (string.IsNullOrEmpty(key)) return false;
-            if (cache.TryGetTranslation(key, true, out var translated))
-            {
-                if (!EnableSafeMode.Value)
-                {
-                    WarnIfUnsafe(calculatedModificationPath);
-                    param.Explan = translated;
-                }
-
-                TrackReplacement(calculatedModificationPath, key, translated);
-                TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
-                result = true;
-            }
-            else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
-                     LanguageHelper.IsTranslatable(key))
-            {
-                cache.AddTranslationToCache(key, string.Empty);
-            }
-
-            return result;
+            return DefaultUpdateParam(calculatedModificationPath, cache, param, param.Explan, ApplyTranslation);
         }
 
         public override bool DumpParam(SimpleTextTranslationCache cache, WhereLiveData.Param param)
         {
-            return DefaultDumpParam(cache, param.Explan);
+            return DefaultDumpParam(cache, param, param.Explan);
         }
     }
 }

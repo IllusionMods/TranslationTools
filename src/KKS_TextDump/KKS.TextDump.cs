@@ -60,8 +60,6 @@ namespace IllusionMods
 
         private void KKS_sceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            Logger.LogFatal(scene.name);
-
             var index = Array.IndexOf(StartupScenes, scene.name);
             if (index == -1) return;
             _startupScenesLoaded[index] = true;

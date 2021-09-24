@@ -4,7 +4,7 @@ using XUnity.AutoTranslator.Plugin.Core;
 
 namespace IllusionMods
 {
-    public class TopicListenDataHandler : UntestedParamAssetLoadedHandler<TopicListenData, TopicListenData.Param>,
+    public class TopicListenDataHandler : ParamAssetLoadedHandler<TopicListenData, TopicListenData.Param>,
         IPathListBoundHandler
     {
         public TopicListenDataHandler(TextResourceRedirector plugin) : base(plugin, true) { }
@@ -18,15 +18,20 @@ namespace IllusionMods
             return DefaultGetParams(asset);
         }
 
+        private static void ApplyTranslation(string calculatedModificationPath, TopicListenData.Param param, string value)
+        {
+            param.text = value;
+        }
+
         public override bool UpdateParam(string calculatedModificationPath, SimpleTextTranslationCache cache,
             TopicListenData.Param param)
         {
-            return DefaultUpdateParam(calculatedModificationPath, cache, param, "text");
+            return DefaultUpdateParam(calculatedModificationPath, cache, param, param.text, ApplyTranslation);
         }
 
         public override bool DumpParam(SimpleTextTranslationCache cache, TopicListenData.Param param)
         {
-            return DefaultDumpParam(cache, param.text);
+            return DefaultDumpParam(cache, param, param.text);
         }
     }
 }

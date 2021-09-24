@@ -63,20 +63,14 @@ namespace IllusionMods
             var handled = false;
             try
             {
-
-                Logger.DebugLogDebug($"{GetType()} attempt to handle {calculatedModificationPath}");
-                var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-                var streams =
-                    HandlerHelper.GetRedirectionStreams(calculatedModificationPath, asset, context, EnableFallbackMapping);
-                var cache = new SimpleTextTranslationCache(
-                    defaultTranslationFile,
-                    streams,
-                    false,
-                    true);
+                var typeName = GetType().Name;
+                Logger.DebugLogDebug("{0}.{1}: attempt to handle {2}", typeName, nameof(TranslateTextAsset), calculatedModificationPath);
+                var cache = GetTranslationCache(calculatedModificationPath, asset, context);
 
                 if (cache.IsEmpty)
                 {
-                    Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath} (no cache)");
+                    Logger.DebugLogDebug("{0}.{1}: unable to handle {2} (no cache)", typeName,
+                        nameof(TranslateTextAsset), calculatedModificationPath);
                     return null;
                 }
 
@@ -85,21 +79,21 @@ namespace IllusionMods
                 if (obj != null && TranslateObject(ref obj, cache, calculatedModificationPath))
                 {
                     handled = true;
-                    Logger.DebugLogDebug($"{GetType()} handled {calculatedModificationPath}");
+                    Logger.DebugLogDebug("{0}.{1}: handled {2}", typeName, nameof(TranslateTextAsset),
+                        calculatedModificationPath);
                     return StoreAsset(obj);
                 }
 
-                Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath}");
+                Logger.DebugLogDebug("{0}.{1}: unable to handle {2}", typeName, nameof(TranslateTextAsset),
+                    calculatedModificationPath);
                 return null;
             }
             finally
             {
-                Logger.LogDebug(
-                    $"{GetType()}.{nameof(TranslateTextAsset)}: {calculatedModificationPath} => {handled} ({Time.realtimeSinceStartup - start} seconds)");
+                Logger.DebugLogDebug("{0}.{1}: {2} => {3} ({4} seconds)", GetType().Name, nameof(TranslateTextAsset),
+                    calculatedModificationPath, handled, Time.realtimeSinceStartup - start);
             }
         }
-
-
 
         protected void SetObjectMark(string mark)
         {
@@ -114,9 +108,9 @@ namespace IllusionMods
 
         protected override bool ShouldHandleAsset(TextAsset asset, IAssetOrResourceLoadedContext context)
         {
-            Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}])?");
+            Logger.DebugLogDebug($"{GetType()}.{nameof(ShouldHandleAsset)}({asset.name}[{asset.GetType()}])?");
             var result = base.ShouldHandleAsset(asset, context) && CanHandleAsset(asset, context);
-            Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}]) => {result}");
+            Logger.DebugLogDebug($"{GetType()}.{nameof(ShouldHandleAsset)}({asset.name}[{asset.GetType()}]) => {result}");
             return result;
         }
 

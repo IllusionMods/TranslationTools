@@ -107,6 +107,7 @@
     <Analyzer Include="..\..\packages\Microsoft.Unity.Analyzers.1.11.0\analyzers\dotnet\cs\Microsoft.Unity.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="KKS.EstheticVoiceInfoHandler.cs" />
     <Compile Include="KKS.CommunicationInfoHandler.cs" />
     <Compile Include="KKS.CommunicationNPCHandler.cs" />
     <Compile Include="KKS.ClubInfoHandler.cs" />
@@ -131,6 +132,10 @@
     <Compile Include="KKS.TopicTalkRareHandler.cs" />
     <Compile Include="KKS.VoiceAllDataHandler.cs" />
     <Compile Include="KKS.ShopInfoHandler.cs" />
+    <Compile Include="KKS.ResultTopicDataHandler.cs" />
+    <Compile Include="KKS.TipsDataHandler.cs" />
+    <Compile Include="KKS_TextResourceHelper.RedirectorOnly.cs" />
+    <Compile Include="KSS.TutorialScopeHelper.cs" />
   </ItemGroup>
   <Import Project="..\Core_TextResourceHelper\Core_TextResourceHelper.projitems" Label="Shared" />
   <Import Project="..\Core_TextResourceRedirector\Core_TextResourceRedirector.projitems" Label="Shared" />

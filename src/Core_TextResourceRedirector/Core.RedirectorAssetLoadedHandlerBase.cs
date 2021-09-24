@@ -7,6 +7,7 @@ using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
 using XUnity.ResourceRedirector;
 using UnityEngineObject = UnityEngine.Object;
 using XUAPluginData = XUnity.AutoTranslator.Plugin.Core.Constants.PluginData;
+using XUnity.AutoTranslator.Plugin.Core;
 
 #if !HS
 using UnityEngine.SceneManagement;
@@ -83,6 +84,8 @@ May slow down load times at cost of improved translations
         public bool AllowTranslationRegistration { get; }
         public bool AllowFallbackMapping { get; }
 
+        public ManualLogSource GetLogger() => Logger;
+
         public void ExcludePathFromTranslationRegistration(string path)
         {
             _excludedTranslationRegistrationPaths.Add(path);
@@ -106,7 +109,8 @@ May slow down load times at cost of improved translations
             if (scopes == null) scopes = new HashSet<int> {-1};
             if (scopes.Count == 0) scopes.Add(-1);
 
-            Logger.LogDebug($"{GetType().Name}:{nameof(TrackReplacement)}:{calculatedModificationPath}: {orig} => {translated}");
+            Logger.DebugLogDebug("{0}.{1}: {2}: {3} => {4}", GetType().Name, nameof(TrackReplacement),
+                calculatedModificationPath, orig, translated);
 
             var enableRegisterAsTranslations = EnableRegisterAsTranslations;
             foreach (var scope in scopes)
@@ -161,6 +165,25 @@ May slow down load times at cost of improved translations
         {
             RegisterAsTranslations();
         }
+
+        public virtual bool ShouldHandleAssetForContext(T asset, IAssetOrResourceLoadedContext context)
+        {
+            return !context.HasReferenceBeenRedirectedBefore(asset);
+        }
+
+        protected SimpleTextTranslationCache GetDumpCache(string calculatedModificationPath, T asset,
+            IAssetOrResourceLoadedContext context)
+        {
+            return this.GetDumpCache<T>(calculatedModificationPath, asset, context);
+        }
+
+
+        protected SimpleTextTranslationCache GetTranslationCache(string calculatedModificationPath, T asset,
+            IAssetOrResourceLoadedContext context)
+        {
+            return this.GetTranslationCache<T>(calculatedModificationPath, asset, context);
+        }
+
 
 #if !HS
         private void SceneManagerSceneLoadedRegisterAsTranslations(Scene arg0, LoadSceneMode arg1)

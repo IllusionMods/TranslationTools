@@ -32,5 +32,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core.HandlerHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.ResourceMappingPath.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.UntestedParamAssetLoadedHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceHelper.RedirectorOnly.cs" />
   </ItemGroup>
 </Project>

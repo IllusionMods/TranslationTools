@@ -1,16 +1,16 @@
 ﻿using System.Collections.Generic;
-using UnityEngine;
+using BepInEx.Configuration;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
-using BepInEx.Configuration;
+using UnityObject = UnityEngine.Object;
 
 namespace IllusionMods
 {
     public abstract class StringArrayParamAssetLoadedHandler<T, TParam> : ParamAssetLoadedHandler<T, TParam>
-        where T : Object
+        where T : UnityObject
     {
-
         public readonly ConfigEntry<bool> EnableInternalAssetTranslation;
+
         protected StringArrayParamAssetLoadedHandler(TextResourceRedirector plugin, int translatedIndex = -1,
             bool allowTranslationRegistration = true) :
             base(plugin, allowTranslationRegistration)
@@ -28,7 +28,8 @@ namespace IllusionMods
         protected virtual bool DumpParamField(SimpleTextTranslationCache cache, string[] field)
         {
             var key = field[0];
-            var value = TranslatedIndex > 0 && field.Length > TranslatedIndex && string.IsNullOrEmpty(field[TranslatedIndex])
+            var value = TranslatedIndex > 0 && field.Length > TranslatedIndex &&
+                        string.IsNullOrEmpty(field[TranslatedIndex])
                 ? field[TranslatedIndex]
                 : key;
             if (string.IsNullOrEmpty(key) || !LanguageHelper.IsTranslatable(key)) return false;
@@ -37,7 +38,7 @@ namespace IllusionMods
         }
 
         protected virtual bool UpdateParamField(string calculatedModificationPath, SimpleTextTranslationCache cache,
-            ref string[] field, string prefix=null)
+            ref string[] field, string prefix = null)
         {
             var rawKey = field[0];
             if (string.IsNullOrEmpty(rawKey)) return false;

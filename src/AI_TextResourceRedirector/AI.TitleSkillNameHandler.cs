@@ -19,19 +19,24 @@ namespace IllusionMods
             TitleSkillName.Param param)
         {
             var result = false;
-            var key = param.name0;
-            if (string.IsNullOrEmpty(key)) return false;
-            if (cache.TryGetTranslation(key, true, out var translated))
+            var origKey = param.name0;
+            foreach (var key in TextResourceHelper.GetTranslationKeys(param, origKey))
             {
-                param.name0 = translated;
-                TrackReplacement(calculatedModificationPath, key, translated);
-                TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
-                result = true;
-            }
-            else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
-                     LanguageHelper.IsTranslatable(key))
-            {
-                cache.AddTranslationToCache(key, !string.IsNullOrEmpty(param.name1) ? param.name1 : key);
+                if (string.IsNullOrEmpty(key)) continue;
+                if (cache.TryGetTranslation(key, true, out var translated))
+                {
+                    param.name0 = translated;
+                    TrackReplacement(calculatedModificationPath, origKey, translated);
+                    TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
+                    result = true;
+                    break;
+                }
+
+                if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
+                    LanguageHelper.IsTranslatable(origKey))
+                {
+                    cache.AddTranslationToCache(key, !string.IsNullOrEmpty(param.name1) ? param.name1 : origKey);
+                }
             }
 
             return result;
@@ -44,14 +49,6 @@ namespace IllusionMods
             var value = !string.IsNullOrEmpty(param.name1) ? param.name1 : key;
             cache.AddTranslationToCache(key, value);
             return true;
-        }
-
-        protected override bool ShouldHandleAsset(TitleSkillName asset, IAssetOrResourceLoadedContext context)
-        {
-            Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}])?");
-            var result = base.ShouldHandleAsset(asset, context);
-            Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}]) => {result}");
-            return result;
         }
     }
 }

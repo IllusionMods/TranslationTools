@@ -5,7 +5,7 @@ using static EnvSEData;
 
 namespace IllusionMods
 {
-    public class EnvSEDataHandler : UntestedParamAssetLoadedHandler<EnvSEData, Param>
+    public class EnvSEDataHandler : ParamAssetLoadedHandler<EnvSEData, Param>
     {
         public EnvSEDataHandler(TextResourceRedirector plugin) : base(plugin, true) { }
 
@@ -17,27 +17,27 @@ namespace IllusionMods
         public override bool UpdateParam(string calculatedModificationPath, SimpleTextTranslationCache cache,
             Param param)
         {
-            var clipDataResult = UpdateClipDatas(calculatedModificationPath, cache, param.clipDatas);
-            var playListDataResult = UpdatePlayListDatas(calculatedModificationPath, cache, param.playListDatas);
+            var clipDataResult = UpdateClipDatas(calculatedModificationPath, cache, param);
+            var playListDataResult = UpdatePlayListDatas(calculatedModificationPath, cache, param);
             return clipDataResult || playListDataResult;
         }
 
         public override bool DumpParam(SimpleTextTranslationCache cache, Param param)
         {
-            var clipDataResult = DumpClipDatas(cache, param.clipDatas);
-            var playListDataResult = DumpPlayListDatas(cache, param.playListDatas);
+            var clipDataResult = DumpClipDatas(cache, param);
+            var playListDataResult = DumpPlayListDatas(cache, param);
             return clipDataResult || playListDataResult;
         }
 
         private bool UpdatePlayListDatas(string calculatedModificationPath, SimpleTextTranslationCache cache,
-            List<PlayListData> paramPlayListDatas)
+            Param param)
         {
             var result = false;
-            foreach (var playListData in paramPlayListDatas)
+            foreach (var playListData in param.playListDatas)
             {
                 foreach (var detail in playListData.details)
                 {
-                    if (UpdateDetail(calculatedModificationPath, cache, detail)) result = true;
+                    if (UpdateDetail(calculatedModificationPath, cache, param, detail)) result = true;
                 }
             }
 
@@ -45,19 +45,14 @@ namespace IllusionMods
         }
 
         private bool UpdateDetail(string calculatedModificationPath, SimpleTextTranslationCache cache,
-            PlayListDataDetail detail)
+            Param param, PlayListDataDetail detail)
         {
             var key = detail.name;
             var result = false;
             if (string.IsNullOrEmpty(key)) return false;
             if (cache.TryGetTranslation(key, true, out var translated))
             {
-                if (!EnableSafeMode.Value)
-                {
-                    WarnIfUnsafe(calculatedModificationPath);
-                    detail.name = translated;
-                }
-
+                detail.name = translated;
                 TrackReplacement(calculatedModificationPath, key, translated);
                 TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
                 result = true;
@@ -65,38 +60,33 @@ namespace IllusionMods
             else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
                      LanguageHelper.IsTranslatable(key))
             {
-                cache.AddTranslationToCache(key, string.Empty);
+                DefaultDumpParam(cache, param, detail, detail.name);
             }
 
             return result;
         }
 
         private bool UpdateClipDatas(string calculatedModificationPath, SimpleTextTranslationCache cache,
-            List<ClipData> paramClipDatas)
+            Param param)
         {
             var result = false;
-            foreach (var clipData in paramClipDatas)
+            foreach (var clipData in param.clipDatas)
             {
-                if (UpdateClipData(calculatedModificationPath, cache, clipData)) result = true;
+                if (UpdateClipData(calculatedModificationPath, cache, param, clipData)) result = true;
             }
 
             return result;
         }
 
         private bool UpdateClipData(string calculatedModificationPath, SimpleTextTranslationCache cache,
-            ClipData clipData)
+            Param param, ClipData clipData)
         {
             var key = clipData.name;
             var result = false;
             if (string.IsNullOrEmpty(key)) return false;
             if (cache.TryGetTranslation(key, true, out var translated))
             {
-                if (!EnableSafeMode.Value)
-                {
-                    WarnIfUnsafe(calculatedModificationPath);
-                    clipData.name = translated;
-                }
-
+                clipData.name = translated;
                 TrackReplacement(calculatedModificationPath, key, translated);
                 TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
                 result = true;
@@ -104,32 +94,32 @@ namespace IllusionMods
             else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
                      LanguageHelper.IsTranslatable(key))
             {
-                cache.AddTranslationToCache(key, string.Empty);
+                DefaultDumpParam(cache, param, clipData, clipData.name);
             }
 
             return result;
         }
 
-        private bool DumpPlayListDatas(SimpleTextTranslationCache cache, List<PlayListData> paramPlayListDatas)
+        private bool DumpPlayListDatas(SimpleTextTranslationCache cache, Param param)
         {
             var result = false;
-            foreach (var playListData in paramPlayListDatas)
+            foreach (var playListData in param.playListDatas)
             {
                 foreach (var detail in playListData.details)
                 {
-                    if (DefaultDumpParam(cache, detail.name)) result = true;
+                    if (DefaultDumpParam(cache, param, detail, detail.name)) result = true;
                 }
             }
 
             return result;
         }
 
-        private bool DumpClipDatas(SimpleTextTranslationCache cache, List<ClipData> paramClipDatas)
+        private bool DumpClipDatas(SimpleTextTranslationCache cache, Param param)
         {
             var result = false;
-            foreach (var clipData in paramClipDatas)
+            foreach (var clipData in param.clipDatas)
             {
-                if (DefaultDumpParam(cache, clipData.name)) result = true;
+                if (DefaultDumpParam(cache, param, clipData, clipData.name)) result = true;
             }
 
             return result;

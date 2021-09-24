@@ -9,7 +9,7 @@ using XUnity.AutoTranslator.Plugin.Core.Utilities;
 
 namespace IllusionMods
 {
-    public class PrayInfoHandler : UntestedParamAssetLoadedHandler<PrayInfo,PrayInfo.Param>
+    public class PrayInfoHandler : ParamAssetLoadedHandler<PrayInfo,PrayInfo.Param>
     {
         public PrayInfoHandler(TextResourceRedirector plugin) : base(plugin, true) { }
         public override IEnumerable<PrayInfo.Param> GetParams(PrayInfo asset)
@@ -24,62 +24,32 @@ namespace IllusionMods
             return nameResult || explanResult;
         }
 
+        private void ApplyExplanTranslation(string calculatedModificationPath, PrayInfo.Param param, string value)
+        {
+            param.Explan = value;
+        }
+
         private bool UpdateExplan(string calculatedModificationPath, SimpleTextTranslationCache cache,
             PrayInfo.Param param)
         {
-            var key = param.Explan;
-            var result = false;
-            if (string.IsNullOrEmpty(key)) return false;
-            if (cache.TryGetTranslation(key, true, out var translated))
-            {
-                if (!EnableSafeMode.Value)
-                {
-                    WarnIfUnsafe(calculatedModificationPath);
-                    param.Explan = translated;
-                }
+            return DefaultUpdateParam(calculatedModificationPath, cache, param, param.Explan, ApplyExplanTranslation);
+        }
 
-                TrackReplacement(calculatedModificationPath, key, translated);
-                TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
-                result = true;
-            }
-            else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
-                     LanguageHelper.IsTranslatable(key))
-            {
-                cache.AddTranslationToCache(key, string.Empty);
-            }
 
-            return result;
+        private void ApplyNameTranslation(string calculatedModificationPath, PrayInfo.Param param, string value)
+        {
+            param.Name = value;
         }
 
         private bool UpdateName(string calculatedModificationPath, SimpleTextTranslationCache cache, PrayInfo.Param param)
         {
-            var result = false;
-            var key = param.Name;
-            if (string.IsNullOrEmpty(key)) return false;
-            if (cache.TryGetTranslation(key, true, out var translated))
-            {
-                if (!EnableSafeMode.Value)
-                {
-                    WarnIfUnsafe(calculatedModificationPath);
-                    param.Name = translated;
-                }
-
-                TrackReplacement(calculatedModificationPath, key, translated);
-                TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
-                result = true;
-            }
-            else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
-                     LanguageHelper.IsTranslatable(key))
-            {
-                cache.AddTranslationToCache(key, string.Empty);
-            }
-
-            return result;
+            return DefaultUpdateParam(calculatedModificationPath, cache, param, param.Name, ApplyNameTranslation);
         }
+
         public override bool DumpParam(SimpleTextTranslationCache cache, PrayInfo.Param param)
         {
-            var nameResult = DefaultDumpParam(cache, param.Name);
-            var explanResult = DefaultDumpParam(cache, param.Explan);
+            var nameResult = DefaultDumpParam(cache, param, param.Name);
+            var explanResult = DefaultDumpParam(cache, param, param.Explan);
             return nameResult || explanResult;
         }
     }

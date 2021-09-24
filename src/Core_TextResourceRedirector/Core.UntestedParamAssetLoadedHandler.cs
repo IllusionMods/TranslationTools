@@ -1,18 +1,18 @@
-﻿using System.Collections.Generic;
-using BepInEx.Configuration;
-using HarmonyLib;
+﻿using BepInEx.Configuration;
 using IllusionMods.Shared;
-using UnityEngine;
+using JetBrains.Annotations;
+using UnityObject = UnityEngine.Object;
 
 namespace IllusionMods
 {
+    [PublicAPI]
     public abstract class UntestedParamAssetLoadedHandler<T, TParam> : ParamAssetLoadedHandler<T, TParam>
-        where T : Object
+        where T : UnityObject
     {
         private string _lastWarningPath;
 
         protected UntestedParamAssetLoadedHandler(TextResourceRedirector plugin,
-            bool allowTranslationRegistration = false, bool enableSafeModeByDefault=true) :
+            bool allowTranslationRegistration = false, bool enableSafeModeByDefault = true) :
             base(plugin, allowTranslationRegistration)
         {
             EnableSafeMode = this.ConfigEntryBind("Enable Safe Mode", enableSafeModeByDefault,
@@ -32,15 +32,13 @@ is causing game to misbehave.".ToSingleLineString(),
             _lastWarningPath = calculatedModificationPath;
         }
 
-        protected override void DefaultUpdateParamValue(string calculatedModificationPath, Traverse<string> field,
-            string translated)
+        protected override void ApplyTranslationToParam(ApplyParamTranslation applyParamTranslation,
+            string calculatedModificationPath,
+            TParam param, string value)
         {
-            if (!EnableSafeMode.Value)
-            {
-                WarnIfUnsafe(calculatedModificationPath);
-                base.DefaultUpdateParamValue(calculatedModificationPath, field, translated);
-            }
-            
+            if (EnableSafeMode.Value) return;
+            WarnIfUnsafe(calculatedModificationPath);
+            base.ApplyTranslationToParam(applyParamTranslation, calculatedModificationPath, param, value);
         }
     }
 }

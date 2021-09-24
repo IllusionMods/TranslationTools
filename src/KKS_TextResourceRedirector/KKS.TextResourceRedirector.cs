@@ -1,17 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using ActionGame;
 using BepInEx;
 using HarmonyLib;
-using Illusion.Extensions;
-using JetBrains.Annotations;
-using Manager;
-using SaveData;
 using UnityEngine;
 using XUnity.ResourceRedirector;
-using static Illusion.Utils;
 
 namespace IllusionMods
 {
@@ -25,71 +17,55 @@ namespace IllusionMods
             TextResourceRedirectorAwake += ConfigureHandlersForKKS;
         }
 
-        [UsedImplicitly] 
         public NickNameHandler NickNameHandler { get; private set; }
 
-        [UsedImplicitly] 
         public MapInfoHandler MapInfoHandler { get; private set; }
 
-        [UsedImplicitly] 
         public EventInfoHandler EventInfoHandler { get; private set; }
 
-        [UsedImplicitly] 
         public MakerCustomDataHandler MakerCustomDataHandler { get; private set; }
 
-        [UsedImplicitly] 
         public VoiceInfoHandler VoiceInfoHandler { get; private set; }
 
-        [UsedImplicitly] 
         public AnimationInfoDataHandler AnimationInfoDataHandler { get; private set; }
 
-        [UsedImplicitly] 
         public ClubInfoHandler ClubInfoHandler { get; private set; }
 
-        [UsedImplicitly] 
         public EnvSEDataHandler EnvSEDataHandler { get; private set; }
 
-        [UsedImplicitly] 
         public FootSEDataHandler FootSEDataHandler { get; private set; }
 
-        [UsedImplicitly] 
         public MonologueInfoHandler MonologueInfoHandler { get; private set; }
 
-        [UsedImplicitly] 
         public PrayInfoHandler PrayInfoHandler { get; private set; }
 
-        [UsedImplicitly] 
         public TopicHandler TopicHandler { get; private set; }
 
-        [UsedImplicitly] 
         public WhereLiveDataHandler WhereLiveDataHandler { get; private set; }
 
-        [UsedImplicitly]
         public CommunicationInfoHandler CommunicationInfoHandler { get; private set; }
 
-        [UsedImplicitly]
         public CommunicationNPCHandler CommunicationNPCHandler { get; private set; }
 
-        [UsedImplicitly]
         public MapThumbnailInfoHandler MapThumbnailInfoHandler { get; private set; }
 
-        [UsedImplicitly]
         public TopicListenDataHandler TopicListenDataHandler { get; private set; }
 
-        [UsedImplicitly]
         public TopicPersonalityGroupHandler TopicPersonalityGroupHandler { get; private set; }
 
-        [UsedImplicitly]
         public TopicTalkCommonHandler TopicTalkCommonHandler { get; private set; }
 
-        [UsedImplicitly]
         public TopicTalkRareHandler TopicTalkRareHandler { get; private set; }
 
-        [UsedImplicitly]
         public VoiceAllDataHandler VoiceAllDataHandler { get; private set; }
 
-        [UsedImplicitly]
+        public ResultTopicDataHandler ResultTopicDataHandler { get; private set; }
+
         public ShopInfoHandler ShopInfoHandler { get; private set; }
+
+        public TipsDataHandler TipsDataHandler { get; private set; }
+
+        public EstheticVoiceInfoHandler EstheticVoiceInfoHandler { get; private set; }
 
         private TextResourceHelper GetTextResourceHelper()
         {
@@ -123,12 +99,16 @@ namespace IllusionMods
             sender.TopicTalkCommonHandler = new TopicTalkCommonHandler(sender);
             sender.TopicTalkRareHandler = new TopicTalkRareHandler(sender);
             sender.VoiceAllDataHandler = new VoiceAllDataHandler(sender);
+            sender.ResultTopicDataHandler = new ResultTopicDataHandler(sender);
+            sender.TipsDataHandler = new TipsDataHandler(sender);
+            sender.EstheticVoiceInfoHandler = new EstheticVoiceInfoHandler(sender);
+
 
             foreach (var handler in new IRedirectorHandler[]
             {
                 sender.CommunicationInfoHandler, sender.CommunicationNPCHandler, sender.TopicHandler,
                 sender.TopicListenDataHandler, sender.TopicPersonalityGroupHandler, sender.TopicTalkCommonHandler,
-                sender.TopicTalkRareHandler
+                sender.TopicTalkRareHandler, sender.TipsDataHandler
             })
             {
                 if (handler is IPathListBoundHandler communicationHandler)
@@ -158,7 +138,14 @@ namespace IllusionMods
                 chaListHandler.WhiteListPaths.Add("abdata/list/characustom");
             }
 
+            if (sender.EstheticVoiceInfoHandler is IPathListBoundHandler estheticVoiceInfoHandler)
+            {
+                estheticVoiceInfoHandler.WhiteListPaths.Add("esthetic/list/voice");
+            }
+
             Harmony.CreateAndPatchAll(typeof(Hooks));
+
+            TutorialScopeHelper.Init(this);
         }
 
 
@@ -182,7 +169,6 @@ namespace IllusionMods
         public static class Hooks
         {
 #if false
-
             [HarmonyPrefix]
             [HarmonyPatch(typeof(Manager.GameAssist), "GetTopic")]
             private static void GetTopicPrefix(GameAssist __instance, Heroine _heroine)

@@ -6,6 +6,7 @@ using BepInEx.Logging;
 using IllusionMods.Shared;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
 using XUnity.ResourceRedirector;
 using XUAPluginData = XUnity.AutoTranslator.Plugin.Core.Constants.PluginData;
@@ -79,9 +80,10 @@ May slow down load times at cost of improved translations
         public TextResourceRedirector Plugin { get; }
 
         public string ConfigSectionName { get; }
-
         public bool AllowTranslationRegistration { get; }
         public bool AllowFallbackMapping { get; }
+
+        public ManualLogSource GetLogger() => Logger;
 
         public void ExcludePathFromTranslationRegistration(string path)
         {
@@ -144,7 +146,7 @@ May slow down load times at cost of improved translations
 
             return path;
         }
-
+        
         protected override bool ShouldHandleAsset(TextAsset asset, IAssetOrResourceLoadedContext context)
         {
             return this.DefaultShouldHandleAsset(asset, context);
@@ -160,5 +162,24 @@ May slow down load times at cost of improved translations
         {
             RegisterAsTranslations();
         }
+
+        public virtual bool ShouldHandleAssetForContext(TextAsset asset, IAssetOrResourceLoadedContext context)
+        {
+            return !context.HasReferenceBeenRedirectedBefore(asset);
+        }
+
+
+        protected SimpleTextTranslationCache GetTranslationCache(string calculatedModificationPath, TextAsset asset,
+            IAssetOrResourceLoadedContext context)
+        {
+            return this.GetTranslationCache<TextAsset>(calculatedModificationPath, asset, context);
+        }
+
+        protected SimpleTextTranslationCache GetDumpCache(string calculatedModificationPath, TextAsset asset,
+            IAssetOrResourceLoadedContext context)
+        {
+            return this.GetDumpCache<TextAsset>(calculatedModificationPath, asset, context);
+        }
+
     }
 }

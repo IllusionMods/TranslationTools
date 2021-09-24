@@ -243,12 +243,15 @@ namespace IllusionMods
                 if (asset is null) return translations;
 
                 var mappings = new Dictionary<int, int>();
-                var headers = ResourceHelper.GetExcelHeaderRow(asset, out var firstRow);
-                for (var i = 1; i < headers.Count; i++)
+                int firstRow;
+                foreach (var headers in ResourceHelper.GetExcelHeaderRows(asset, out firstRow))
                 {
-                    var header = headers[i];
-                    if (header.Contains("(") && header.EndsWith(")")) break;
-                    mappings.Add(i, headers.IndexOf($"{header}(英語)"));
+                    for (var i = 1; i < headers.Count; i++)
+                    {
+                        var header = headers[i];
+                        if (header.Contains("(") && header.EndsWith(")")) break;
+                        mappings.Add(i, headers.IndexOf($"{header}(英語)"));
+                    }
                 }
 
                 for (var rowIndex = firstRow; rowIndex < asset.list.Count; rowIndex++)
@@ -332,7 +335,6 @@ namespace IllusionMods
                     foreach (var translationDumper in GetCommunicationTextCollectors(assetBundleName, assetName,
                         filePath))
                     {
-                        Logger.LogFatal($"{nameof(GetCommunicationTextDumpers)}: {assetBundleName}: {assetName}: {translationDumper}");
                         yield return translationDumper;
                     }
                 }
@@ -366,7 +368,7 @@ namespace IllusionMods
 
         #region ScenarioText
 
-        private string BuildReplacementKey(string assetBundleName, string key)
+        protected string BuildReplacementKey(string assetBundleName, string key)
         {
             Assert.IsNotNull(this);
             return JoinStrings("|", Path.GetDirectoryName(assetBundleName), key);
@@ -441,157 +443,175 @@ namespace IllusionMods
                         var choiceDictionary =
                             new Dictionary<string, KeyValuePair<string, string>>(baseChoiceDictionary);
 
+                        
                         IDictionary<string, string> AssetDumper()
                         {
                             var translations = new OrderedDictionary<string, string>();
                             foreach (var param in asset.list)
                             {
+                                /*
+                                Logger.LogFatal(
+                                    $"{nameof(GetScenarioTextDumpers)}.{nameof(AssetDumper)}: {assetBundleName} {assetName} {param.Command} {param}");
+                                */
                                 // update as we go so most recent entries are in place
                                 UpdatedReplacementDictionary(assetBundleName, ref choiceDictionary, param);
-                                if (!ResourceHelper.IsSupportedCommand(param.Command))
-                                {
-#if DEBUG
-                                    Logger.DebugLogDebug($"DumpScenarioText: Unsupported: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
-#endif
-                                    continue;
-                                }
-
-
-                                switch (param.Command)
-                                {
-                                    case Command.Text:
-                                    case (Command) 242:
-                                    {
-                                        // Text: 0 - jp speaker (if present), 1 - jp text,  2 - eng text
-                                        if (param.Args.Length == 0) continue;
-
-                                        var speaker = param.Args[0];
-                                        if (!speaker.IsNullOrEmpty() && !StringIsSingleReplacement(speaker) &&
-                                            !ResourceHelper.TextKeysBlacklist.Contains(speaker))
-                                        {
-                                            // capture speaker name
-                                            AddLocalizationToResults(translations, speaker,
-                                                LookupSpeakerLocalization(speaker, assetBundleName, assetName));
-                                        }
-
-                                        if (param.Args.Length >= 2 && !param.Args[1].IsNullOrEmpty())
-                                        {
-                                            var key = param.Args[1];
-                                            var value = string.Empty;
-                                            if (!ResourceHelper.TextKeysBlacklist.Contains(key))
-                                            {
-                                                Logger.DebugLogDebug($"DumpScenarioText: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
-                                                if (param.Args.Length >= 3 && !param.Args[2].IsNullOrEmpty())
-                                                {
-                                                    value = param.Args[2];
-                                                }
-
-                                                allJpText.Add(key);
-                                                AddLocalizationToResults(translations, key, value);
-                                            }
-                                        }
-
-                                        break;
-                                    }
-                                    case Command.Calc:
-                                    {
-                                        if (param.Args.Length >= 3 && ResourceHelper.CalcKeys.Contains(param.Args[0]))
-                                        {
-                                            Logger.DebugLogDebug($"DumpScenarioText: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
-                                            var key = ResourceHelper.GetSpecializedKey(param, 2, out var value);
-                                            allJpText.Add(key);
-                                            AddLocalizationToResults(translations, key, value);
-                                        }
-
-                                        break;
-                                    }
-                                    case Command.Format:
-                                    {
-                                        if (param.Args.Length >= 2 && ResourceHelper.FormatKeys.Contains(param.Args[0]))
-                                        {
-                                            Logger.DebugLogDebug($"DumpScenarioText: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
-                                            var key = param.Args[1];
-                                            allJpText.Add(key);
-                                            AddLocalizationToResults(translations, key, string.Empty);
-                                            // not sure where localizations are, but they're not in the next arg
-                                        }
-
-                                        break;
-                                    }
-                                    case Command.Choice:
-                                    {
-                                        Logger.DebugLogDebug($"DumpScenarioText: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
-                                        for (var i = 0; i < param.Args.Length; i++)
-                                        {
-                                            var key = ResourceHelper.GetSpecializedKey(param, i, out var fallbackValue);
-                                            if (key.IsNullOrEmpty()) continue;
-                                            var value = string.Empty;
-                                            if (choiceDictionary.TryGetValue(
-                                                BuildReplacementKey(assetBundleName,
-                                                    fallbackValue.TrimStart('[').TrimEnd(']')), out var entry))
-                                            {
-                                                key = ResourceHelper.BuildSpecializedKey(param, entry.Key);
-                                                value = entry.Value;
-                                            }
-
-                                            allJpText.Add(key);
-                                            AddLocalizationToResults(translations, key, value);
-                                        }
-
-                                        break;
-                                    }
-                                    case Command.Switch:
-                                    {
-                                        Logger.DebugLogDebug($"DumpScenarioText: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
-                                        for (var i = 0; i < param.Args.Length; i++)
-                                        {
-                                            var key = ResourceHelper.GetSpecializedKey(param, i, out var value);
-                                            allJpText.Add(key);
-                                            AddLocalizationToResults(translations, key, value);
-                                        }
-
-                                        break;
-                                    }
-#if AI
-                                    case Command.InfoText:
-                                    {
-                                        Logger.DebugLogDebug($"DumpScenarioText: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
-                                        for (var i = 2; i < param.Args.Length; i += 2)
-                                        {
-                                            var key = param.Args[i];
-                                            allJpText.Add(key);
-                                            AddLocalizationToResults(translations, key, string.Empty);
-                                        }
-
-                                        break;
-                                    }
-#endif
-                                    case Command.Jump:
-                                    {
-                                        if (param.Args.Length >= 1 &&
-                                            ContainsNonAscii(param.Args[0]))
-                                        {
-                                            Logger.DebugLogDebug($"DumpScenarioText: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
-                                            allJpText.Add(param.Args[0]);
-                                            AddLocalizationToResults(translations, param.Args[0],
-                                                "Jump");
-                                        }
-
-                                        break;
-                                    }
-                                    default:
-                                        Logger.LogError(
-                                            $"[TextDump] Unhandled command: {param.Command}: '{string.Join("', '", param.Args.Select(a => a?.ToString() ?? string.Empty).ToArray())}'");
-                                        break;
-                                }
+                                HandleAdvCommandDump(assetBundleName, assetName, param, translations, ref choiceDictionary, allJpText);
                             }
 
                             return translations;
                         }
 
-                        yield return new StringTranslationDumper(filePath, AssetDumper);
+                        TranslationDumper<IDictionary<string, string>>.TranslationCollector assetDumper = AssetDumper;
+                        yield return new StringTranslationDumper(filePath, assetDumper);
                     }
                 }
+            }
+        }
+
+        protected virtual void HandleAdvCommandDump(string assetBundleName, string assetName, ScenarioData.Param param,
+            IDictionary<string, string> translations,
+            ref Dictionary<string, KeyValuePair<string, string>> choiceDictionary, HashSet<string> allJpText)
+        {
+            if (!ResourceHelper.IsSupportedCommand(param.Command))
+            {
+#if DEBUG
+             Logger.DebugLogDebug($"{nameof(HandleAdvCommandDump)}: Unsupported: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
+#endif
+                return;
+            }
+
+
+            switch (param.Command)
+            {
+                case Command.Text:
+                case (Command) 242:
+                {
+                    // Text: 0 - jp speaker (if present), 1 - jp text,  2 - eng text
+                    if (param.Args.Length == 0) return;
+
+                    var speaker = param.Args[0];
+                    if (!speaker.IsNullOrEmpty() && !StringIsSingleReplacement(speaker) &&
+                        !ResourceHelper.TextKeysBlacklist.Contains(speaker))
+                    {
+                        // capture speaker name
+                        AddLocalizationToResults(translations, speaker,
+                            LookupSpeakerLocalization(speaker, assetBundleName, assetName));
+                    }
+
+                    if (param.Args.Length >= 2 && !param.Args[1].IsNullOrEmpty())
+                    {
+                        var key = param.Args[1];
+                        var value = string.Empty;
+                        if (!ResourceHelper.TextKeysBlacklist.Contains(key))
+                        {
+                            Logger.DebugLogDebug(
+                                $"{nameof(HandleAdvCommandDump)}: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
+                            if (param.Args.Length >= 3 && !param.Args[2].IsNullOrEmpty())
+                            {
+                                value = param.Args[2];
+                            }
+
+                            allJpText.Add(key);
+                            AddLocalizationToResults(translations, key, value);
+                        }
+                    }
+
+                    break;
+                }
+                case Command.Calc:
+                {
+                    if (param.Args.Length >= 3 && ResourceHelper.CalcKeys.Contains(param.Args[0]))
+                    {
+                        Logger.DebugLogDebug(
+                            $"{nameof(HandleAdvCommandDump)}: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
+                        var key = ResourceHelper.GetSpecializedKey(param, 2, out var value);
+                        allJpText.Add(key);
+                        AddLocalizationToResults(translations, key, value);
+                    }
+
+                    break;
+                }
+                case Command.Format:
+                {
+                    if (param.Args.Length >= 2 && ResourceHelper.FormatKeys.Contains(param.Args[0]))
+                    {
+                        Logger.DebugLogDebug(
+                            $"{nameof(HandleAdvCommandDump)}: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
+                        var key = param.Args[1];
+                        allJpText.Add(key);
+                        AddLocalizationToResults(translations, key, string.Empty);
+                        // not sure where localizations are, but they're not in the next arg
+                    }
+
+                    break;
+                }
+                case Command.Choice:
+                {
+                    Logger.DebugLogDebug($"{nameof(HandleAdvCommandDump)}: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
+                    for (var i = 0; i < param.Args.Length; i++)
+                    {
+                        var key = ResourceHelper.GetSpecializedKey(param, i, out var fallbackValue);
+                        if (key.IsNullOrEmpty()) continue;
+                        var value = string.Empty;
+                        if (choiceDictionary.TryGetValue(
+                            BuildReplacementKey(assetBundleName,
+                                fallbackValue.TrimStart('[').TrimEnd(']')), out var entry))
+                        {
+                            key = ResourceHelper.BuildSpecializedKey(param, entry.Key);
+                            value = entry.Value;
+                        }
+
+                        allJpText.Add(key);
+                        AddLocalizationToResults(translations, key, value);
+                    }
+
+                    break;
+                }
+                case Command.Switch:
+                {
+                    Logger.DebugLogDebug($"{nameof(HandleAdvCommandDump)}: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
+                    for (var i = 0; i < param.Args.Length; i++)
+                    {
+                        var key = ResourceHelper.GetSpecializedKey(param, i, out var value);
+                        allJpText.Add(key);
+                        AddLocalizationToResults(translations, key, value);
+                    }
+
+                    break;
+                }
+
+#if AI
+                case Command.InfoText:
+                {
+                    Logger.DebugLogDebug($"{nameof(HandleAdvCommandDump)}: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
+                    for (var i = 2; i < param.Args.Length; i += 2)
+                    {
+                        var key = param.Args[i];
+                        allJpText.Add(key);
+                        AddLocalizationToResults(translations, key, string.Empty);
+                    }
+
+                    break;
+                }
+#endif
+                case Command.Jump:
+                {
+                    if (param.Args.Length >= 1 &&
+                        ContainsNonAscii(param.Args[0]))
+                    {
+                        Logger.DebugLogDebug(
+                            $"{nameof(HandleAdvCommandDump)}: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
+                        allJpText.Add(param.Args[0]);
+                        AddLocalizationToResults(translations, param.Args[0],
+                            "Jump");
+                    }
+
+                    break;
+                }
+                default:
+                    Logger.LogError(
+                        $"[TextDump] Unhandled command: {param.Command}: '{string.Join("', '", param.Args.Select(a => a?.ToString() ?? string.Empty).ToArray())}'");
+                    break;
             }
         }
 
@@ -709,29 +729,32 @@ namespace IllusionMods
             var skipName = new Dictionary<int, string>();
             assetDumpColumnInfo.NumericMappings.ToList().ForEach(x => mappings[x.Key] = x.Value);
 
-            var headers = ResourceHelper.GetExcelHeaderRow(excelAsset, out var firstRow);
-            foreach (var entry in assetDumpColumnInfo.NameMappings)
+            int firstRow;
+            var itemLookupColumns = new List<int[]>();
+            foreach (var headers in ResourceHelper.GetExcelHeaderRows(excelAsset, out firstRow))
             {
-                var src = headers.IndexOf(entry.Key);
-                var dest = -1;
-                if (src != -1)
+                foreach (var entry in assetDumpColumnInfo.NameMappings)
                 {
-                    if (!string.IsNullOrEmpty(entry.Value)) dest = headers.IndexOf(entry.Value);
+                    var src = headers.IndexOf(entry.Key);
+                    var dest = -1;
+                    if (src != -1)
+                    {
+                        if (!string.IsNullOrEmpty(entry.Value)) dest = headers.IndexOf(entry.Value);
 
-                    mappings[src] = dest;
-                    skipName[src] = entry.Key;
+                        mappings[src] = dest;
+                        skipName[src] = entry.Key;
+                    }
+                }
+
+
+                foreach (var entry in assetDumpColumnInfo.ItemLookupColumns)
+                {
+                    var lookup = ResourceHelper.GetItemLookupColumns(headers, entry);
+                    if (lookup.Length > 0) itemLookupColumns.Add(lookup);
+                    Logger.DebugLogDebug(
+                        $"[TextDump] TryDumpExcelData: {assetBundleName}, {assetName}: {entry} => {string.Join(", ", lookup.Select(i => i.ToString()).ToArray())}");
                 }
             }
-
-            var itemLookupColumns = new List<int[]>();
-            foreach (var entry in assetDumpColumnInfo.ItemLookupColumns)
-            {
-                var lookup = ResourceHelper.GetItemLookupColumns(headers, entry);
-                if (lookup.Length > 0) itemLookupColumns.Add(lookup);
-                Logger.DebugLogDebug(
-                    $"[TextDump] TryDumpExcelData: {assetBundleName}, {assetName}: {entry} => {string.Join(", ", lookup.Select(i => i.ToString()).ToArray())}");
-            }
-
 
             foreach (var mapping in mappings.Where(m => m.Key > -1))
             {
@@ -762,7 +785,7 @@ namespace IllusionMods
 
             foreach (var mapping in itemLookupColumns)
             {
-                for (var i = 1; i < excelAsset.list.Count; i++)
+                for (var i = firstRow; i < excelAsset.list.Count; i++)
                 {
                     var row = excelAsset.GetRow(i);
                     var translatedName = ResourceHelper.PerformNameLookup(row, mapping);

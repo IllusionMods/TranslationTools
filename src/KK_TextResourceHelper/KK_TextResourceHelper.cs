@@ -59,17 +59,21 @@ namespace IllusionMods
             return base.GetSpecializedKey(obj, defaultValue);
         }
 
-        public override IEnumerable<int> GetSupportedExcelColumns(string calculatedModificationPath, ExcelData asset)
+        public override IEnumerable<int> GetSupportedExcelColumns(string calculatedModificationPath, ExcelData asset, out int firstRow)
         {
             foreach (var mapping in ExcelListPathColumnNameMapping)
             {
                 if (!calculatedModificationPath.Contains(mapping.Key)) continue;
 
-                var headers = GetExcelHeaderRow(asset);
-                return mapping.Value.Select(h => headers.IndexOf(h)).Where(i => i != -1).Distinct().Ordered();
+                var columns = new List<int>();
+                foreach (var headers in GetExcelHeaderRows(asset, out firstRow))
+                {
+                    columns.AddRange(mapping.Value.Select(h => headers.IndexOf(h)).Where(i => i != -1));
+                }
+                return columns.Distinct().Ordered();
             }
 
-            var result = base.GetSupportedExcelColumns(calculatedModificationPath, asset).ToList();
+            var result = base.GetSupportedExcelColumns(calculatedModificationPath, asset, out firstRow).ToList();
 
             if (result.Count == 0 && string.Equals(asset.name, "cus_pose", StringComparison.OrdinalIgnoreCase))
             {
@@ -103,6 +107,12 @@ namespace IllusionMods
             var tableHelper = base.GetTableHelper();
             tableHelper.HTextColumns.AddRange(new[] {4, 27, 50, 73});
             return tableHelper;
+        }
+
+        protected override bool IsRawKeyDisabled(object obj)
+        {
+            if (obj is NickName.Param) return true;
+            return base.IsRawKeyDisabled(obj);
         }
     }
 }

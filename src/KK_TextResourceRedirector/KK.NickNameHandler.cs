@@ -59,17 +59,9 @@ namespace IllusionMods
             try
             {
                 // updating the NickName assets directly causes issues, save off a lookup table.
+                var cache = GetTranslationCache(calculatedModificationPath, asset, context);
 
-                var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-                var streams =
-                    HandlerHelper.GetRedirectionStreams(calculatedModificationPath, asset, context, EnableFallbackMapping);
-                var cache = new SimpleTextTranslationCache(
-                    defaultTranslationFile,
-                    streams,
-                    false,
-                    true);
-
-                if (cache.IsEmpty) return (result = true);
+                if (cache.IsEmpty) return false;
 
                 var personalityKey = calculatedModificationPath
                     .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
@@ -77,24 +69,31 @@ namespace IllusionMods
 
                 if (string.IsNullOrEmpty(personalityKey))
                 {
-                    return (result = true);
+                    return false;
                 }
 
                 var replacements = _replacements.GetOrInit(personalityKey);
 
                 foreach (var entry in asset.param)
                 {
+                    // nicknames should not fall back on undecorated keys, so don't loop
                     var key = TextResourceHelper.GetSpecializedKey(entry, entry.Name);
                     if (string.IsNullOrEmpty(key)) continue;
                     if (cache.TryGetTranslation(key, true, out var translated))
                     {
                         replacements[key] = translated;
+                        result = true;
+                        if (key == entry.Name)
+                        {
+                            // only track raw keys
+                            // Scope 15 for the class nickname editor
+                            TrackReplacement(calculatedModificationPath, key, translated, 15, -1);
+                        }
+                        TranslationHelper.RegisterRedirectedResourceTextToPath(translated,
+                            calculatedModificationPath);
 
-                        // Scope 15 for the class nickname editor
-                        TrackReplacement(calculatedModificationPath, entry.Name, translated, 15, -1);
-                        TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
-                        Logger.DebugLogDebug(
-                            $"{GetType().FullName}.{nameof(ReplaceOrUpdateAsset)}: {personalityKey}: {key} => {translated}");
+                        Logger.DebugLogDebug("{0}.{1}: {2}: {3} => {4}", GetType().FullName,
+                            nameof(ReplaceOrUpdateAsset), personalityKey, key, translated);
                     }
                     else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
                              LanguageHelper.IsTranslatable(key))
@@ -103,11 +102,12 @@ namespace IllusionMods
                     }
                 }
 
-                return (result = true);
+                return result;
             }
             finally
             {
-                Logger.LogDebug($"{GetType()}.{nameof(ReplaceOrUpdateAsset)}: {calculatedModificationPath} => {result} ({Time.realtimeSinceStartup - start} seconds)");
+                Logger.DebugLogDebug("{0}.{1}: {2} => {3} ({4} seconds)", GetType().Name, nameof(ReplaceOrUpdateAsset),
+                    calculatedModificationPath, result, Time.realtimeSinceStartup - start);
             }
 
         }
@@ -115,10 +115,7 @@ namespace IllusionMods
         protected override bool DumpAsset(string calculatedModificationPath, NickName asset,
             IAssetOrResourceLoadedContext context)
         {
-            var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-            var cache = new SimpleTextTranslationCache(
-                defaultTranslationFile,
-                false);
+            var cache = GetDumpCache(calculatedModificationPath, asset, context);
 
             foreach (var entry in asset.param)
             {

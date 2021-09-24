@@ -18,20 +18,27 @@ namespace IllusionMods
         public override bool UpdateParam(string calculatedModificationPath, SimpleTextTranslationCache cache,
             EventInfo.Param param)
         {
-            var key = TextResourceHelper.GetSpecializedKey(param, param.Name);
-            if (string.IsNullOrEmpty(key)) return false;
             var result = false;
-            if (cache.TryGetTranslation(key, true, out var translated))
+            var origKey = param.Name;
+
+            foreach (var key in TextResourceHelper.GetTranslationKeys(param, origKey))
             {
-                param.Name = translated;
-                TrackReplacement(calculatedModificationPath, key, translated);
-                TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
-                result = true;
-            }
-            else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
-                     LanguageHelper.IsTranslatable(key))
-            {
-                cache.AddTranslationToCache(key, !string.IsNullOrEmpty(param.Name) ? param.Name : string.Empty);
+                if (string.IsNullOrEmpty(key)) continue;
+
+                if (cache.TryGetTranslation(key, true, out var translated))
+                {
+                    param.Name = translated;
+                    TrackReplacement(calculatedModificationPath, origKey, translated);
+                    TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
+                    result = true;
+                    break;
+                }
+
+                if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
+                    LanguageHelper.IsTranslatable(origKey))
+                {
+                    cache.AddTranslationToCache(key, !string.IsNullOrEmpty(param.Name) ? param.Name : string.Empty);
+                }
             }
 
             return result;

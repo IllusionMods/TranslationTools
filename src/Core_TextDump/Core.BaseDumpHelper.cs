@@ -4,6 +4,7 @@ using BepInEx.Logging;
 using IllusionMods.Shared;
 using UnityEngine;
 using static IllusionMods.TextResourceHelper.Helpers;
+using UnityObject = UnityEngine.Object;
 
 #if AI || HS2 || KKS
 using Illusion.Extensions;
@@ -87,12 +88,12 @@ namespace IllusionMods
             return TextDump.Helpers.GetAssetNamesFromBundle(assetBundleName);
         }
 
-        public static T ManualLoadAsset<T>(string bundle, string asset, string manifest) where T : Object
+        public static T ManualLoadAsset<T>(string bundle, string asset, string manifest) where T : UnityObject
         {
             return TextDump.Helpers.ManualLoadAsset<T>(bundle, asset, manifest);
         }
 
-        public static T ManualLoadAsset<T>(AssetBundleAddress assetBundleAddress) where T : Object
+        public static T ManualLoadAsset<T>(AssetBundleAddress assetBundleAddress) where T : UnityObject
         {
             return TextDump.Helpers.ManualLoadAsset<T>(assetBundleAddress);
         }
@@ -114,8 +115,13 @@ namespace IllusionMods
 
         public virtual void PrepareLineForDump(ref string key, ref string value)
         {
-            key = NewlineReplaceRegex.Replace(key, NewlineReplaceValue);
-            value = NewlineReplaceRegex.Replace(value, NewlineReplaceValue);
+            string Encode(string str)
+            {
+                return NewlineReplaceRegex.Replace(str, NewlineReplaceValue).Replace("=", "%3D");
+            }
+
+            key = Encode(key);
+            value = Encode(value);
         }
 
         protected static string BuildSeenKey(int topLevel, string tag)

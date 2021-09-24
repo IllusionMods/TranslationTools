@@ -1,13 +1,20 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using ADV;
+using HarmonyLib;
+using UnityEngine.SceneManagement;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
+using XUnity.ResourceRedirector;
+using static SaveData.FileQuestion;
 
 namespace IllusionMods
 {
-    public class VoiceAllDataHandler : UntestedParamAssetLoadedHandler<VoiceAllData, VoiceAllData.Param>,
+    public class VoiceAllDataHandler : ParamAssetLoadedHandler<VoiceAllData, VoiceAllData.Param>,
         IPathListBoundHandler
     {
-        public VoiceAllDataHandler(TextResourceRedirector plugin) : base(plugin, true, false) { }
+
+        public VoiceAllDataHandler(TextResourceRedirector plugin) : base(plugin, true) { }
 
         public PathList WhiteListPaths { get; } = new PathList();
 
@@ -16,6 +23,23 @@ namespace IllusionMods
         public override IEnumerable<VoiceAllData.Param> GetParams(VoiceAllData asset)
         {
             return asset.param;
+        }
+
+        // lots of repeating entries, this should save some overhead
+        private readonly string[] _lastMatch = {null, null, null};
+
+        private void SaveLastMatch(string calculatedModificationPath, string origValue, string transValue)
+        {
+            _lastMatch[0] = calculatedModificationPath;
+            _lastMatch[1] = origValue;
+            _lastMatch[2] = transValue;
+        }
+
+        private bool ApplyLastMatch(string calculatedModificationPath, VoiceAllData.VoiceInfo info)
+        {
+            if (info.word != _lastMatch[1] || calculatedModificationPath != _lastMatch[0] ) return false;
+            info.word = _lastMatch[2];
+            return true;
         }
 
         public override bool UpdateParam(string calculatedModificationPath, SimpleTextTranslationCache cache,
@@ -27,26 +51,28 @@ namespace IllusionMods
             {
                 foreach (var voiceInfo in voiceData.info)
                 {
-                    var key = voiceInfo.word;
-
-                    if (string.IsNullOrEmpty(key)) return false;
-                    if (cache.TryGetTranslation(key, true, out var translated))
+                    if (string.IsNullOrEmpty(voiceInfo.word)) continue;
+                    if (ApplyLastMatch(calculatedModificationPath, voiceInfo))
                     {
-                        if (!EnableSafeMode.Value)
-                        {
-                            WarnIfUnsafe(calculatedModificationPath);
-                            voiceInfo.word = translated;
-                        }
+                        result = true;
+                        continue;
+                    }
 
-                        TrackReplacement(calculatedModificationPath, key, translated);
+                    if (cache.TryGetTranslation(voiceInfo.word, true, out var translated))
+                    {
+                        SaveLastMatch(calculatedModificationPath, voiceInfo.word, translated);
+                        voiceInfo.word = translated;
+
+                        // H & Free-H scopes
+                        TrackReplacement(calculatedModificationPath, voiceInfo.word, translated, 8, 9, -1);
                         TranslationHelper.RegisterRedirectedResourceTextToPath(translated,
                             calculatedModificationPath);
                         result = true;
                     }
                     else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
-                             LanguageHelper.IsTranslatable(key))
+                             LanguageHelper.IsTranslatable(voiceInfo.word))
                     {
-                        cache.AddTranslationToCache(key, string.Empty);
+                        DefaultDumpParam(cache, param, voiceInfo, voiceInfo.word);
                     }
                 }
             }
@@ -62,11 +88,17 @@ namespace IllusionMods
             {
                 foreach (var voiceInfo in voiceData.info)
                 {
-                    if (DefaultDumpParam(cache, voiceInfo.word)) result = true;
+                    if (DefaultDumpParam(cache, param, voiceInfo, voiceInfo.word)) result = true;
                 }
             }
 
             return result;
+        }
+
+        public override bool ShouldHandleAssetForContext(VoiceAllData asset, IAssetOrResourceLoadedContext context)
+        {
+            // loaded multiple times in same context, needs to always replace
+            return true;
         }
     }
 }

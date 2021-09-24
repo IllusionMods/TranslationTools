@@ -152,8 +152,7 @@ namespace IllusionMods
                     {
                         key = $"//{key}";
                     }
-
-                    scopeLines.Add(JoinStrings("=", key, value));
+                    scopeLines.Add(JoinStrings("=", Encode(key), Encode(value)));
                 }
 
                 if (scopeLines.Count <= 0) continue;
@@ -165,6 +164,12 @@ namespace IllusionMods
 
             return lines;
         }
+
+        private static string Encode(string str)
+        {
+            return str.Replace("=", "%3D");
+        }
+
 
         internal void Update()
         {

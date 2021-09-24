@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using static IllusionMods.TextResourceHelper.Helpers;
-using Object = UnityEngine.Object;
+using UnityObject = UnityEngine.Object;
 #if AI
 using AIProject;
 using UnityEx;
@@ -132,7 +132,7 @@ namespace IllusionMods
             }
 #endif
 
-            public static T ManualLoadAsset<T>(AssetBundleAddress assetBundleAddress) where T : Object
+            public static T ManualLoadAsset<T>(AssetBundleAddress assetBundleAddress) where T : UnityObject
             {
                 return IllusionMods.AssetLoader.ManualLoadAsset<T>(assetBundleAddress);
 #if false
@@ -171,7 +171,7 @@ namespace IllusionMods
 
 
 
-            public static T ManualLoadAsset<T>(string bundle, string asset, string manifest) where T : Object
+            public static T ManualLoadAsset<T>(string bundle, string asset, string manifest) where T : UnityObject
             {
                 return IllusionMods.AssetLoader.ManualLoadAsset<T>(bundle, asset, manifest);
 #if false

@@ -26,7 +26,7 @@ namespace IllusionMods
         private const BindingFlags CtorFlags = BindingFlags.Instance | BindingFlags.CreateInstance |
                                                BindingFlags.NonPublic;
 
-        internal static ManualLogSource Logger => GetLogger<T>();
+        internal ManualLogSource Logger => GetLogger<T>();
 
         public static TSub Create<TSub>() where TSub : T, IHelper
         {

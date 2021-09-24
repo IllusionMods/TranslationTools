@@ -46,25 +46,22 @@ namespace IllusionMods
             var start = Time.realtimeSinceStartup;
             try
             {
-                Logger.DebugLogDebug($"{GetType()} attempt to handle {calculatedModificationPath}");
+                Logger.DebugLogDebug("{0}.{1} attempt to handle {2}", GetType(), nameof(ReplaceOrUpdateAsset),
+                    calculatedModificationPath);
                 if (!Enabled || !TextAssetTableHelper.IsTable(asset))
                 {
-                    Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath}");
+                    Logger.DebugLogDebug("{0}.{1} unable to handle {2}", GetType(),
+                        nameof(ReplaceOrUpdateAsset), calculatedModificationPath);
                     return null;
                 }
 
-                var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-                var streams =
-                    HandlerHelper.GetRedirectionStreams(calculatedModificationPath, asset, context, EnableFallbackMapping);
-                var cache = new SimpleTextTranslationCache(
-                    defaultTranslationFile,
-                    streams,
-                    false,
-                    true);
+                var cache = GetTranslationCache(calculatedModificationPath, asset, context);
+
 
                 if (cache.IsEmpty)
                 {
-                    Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath} (no cache)");
+                    Logger.DebugLogDebug("{0}.{1} unable to handle {2} (no cache)", GetType(),
+                        nameof(ReplaceOrUpdateAsset), calculatedModificationPath);
                     return null;
                 }
 
@@ -99,17 +96,21 @@ namespace IllusionMods
 
                 if (TextAssetTableHelper.TryTranslateTextAsset(ref asset, DoTranslation, out var result))
                 {
+                    Logger.DebugLogDebug("{0}.{1} handled {2}", GetType(), nameof(ReplaceOrUpdateAsset),
+                        calculatedModificationPath);
                     Logger.DebugLogDebug($"{GetType()} handled {calculatedModificationPath}");
                     handled = true;
                     return new TextAndEncoding(result, TextAssetTableHelper.TextAssetEncoding);
                 }
 
-                Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath}");
+                Logger.DebugLogDebug("{0}.{1} unable to handle {2}", GetType(), nameof(ReplaceOrUpdateAsset),
+                    calculatedModificationPath);
                 return null;
-            } 
+            }
             finally
             {
-                Logger.LogDebug($"{GetType()}.{nameof(TranslateTextAsset)}: {calculatedModificationPath} => {handled} ({Time.realtimeSinceStartup - start} seconds)");
+                Logger.DebugLogDebug("{0}.{1}: {2} => {3} ({4} seconds)", GetType(), nameof(ReplaceOrUpdateAsset),
+                    calculatedModificationPath, handled, Time.realtimeSinceStartup - start);
             }
         }
 
@@ -122,9 +123,9 @@ namespace IllusionMods
         }
         protected override bool ShouldHandleAsset(TextAsset asset, IAssetOrResourceLoadedContext context)
         {
-            Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}])?");
+            Logger.DebugLogDebug($"{GetType()}.{nameof(ShouldHandleAsset)}({asset.name}[{asset.GetType()}])?");
             var result = base.ShouldHandleAsset(asset, context) && TextAssetTableHelper.IsTable(asset);
-            Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}]) => {result}");
+            Logger.DebugLogDebug($"{GetType()}.{nameof(ShouldHandleAsset)}({asset.name}[{asset.GetType()}]) => {result}");
             return result;
         }
 

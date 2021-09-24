@@ -13,7 +13,6 @@ namespace IllusionMods
 
             var baseHandler = plugin.ExcelDataHandler;
             SupportedColumnNames.AddRange(baseHandler.SupportedColumnNames.ToList());
-            
             foreach (var pth in WhiteListPaths)
             {
                baseHandler.BlackListPaths.Add(pth);

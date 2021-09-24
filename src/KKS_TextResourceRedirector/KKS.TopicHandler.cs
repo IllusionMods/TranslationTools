@@ -4,7 +4,7 @@ using XUnity.AutoTranslator.Plugin.Core.Utilities;
 
 namespace IllusionMods
 {
-    public class TopicHandler : UntestedParamAssetLoadedHandler<Topic, Topic.Param>
+    public class TopicHandler : ParamAssetLoadedHandler<Topic, Topic.Param>
     {
         public TopicHandler(TextResourceRedirector plugin) : base(plugin, true) { }
 
@@ -13,36 +13,20 @@ namespace IllusionMods
             return asset.param;
         }
 
+        private static void ApplyTranslation(string calculatedModificationPath, Topic.Param param, string value)
+        {
+            param.Name = value;
+        }
+
         public override bool UpdateParam(string calculatedModificationPath, SimpleTextTranslationCache cache,
             Topic.Param param)
         {
-            var result = false;
-            var key = param.Name;
-            if (string.IsNullOrEmpty(key)) return false;
-            if (cache.TryGetTranslation(key, true, out var translated))
-            {
-                if (!EnableSafeMode.Value)
-                {
-                    WarnIfUnsafe(calculatedModificationPath);
-                    param.Name = translated;
-                }
-
-                TrackReplacement(calculatedModificationPath, key, translated);
-                TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
-                result = true;
-            }
-            else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
-                     LanguageHelper.IsTranslatable(key))
-            {
-                cache.AddTranslationToCache(key, string.Empty);
-            }
-
-            return result;
+            return DefaultUpdateParam(calculatedModificationPath, cache, param, param.Name, ApplyTranslation);
         }
 
         public override bool DumpParam(SimpleTextTranslationCache cache, Topic.Param param)
         {
-            return DefaultDumpParam(cache, param.Name);
+            return DefaultDumpParam(cache, param, param.Name);
         }
     }
 }

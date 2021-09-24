@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using ActionGame;
+using ADV;
 using HarmonyLib;
 using IllusionMods.Shared;
 using IllusionMods.Shared.TextDumpBase;
@@ -36,6 +38,9 @@ namespace IllusionMods
             AssetDumpGenerators.Add(GetHPointToggleDumpers);
             AssetDumpGenerators.Add(GetNickNameDumpers);
             AssetDumpGenerators.Add(GetEventInfoDumpers);
+            AssetDumpGenerators.Add(GetResultTopicDataDumpers);
+            AssetDumpGenerators.Add(GetEstheticVoiceInfoDumpers);
+
 
             AssetDumpGenerators.Add(GetScenarioTextMergers);
             AssetDumpGenerators.Add(GetCommunicationTextMergers);
@@ -81,6 +86,7 @@ namespace IllusionMods
 
                             AddLocalizationToResults(results, ResourceHelper.GetSpecializedKey(entry, entry.MapName),
                                 value);
+                            AddLocalizationToResults(results, entry.DisplayName, string.Empty);
                         }
 
                         return results;
@@ -150,6 +156,42 @@ namespace IllusionMods
         }
 #endif
 
+        private IEnumerable<ITranslationDumper> GetEstheticVoiceInfoDumpers()
+        {
+            foreach (var assetBundleName in GetAssetBundleNameListFromPath("esthetic/list/voice"))
+            {
+                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName)
+                    .Where(x => x.StartsWith("voicelist_")))
+                {
+                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
+
+                    IDictionary<string, string> AssetDumper()
+                    {
+                        var translations = new OrderedDictionary<string, string>();
+
+                        var asset = ManualLoadAsset<EstheticVoiceInfo>(assetBundleName, assetName, "abdata");
+                        if (asset is null) return translations;
+
+                        foreach (var param in asset.param)
+                        {
+                            foreach (var voiceAsset in param.voiceAssets)
+                            {
+                                AddLocalizationToResults(translations, voiceAsset.voice, string.Empty);
+                            }
+                        }
+                        return translations;
+                    }
+
+                    yield return new StringTranslationDumper(filePath, AssetDumper);
+                }
+
+
+
+            }
+
+
+        }
+
         protected override IEnumerable<ITranslationDumper> GetHTextDumpers()
         {
             foreach (var dumper in base.GetHTextDumpers()) yield return dumper;
@@ -180,6 +222,35 @@ namespace IllusionMods
                                     AddLocalizationToResults(translations, voiceInfo.word, string.Empty);
                                 }
                             }
+                        }
+                        return translations;
+                    }
+
+                    yield return new StringTranslationDumper(filePath, AssetDumper);
+                }
+            }
+        }
+
+        private IEnumerable<ITranslationDumper> GetResultTopicDataDumpers()
+        {
+            foreach (var assetBundleName in GetAssetBundleNameListFromPath("h/list/"))
+            {
+                foreach (var assetName in GetAssetNamesFromBundle(assetBundleName)
+                    .Where(x => x.StartsWith("result_topic")))
+                {
+
+                    var filePath = BuildAssetFilePath(assetBundleName, assetName);
+
+                    IDictionary<string, string> AssetDumper()
+                    {
+                        var translations = new OrderedDictionary<string, string>();
+
+                        var asset = ManualLoadAsset<ResultTopicData>(assetBundleName, assetName, "abdata");
+                        if (asset is null) return translations;
+
+                        foreach (var param in asset.param)
+                        {
+                            AddLocalizationToResults(translations, param.name, string.Empty);
                         }
                         return translations;
                     }
@@ -386,7 +457,7 @@ namespace IllusionMods
 
         protected IEnumerable<ITranslationDumper> GetCustomListDumpers()
         {
-            TranslationDumper<IDictionary<string, string>>.TranslationCollector BuildDumper(ExcelData asset,
+            TranslationDumper<IDictionary<string, string>>.TranslationCollector BuildDumper(string assetBundleName, ExcelData asset,
                 string assetName = null)
             {
 
@@ -404,34 +475,24 @@ namespace IllusionMods
                     results = new OrderedDictionary<string, string>();
                     if (asset == null) return results;
                     var firstRow = 0;
-                    var colToDump = -1;
-                    if (asset.list[0].list.Count == 0 || asset.list[0].list[0].IsNullOrEmpty())
+                    var assetPath = BuildAssetFilePath(assetBundleName, assetName);
+                    var colsToDump = Plugin.TextResourceHelper.GetSupportedExcelColumns(assetPath, asset, out firstRow).ToList();
+                    Logger.LogFatal($"{nameof(GetCustomListDumpers)}.{nameof(Dumper)}: {assetPath}, {asset.name}: {string.Join(", ", colsToDump.Select(i=>i.ToString()))}");
+
+                    
+                    if (colsToDump.Count < 1)
                     {
-                        var i = 0;
-                        while (i < asset.list.Count && asset.list[i].list.Count == 0) i++;
-                        if (i < asset.list.Count)
+                        foreach (var header in ResourceHelper.GetExcelHeaderRows(asset, out firstRow))
                         {
-                            firstRow = i;
-                            var row = asset.GetRow(i);
-
-                            if (asset.name.Contains("_pose") && row.Count >= 7)
-                            {
-                                colToDump = 3;
-                            }
-                            else if (row.Count >= 9)
-                            {
-                                colToDump = 2;
-                            }
-                            else if (row.Count > 2) colToDump = 1;
+                            var colToDump = header.IndexOf("デフォルト");
+                            if (colToDump < 0) continue;
+                            colsToDump.Add(colToDump);
+                            break;
                         }
-                    }
-                    else
-                    {
-                        var header = ResourceHelper.GetExcelHeaderRow(asset, out firstRow);
-                        colToDump = header.IndexOf("デフォルト");
+                        
                     }
 
-                    if (colToDump == -1) return results;
+                    if (colsToDump.Count < 1) return results;
 
                     var mapIdx = -1;
 
@@ -467,22 +528,36 @@ namespace IllusionMods
 
 
                     // CUSTOM_LIST2 = 3
-                    var processor = GetTranslateManagerRowProcessor(3, mapIdx, colToDump);
+                    Logger.LogFatal($"{nameof(GetCustomListDumpers)}: {assetBundleName} {asset.name}: ");
+                    var processors = colsToDump.Select(col => GetTranslateManagerRowProcessor(3, mapIdx, col)).ToList();
                     var items = GetExcelEntries(asset, assetName).ToList();
                     for (var i = firstRow; i < items.Count; i++)
                     {
                         try
                         {
-                            foreach (var entry in processor(items[i].list))
+                            foreach (var processor in processors)
                             {
-                                if (entry.Key.Contains("unity3d")) continue;
-                                AddLocalizationToResults(results, entry);
+                                try
+                                {
+                                    foreach (var entry in processor(items[i].list))
+                                    {
+                                        if (entry.Key.Contains("unity3d")) continue;
+                                        AddLocalizationToResults(results, entry);
+                                    }
+                                }
+                                catch (Exception err)
+                                {
+                                    Logger.LogWarning(
+                                        $"{nameof(GetCustomListDumpers)}: error processing row {i} with {processor}: {err.Message}");
+                                    UnityEngine.Debug.LogException(err);
+                                }
                             }
                         }
                         catch (Exception err)
                         {
-                            Logger.LogFatal($"GetCustomListDumpers: {err}\n{err.StackTrace}");
-                            throw;
+                            Logger.LogWarning(
+                                $"{nameof(GetCustomListDumpers)}:  error processing row {i}: {err.Message}");
+                            UnityEngine.Debug.LogException(err);
                         }
                     }
 
@@ -504,7 +579,7 @@ namespace IllusionMods
 
                         var asset = ManualLoadAsset<ExcelData>(assetBundleName, assetName, null);
                         if (asset == null) continue;
-                        var dumper = BuildDumper(asset, assetName);
+                        var dumper = BuildDumper(assetBundleName, asset, assetName);
                         foreach (var filePath in BuildCustomListDumperAssetFilePaths(assetBundleName, assetName))
                         {
                             yield return new StringTranslationDumper(filePath, dumper);
@@ -523,7 +598,7 @@ namespace IllusionMods
                     {
                         if (asset == null) continue;
                         var assetName = asset.name;
-                        var dumper = BuildDumper(asset, assetName);
+                        var dumper = BuildDumper(assetBundleName, asset, assetName);
                         foreach (var filePath in BuildCustomListDumperAssetFilePaths(assetBundleName, assetName))
                         {
                             yield return new StringTranslationDumper(filePath, dumper);
@@ -1072,6 +1147,38 @@ namespace IllusionMods
             
         }
 
+        protected override void HandleAdvCommandDump(string assetBundleName, string assetName, ScenarioData.Param param,
+            IDictionary<string, string> translations,
+            ref Dictionary<string, KeyValuePair<string, string>> choiceDictionary, HashSet<string> allJpText)
+        {
+            switch (param.Command)
+            {
+                case Command.SelectionAdd:
+                case Command.SelectionInsert:
+                case Command.SelectionReplace:
+                {
+                    Logger.DebugLogDebug(
+                        $"{nameof(HandleAdvCommandDump)}: {param.Command}: \"{string.Join("\", \"", param.Args)}\"");
+
+                    foreach (var i in Plugin.TextResourceHelper.GetScenarioCommandTranslationIndexes(param.Command))
+                    {
+                        var key = ResourceHelper.GetSpecializedKey(param, i);
+                        allJpText.Add(key);
+                        AddLocalizationToResults(translations, key, string.Empty);
+
+                    }
+
+                    break;
+                }
+                default:
+                {
+                    base.HandleAdvCommandDump(assetBundleName, assetName, param, translations, ref choiceDictionary,
+                        allJpText);
+                    break;
+                }
+            }
+        }
+
 
         // Communication is different
 
@@ -1109,7 +1216,42 @@ namespace IllusionMods
             {
                 yield return new StringTranslationDumper(filePath,
                     MakeTopicTalkRareCollector(assetBundleName, assetName));
+            } 
+            else if (assetName.Contains("TopicTalkRare", StringComparison.OrdinalIgnoreCase))
+
+            {
+                yield return new StringTranslationDumper(filePath,
+                    MakeTopicTalkRareCollector(assetBundleName, assetName));
+            } 
+            else if (assetName.StartsWith("tips_", StringComparison.OrdinalIgnoreCase))
+            {
+                yield return new StringTranslationDumper(filePath,
+                    MakeTipsCollector(assetBundleName, assetName));
             }
+
+
+
+        }
+
+        private TranslationDumper<IDictionary<string, string>>.TranslationCollector MakeTipsCollector(string assetBundleName, string assetName)
+        {
+            IDictionary<string, string> AssetDumper()
+            {
+                var translations = new OrderedDictionary<string, string>();
+                var asset = ManualLoadAsset<TipsData>(assetBundleName, assetName, "abdata");
+                if (asset is null) return translations;
+
+                foreach (var param in asset.param)
+                {
+                    AddLocalizationToResults(translations, param.title, string.Empty);
+                    AddLocalizationToResults(translations, param.text, string.Empty);
+                }
+
+                return translations;
+            }
+
+            return AssetDumper;
+
 
         }
 
@@ -1234,6 +1376,7 @@ namespace IllusionMods
 
             return AssetDumper;
         }
+       
 
         // AI/HS2 similar
 

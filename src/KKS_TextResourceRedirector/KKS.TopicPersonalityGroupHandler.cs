@@ -6,7 +6,7 @@ using XUnity.AutoTranslator.Plugin.Core.Utilities;
 namespace IllusionMods
 {
     public class TopicPersonalityGroupHandler :
-        UntestedParamAssetLoadedHandler<TopicPersonalityGroup, TopicPersonalityGroup.Param>, IPathListBoundHandler
+        ParamAssetLoadedHandler<TopicPersonalityGroup, TopicPersonalityGroup.Param>, IPathListBoundHandler
     {
         public TopicPersonalityGroupHandler(TextResourceRedirector plugin) : base(plugin, true) { }
 
@@ -24,26 +24,11 @@ namespace IllusionMods
         {
             var result = false;
 
-            for (var i = 0; i < param.personality.Length; i++)
+            foreach (var entry in param.personality)
             {
-                var key = param.personality[i];
-                if (string.IsNullOrEmpty(key)) return false;
-                if (cache.TryGetTranslation(key, true, out var translated))
+                if (DefaultUpdateParam(calculatedModificationPath, cache, param, entry, NoOpApplyParamTranslation))
                 {
-                    if (!EnableSafeMode.Value)
-                    {
-                        WarnIfUnsafe(calculatedModificationPath);
-                        param.personality[i] = translated;
-                    }
-
-                    TrackReplacement(calculatedModificationPath, key, translated);
-                    TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
                     result = true;
-                }
-                else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
-                         LanguageHelper.IsTranslatable(key))
-                {
-                    cache.AddTranslationToCache(key, string.Empty);
                 }
             }
 
@@ -55,7 +40,7 @@ namespace IllusionMods
             var result = false;
             foreach (var entry in param.personality)
             {
-                if (DefaultDumpParam(cache, entry)) result = true;
+                if (DefaultDumpParam(cache, param, entry)) result = true;
             }
 
             return result;

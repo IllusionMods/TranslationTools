@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using ActionGame;
@@ -18,12 +19,31 @@ using UnityEngine;
 using UnityEngine.UI;
 using UploaderSystem;
 using static IllusionMods.TextResourceHelper.Helpers;
-using Info = ActionGame.Communication.Info;
 
 namespace IllusionMods
 {
-    public class KKS_LocalizationDumpHelper : LocalizationDumpHelper
+    public partial class KKS_LocalizationDumpHelper : LocalizationDumpHelper
     {
+
+        protected readonly Dictionary<string, HashSet<string>> TutorialCategoryMap =
+            new Dictionary<string, HashSet<string>>();
+
+
+        public override string LocalizationFileRemap(string outputFile)
+        {
+            var fileName = Path.GetFileNameWithoutExtension(outputFile);
+            if (fileName.StartsWith("p_ai_tutorial"))
+            {
+                var mapName =
+                    TutorialCategoryMap.Where(m => m.Value.Contains(fileName)).Select(m => m.Key).FirstOrDefault() ??
+                    "xx_Unknown";
+
+                return $"Tutorials/{mapName}/{fileName}.txt";
+            }
+
+            return base.LocalizationFileRemap(outputFile);
+        }
+
         public override IEnumerable<ITranslationDumper> GetInstanceLocalizers()
         {
             foreach (var localizer in base.GetInstanceLocalizers())
@@ -84,18 +104,25 @@ namespace IllusionMods
             "FairyGUI.TextField"
         };
 
-        private static readonly Type[] SupportedEnumerationTypes;
+        private static System.Type[] SupportedEnumerationTypes = null;
 
-        private static readonly Dictionary<string, Type> SupportedEnumerationTypeMap;
+        private static Dictionary<string, System.Type> SupportedEnumerationTypeMap = null;
 
         [SuppressMessage("Performance", "CA1810:Initialize reference type static fields inline",
             Justification = "Dynamic initialization")]
         static KKS_LocalizationDumpHelper()
         {
             FormatStringRegex = new Regex(@"(\{[0-9]\}|\[[PH][^\]]*\])");
+           
+
+        }
+
+        private static void InitSupportedEnumerationTypes()
+        {
+            if (SupportedEnumerationTypes != null) return;
             var typeMap = SupportedEnumerationTypeMap = new Dictionary<string, Type>();
             SupportedEnumerationTypes = new Type[0];
-            /*
+
             foreach (var typeName in SupportedEnumerationTypeNames)
             {
                 Type type = null;
@@ -118,7 +145,6 @@ namespace IllusionMods
             }
 
             SupportedEnumerationTypes = typeMap.Values.Where(o => o != null).ToArray();
-            */
         }
 
         protected KKS_LocalizationDumpHelper(TextDump plugin) : base(plugin)
@@ -184,7 +210,7 @@ namespace IllusionMods
             // translateSlotTitle
             //OtherDataByTag[996] = new Dictionary<string, string> {};
 #endif
-            //Harmony.CreateAndPatchAll(typeof(KKS_LocalizationDumpHelper));
+            Harmony.CreateAndPatchAll(typeof(Hooks));
         }
 
         public static List<Heroine> LoadHeroines(string assetBundlePath)
@@ -346,9 +372,217 @@ namespace IllusionMods
 
             if (!readyToDump) yield break;
 
+            InitSupportedEnumerationTypes();
+
+            foreach (var dir in new[] {"tutorial", "abdata/menu/entrylive", 
+                "h/scene/freehcharaselect", "network/entryhn"})
+            {
+                yield return () => GetBindLocalizers(dir);
+            }
+
             yield return WrapTranslationCollector("Names/ScenarioChars", CollectScenarioCharsLocalizations);
             yield return WrapTranslationCollector("Names/Clubs", CollectClubNameLocalizations);
             yield return WrapTranslationCollector("Names/Heroines", CollectHeroineLocalizations);
+        }
+
+        protected IEnumerable<AssetBundleAddress> GetAssetBundleAddresses(string assetPath)
+        {
+            var assetBundleNames = GetAssetBundleNameListFromPath(assetPath);
+            assetBundleNames.Sort();
+            foreach (var assetBundleName in assetBundleNames)
+            {
+                string[] assetNames = null;
+                try
+                {
+                    assetNames = GetAssetNamesFromBundle(assetBundleName);
+                }
+                catch
+                {
+                    assetNames = null;
+                }
+
+                if (assetNames is null) continue;
+                foreach (var assetName in assetNames)
+                {
+                    yield return new AssetBundleAddress(string.Empty, assetBundleName, assetName, null);
+                }
+            }
+        }
+
+        protected GameObject[] LoadGameObjects(params AssetBundleAddress[] assetBundleAddresses)
+        {
+            var results = new GameObject[0];
+            var gameObjects = AIProject.ListPool<GameObject>.Get();
+            try
+            {
+                foreach (var abi in assetBundleAddresses)
+                {
+                    GameObject gameObject;
+
+                    //Logger.LogError($"LoadGameObjects: assetbundle={abi.assetbundle}, asset={abi.asset}, manifest={abi.manifest}");
+                    try
+                    {
+                        gameObject = ManualLoadAsset<GameObject>(abi);
+                    }
+                    catch
+                    {
+                        gameObject = null;
+                    }
+
+                    if (gameObject != null)
+                    {
+                        //Singleton<Manager.Resources>.Instance.AddLoadAssetBundle(abi.assetbundle, abi.manifest);
+                        //Logger.LogFatal($"LoadGameObjects: {gameObject.name}");
+                        gameObjects.Add(gameObject);
+                    }
+                }
+
+                if (!gameObjects.IsNullOrEmpty())
+                {
+                    results = new GameObject[gameObjects.Count];
+                    for (var l = 0; l < gameObjects.Count; l++)
+                    {
+                        results[l] = gameObjects[l];
+                    }
+                }
+            }
+            finally
+            {
+                AIProject.ListPool<GameObject>.Release(gameObjects);
+            }
+
+            return results;
+        }
+
+         protected IEnumerable<KeyValuePair<GameObject, Text>> EnumerateTexts(GameObject gameObject,
+            MonoBehaviour component, HashSet<object> handled = null, List<UIBinder> binders = null)
+        {
+            var _ = binders;
+            if (handled is null)
+            {
+                handled = new HashSet<object>();
+            }
+
+            if (!handled.Contains(component))
+            {
+                handled.Add(component);
+                if (component is Text text)
+                {
+                    //Logger.LogInfo($"EnumerateTexts: {gameObject} yield {text}");
+                    yield return new KeyValuePair<GameObject, Text>(gameObject, text);
+                }
+                else
+                {
+                    var trav = Traverse.Create(component);
+                    foreach (var fieldName in trav.Fields())
+                    {
+                        var field = trav.Field(fieldName);
+                        var fieldType = field.GetValueType();
+                        if (fieldType == typeof(Text))
+                        {
+                            var fieldValue = field.GetValue<Text>();
+                            if (fieldValue != null && !handled.Contains(fieldValue))
+                            {
+                                //Logger.LogInfo($"EnumerateTexts: {gameObject} field {fieldName} text {fieldValue}");
+                                yield return new KeyValuePair<GameObject, Text>(gameObject, fieldValue);
+                            }
+                        }
+                        else if (typeof(MonoBehaviour).IsAssignableFrom(fieldType))
+                        {
+                            var subBehaviour = field.GetValue<MonoBehaviour>();
+                            if (subBehaviour != null && !handled.Contains(subBehaviour))
+                            {
+                                foreach (var subValue in EnumerateTexts(gameObject, subBehaviour, handled))
+                                {
+                                    yield return subValue;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        protected IEnumerable<KeyValuePair<GameObject, Text>> EnumerateTexts(GameObject gameObject,
+            HashSet<object> handled = null, List<UIBinder> binders = null)
+        {
+            handled = handled ?? new HashSet<object>();
+
+            if (handled.Contains(gameObject)) yield break;
+            handled.Add(gameObject);
+
+            if (binders != null)
+            {
+                foreach (var binder in gameObject.GetComponents<UIBinder>())
+                {
+                    if (!binders.Contains(binder))
+                    {
+                        binders.Add(binder);
+                    }
+                }
+            }
+
+            foreach (var text in gameObject.GetComponents<Text>())
+            {
+                //Logger.LogInfo($"EnumerateTexts: {gameObject} GetComponents (text) {text}");
+                yield return new KeyValuePair<GameObject, Text>(gameObject, text);
+            }
+
+            foreach (var component in gameObject.GetComponents<MonoBehaviour>())
+            {
+                foreach (var result in EnumerateTexts(gameObject, component, handled, binders))
+                {
+                    yield return result;
+                }
+            }
+
+            foreach (var childText in GetChildrenFromGameObject(gameObject)
+                .SelectMany(child => EnumerateTexts(child, handled, binders)))
+            {
+                yield return childText;
+            }
+        }
+
+        protected IEnumerable<ITranslationDumper> GetBindLocalizers(string assetPath)
+        {
+            var handled = new HashSet<object>();
+            foreach (var entry in GetAssetBundleAddresses(assetPath))
+            {
+                var path = CombinePaths(
+                    Path.GetDirectoryName(entry.AssetBundle),
+                    Path.GetFileNameWithoutExtension(entry.Asset));
+                foreach (var gameObject in LoadGameObjects(entry))
+                {
+                    var outputName = $"Bind/{path}/{gameObject.name}";
+
+                    Dictionary<string, string> Localizer()
+                    {
+                        var binders = new List<UIBinder>();
+                        var textList = EnumerateTexts(gameObject, handled, binders).Select(t => t.Value).ToArray();
+                        var before = textList.Select(t => t.text).ToArray();
+
+                        foreach (var binder in binders)
+                        {
+                            var binderLoad = Traverse.Create(binder).Method("Load");
+                            if (binderLoad?.MethodExists() == true)
+                            {
+                                binderLoad.GetValue();
+                            }
+                        }
+
+                        var results = new Dictionary<string, string>();
+                        var after = textList.Select(t => t.text).ToArray();
+                        for (var i = 1; i < before.Length; i++)
+                        {
+                            AddLocalizationToResults(results, before[i], after[i]);
+                        }
+
+                        return results;
+                    }
+
+                    yield return new StringTranslationDumper(outputName, Localizer);
+                }
+            }
         }
 
         // TODO: public static string GetClubName(int clubActivities, bool check)

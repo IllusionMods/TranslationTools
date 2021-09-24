@@ -1,4 +1,4 @@
-﻿#if KK||HS2
+﻿#if KK||HS2||KKS
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -53,15 +53,7 @@ namespace IllusionMods
                 Hooks.Init();
 
                 // register new translations with helper without replacing
-                var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-
-                var streams =
-                    HandlerHelper.GetRedirectionStreams(calculatedModificationPath, asset, context, EnableFallbackMapping);
-                var cache = new SimpleTextTranslationCache(
-                    defaultTranslationFile,
-                    streams,
-                    false,
-                    true);
+                var cache = GetTranslationCache(calculatedModificationPath, asset, context);
 
                 if (cache.IsEmpty) return (result = true);
 
@@ -87,22 +79,31 @@ namespace IllusionMods
                     }
                 }
 
+                GameSpecificReplaceOrUpdateAsset(calculatedModificationPath, ref asset, context, cache, shouldTrack);
+
                 return (result = true);
             }
             finally
             {
-                Logger.LogDebug($"{GetType()}.{nameof(ReplaceOrUpdateAsset)}: {calculatedModificationPath} => {result} ({Time.realtimeSinceStartup - start} seconds)");
+                Logger.DebugLogDebug("{0}.{1}: {2} => {3} ({4} seconds)", GetType(), nameof(ReplaceOrUpdateAsset),
+                    calculatedModificationPath, result, Time.realtimeSinceStartup - start);
             }
 
         }
 
+#if KK||HS2
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter")]
+        private void GameSpecificReplaceOrUpdateAsset(string calculatedModificationPath, ref MapInfo asset, IAssetOrResourceLoadedContext context, SimpleTextTranslationCache cache, bool shouldTrack)
+        {
+            
+        }
+
+#endif
+
         protected override bool DumpAsset(string calculatedModificationPath, MapInfo asset,
             IAssetOrResourceLoadedContext context)
         {
-            var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-            var cache = new SimpleTextTranslationCache(
-                defaultTranslationFile,
-                false);
+            var cache = GetDumpCache(calculatedModificationPath, asset, context);
 
             var result = false;
             foreach (var entry in asset.param)

@@ -406,8 +406,11 @@ namespace IllusionMods
                     }
                     else
                     {
-                        var header = ResourceHelper.GetExcelHeaderRow(asset, out firstRow);
-                        colToDump = header.IndexOf("デフォルト");
+                        foreach (var header in ResourceHelper.GetExcelHeaderRows(asset, out firstRow))
+                        {
+                            colToDump = header.IndexOf("デフォルト");
+                            if (colToDump > -1) break;
+                        }
                     }
 
                     if (colToDump == -1) return results;

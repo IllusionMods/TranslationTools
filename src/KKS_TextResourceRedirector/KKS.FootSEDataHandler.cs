@@ -4,7 +4,7 @@ using XUnity.AutoTranslator.Plugin.Core.Utilities;
 
 namespace IllusionMods
 {
-    public class FootSEDataHandler : UntestedParamAssetLoadedHandler<FootSEData, FootSEData.Param>
+    public class FootSEDataHandler : ParamAssetLoadedHandler<FootSEData, FootSEData.Param>
     {
         public FootSEDataHandler(TextResourceRedirector plugin) : base(plugin, true) { }
 
@@ -13,36 +13,20 @@ namespace IllusionMods
             return asset.param;
         }
 
+        private static void ApplyTranslation(string calculatedModificationPath, FootSEData.Param param, string value)
+        {
+            param.supplement = value;
+        }
+
         public override bool UpdateParam(string calculatedModificationPath, SimpleTextTranslationCache cache,
             FootSEData.Param param)
         {
-            var result = false;
-            var key = param.supplement;
-            if (string.IsNullOrEmpty(key)) return false;
-            if (cache.TryGetTranslation(key, true, out var translated))
-            {
-                if (!EnableSafeMode.Value)
-                {
-                    WarnIfUnsafe(calculatedModificationPath);
-                    param.supplement = translated;
-                }
-
-                TrackReplacement(calculatedModificationPath, key, translated);
-                TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
-                result = true;
-            }
-            else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
-                     LanguageHelper.IsTranslatable(key))
-            {
-                cache.AddTranslationToCache(key, string.Empty);
-            }
-
-            return result;
+            return DefaultUpdateParam(calculatedModificationPath, cache, param, param.supplement, ApplyTranslation);
         }
 
         public override bool DumpParam(SimpleTextTranslationCache cache, FootSEData.Param param)
         {
-            return DefaultDumpParam(cache, param.supplement);
+            return DefaultDumpParam(cache, param, param.supplement);
         }
     }
 }

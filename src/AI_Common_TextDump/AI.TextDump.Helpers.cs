@@ -1,14 +1,10 @@
-﻿using System;
-#if AI 
-using AIProject;
+﻿#if AI 
 using UnityEx;
 #endif
 #if HS2
 using Manager;
 #endif
-
-
-using Object = UnityEngine.Object;
+using UnityObject = UnityEngine.Object;
 
 namespace IllusionMods
 {
@@ -16,7 +12,7 @@ namespace IllusionMods
     {
         internal static partial class Helpers
         {
-            internal static T ManualLoadAsset<T>(AssetBundleInfo assetBundleInfo) where T : Object
+            internal static T ManualLoadAsset<T>(AssetBundleInfo assetBundleInfo) where T : UnityObject
             {
                 return IllusionMods.AssetLoader.ManualLoadAsset<T>(assetBundleInfo);
             }

@@ -28,7 +28,7 @@ namespace IllusionMods
     {
         public const string GUID = "com.deathweasel.bepinex.textdump";
         public const string PluginName = "Text Dump";
-        public const string Version = "1.4.5.0";
+        public const string Version = "1.4.5.2";
 
         private const string FormatStringPlaceholder = "_P_L_A_C_E_H_O_L_D_E_R_";
 
