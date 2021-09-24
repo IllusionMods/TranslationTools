@@ -27,6 +27,9 @@ for /f "tokens=3" %%a in ('REG query "HKEY_CURRENT_USER\Software\illusion\HoneyS
 for /f "tokens=3" %%a in ('REG query "HKEY_CURRENT_USER\SOFTWARE\illusion\Koikatu\koikatu" /v "INSTALLDIR" 2^>nul') do set "KK_DIR=%%a"
 for /f "tokens=3" %%a in ('REG query "HKEY_CURRENT_USER\SOFTWARE\illusion\Koikatsu\Koikatsu Party" /v "INSTALLDIR" 2^>nul') do set "KK_PARTY_DIR=%%a"
 for /f "tokens=3" %%a in ('REG query "HKEY_CURRENT_USER\SOFTWARE\illusion\PlayHome" /v "INSTALLDIR" 2^>nul') do set "PH_DIR=%%a"
+rem -- set trial first, full game will overwrite
+for /f "tokens=3" %%a in ('REG query "HKEY_CURRENT_USER\SOFTWARE\illusion\KoikatsuSunshine\KoikatsuSunshineTrial" /v "INSTALLDIR" 2^>nul') do set "KKS_DIR=%%a"
+for /f "tokens=3" %%a in ('REG query "HKEY_CURRENT_USER\SOFTWARE\illusion\KoikatsuSunshine\KoikatsuSunshine" /v "INSTALLDIR" 2^>nul') do set "KKS_DIR=%%a"
 
 IF EXIST %POSTBUILD_CONFIG% CALL "%POSTBUILD_CONFIG%"
 
@@ -39,6 +42,7 @@ IF "%2" == "ALL" (
     call %~dpnx0 "%1" EC
     call %~dpnx0 "%1" AI
     call %~dpnx0 "%1" HS2
+    call %~dpnx0 "%1" KKS
     goto END
 )
 
@@ -114,6 +118,13 @@ IF "%2" == "HS2" IF NOT "%HS2_DIR%" == "" (
     call :COPY_TARGET "%1" "%TARGET%"
     goto END
     )	
+
+IF "%2" == "KKS" IF NOT "%KKS_DIR%" == "" (
+    set TARGET=%KKS_DIR%\%TARGET_SUBDIR%
+    call :COPY_TARGET "%1" "%TARGET%"
+    goto END
+    )	
+
 goto NO_TARGET
 
 :COPY_TARGET

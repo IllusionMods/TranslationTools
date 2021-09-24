@@ -17,6 +17,9 @@ namespace IllusionMods
         protected readonly Dictionary<string, Dictionary<string, string>> AutoLocalizers =
             new Dictionary<string, Dictionary<string, string>>();
 
+
+        private static readonly object[] noObjArray = new object[0];
+
         protected LocalizationDumpHelper(TextDump plugin) : base(plugin)
         {
             _instance = this;
@@ -130,10 +133,7 @@ namespace IllusionMods
 
         public void AddAutoLocalizer(string path, Dictionary<string, string> newTranslations)
         {
-            if (!AutoLocalizers.TryGetValue(path, out var translations))
-            {
-                AutoLocalizers[path] = translations = new Dictionary<string, string>();
-            }
+            var translations = AutoLocalizers.GetOrInit(path);
 
             foreach (var entry in newTranslations)
             {
@@ -151,13 +151,24 @@ namespace IllusionMods
             }
         }
 
-        protected bool FieldLocalizerAddResults(object sources, ref Dictionary<string, string> results)
+        protected bool FieldLocalizerAddResults(object sources, ref Dictionary<string, string> results, bool stringsAreLocalizations=true)
         {
             bool result = false;
             void AddResult(string[] src, ref Dictionary<string, string> localizations)
             {
                 //Logger.LogWarning(src);
-                AddLocalizationToResults(localizations, src[0], src.Length > 1 ? src[1] : string.Empty);
+                if (stringsAreLocalizations)
+                {
+                    AddLocalizationToResults(localizations, src[0], src.Length > 1 ? src[1] : string.Empty);
+                }
+                else
+                {
+                    foreach (var str in src)
+                    {
+                        AddLocalizationToResults(localizations, str, string.Empty);
+                    }
+                }
+
                 result = true;
             }
 
@@ -165,28 +176,33 @@ namespace IllusionMods
             {
                 switch (sources)
                 {
-                    case string[][] nested:
+                    case string[][] nestedArr:
                     {
-                        foreach (var entry in nested)
+                        foreach (var entry in nestedArr)
                         {
                             AddResult(entry, ref results);
                         }
 
                         break;
                     }
-                    case string[,] multi:
+                    case string[,] multiArr:
                     {
-                        for (var i = 0; i < multi.GetLength(1); i++)
+                        for (var i = 0; i < multiArr.GetLength(1); i++)
                         {
-                            var entry = new[] {multi[0, i], multi[1, i]};
+                            var entry = new[] {multiArr[0, i], multiArr[1, i]};
                             AddResult(entry, ref results);
                         }
                         break;
                     }
 
-                    case string[] single:
-                        AddResult(single, ref results);
+                    case string[] singleArr:
+                        AddResult(singleArr, ref results);
                         break;
+
+                    case string singleStr:
+                        sources = new[] {singleStr};
+                        continue;
+
                     case IDictionary sourcesDict:
                         sources = sourcesDict.Values;
                         continue;
@@ -207,25 +223,54 @@ namespace IllusionMods
 
         protected StringTranslationDumper MakeStandardInstanceLocalizer<T>(params string[] fieldNames) where T : new()
         {
+            return MakeStandardInstanceLocalizer<T>(true, fieldNames);
+        }
+
+        protected StringTranslationDumper MakeStandardInstanceLocalizer<T>(bool stringsAreLocalizations, params string[] fieldNames) where T : new()
+        {
             Dictionary<string, string> Localizer()
             {
                 var results = new Dictionary<string, string>();
 
                 var instance = new T();
 
+                var type = typeof(T);
                 foreach (var fieldName in fieldNames)
                 {
-                    var field = AccessTools.Field(typeof(T), fieldName);
-                    if (field is null)
+                    try
+                    {
+                        var field = type.GetField(fieldName, AccessTools.all);
+                        if (!(field is null))
+                        {
+                            if (FieldLocalizerAddResults(field.GetValue(instance), ref results,
+                                stringsAreLocalizations))
+                                continue;
+                            Logger.LogWarning(
+                                $"{nameof(MakeStandardInstanceLocalizer)}: Unable process field: {typeof(T).Name}.{fieldName}: ({field.FieldType.Name}){field.GetValue(instance)}");
+                        }
+
+                        var prop = type.GetProperty(fieldName, AccessTools.all);
+                        if (!(prop is null))
+                        {
+                            if (FieldLocalizerAddResults(prop.GetValue(instance, noObjArray), ref results, stringsAreLocalizations))
+                                continue;
+                            Logger.LogWarning(
+                                $"{nameof(MakeStandardInstanceLocalizer)}: Unable process property: {type.Name}.{fieldName}: ({prop.PropertyType.Name}){prop.GetValue(instance, noObjArray)}");
+                        }
+
+
+
+                        if (field is null && prop is null)
+                        {
+                            Logger.LogWarning(
+                                $"{nameof(MakeStandardInstanceLocalizer)}: Unable to find field/property: {type.Name}.{fieldName}");
+                        }
+                    }
+                    catch (Exception err)
                     {
                         Logger.LogWarning(
-                            $"MakeStandardInstanceLocalizer: Unable to find field: {typeof(T).Name}.{fieldName}");
-                        continue;
+                            $"{nameof(MakeStandardInstanceLocalizer)}: unexpected error processing: {type.Name}.{fieldName}: {err}");
                     }
-
-                    if (FieldLocalizerAddResults(field.GetValue(instance), ref results)) continue;
-
-                    Logger.LogWarning($"MakeStandardInstanceLocalizer: Unable process field: {typeof(T).Name}.{fieldName}");
                 }
 
                 return results;
@@ -236,22 +281,50 @@ namespace IllusionMods
 
         protected StringTranslationDumper MakeStandardStaticLocalizer(Type type, params string[] fieldNames)
         {
+            return MakeStandardStaticLocalizer(type, true, fieldNames);
+        }
+
+        protected StringTranslationDumper MakeStandardStaticLocalizer(Type type, bool stringsAreLocalizations, params string[] fieldNames)
+        {
             Dictionary<string, string> Localizer()
             {
                 var results = new Dictionary<string, string>();
 
                 foreach (var fieldName in fieldNames)
                 {
-                    var field = AccessTools.Field(type, fieldName);
-                    if (field is null)
+                    try
+                    {
+                        var field = type.GetField(fieldName, AccessTools.all);
+                        if (!(field is null))
+                        {
+                            if (FieldLocalizerAddResults(field.GetValue(null), ref results, stringsAreLocalizations))
+                                continue;
+                            Logger.LogWarning(
+                                $"{nameof(MakeStandardStaticLocalizer)}: Unable process field: {type.Name}.{fieldName}: ({field.FieldType.Name}){field.GetValue(null)}");
+                        }
+
+                        var prop = type.GetProperty(fieldName, AccessTools.all);
+                        if (!(prop is null))
+                        {
+                            if (FieldLocalizerAddResults(prop.GetValue(null,noObjArray), ref results, stringsAreLocalizations))
+                                continue;
+                            Logger.LogWarning(
+                                $"{nameof(MakeStandardStaticLocalizer)}: Unable process property: {type.Name}.{fieldName}: ({prop.PropertyType.Name}){prop.GetValue(null, noObjArray)}");
+                        }
+
+                        if (field is null && prop is null)
+                        {
+                            Logger.LogWarning(
+                                $"{nameof(MakeStandardStaticLocalizer)}: Unable to find field/property: {type.Name}.{fieldName}");
+                        }
+                    }
+                    catch (Exception err)
                     {
                         Logger.LogWarning(
-                            $"MakeStandardStaticLocalizer: Unable to find field: {type.Name}.{fieldName}");
-                        continue;
+                            $"{nameof(MakeStandardStaticLocalizer)}: unexpected error processing: {type.Name}.{fieldName}: {err}");
                     }
 
-                    if (FieldLocalizerAddResults(field.GetValue(null), ref results)) continue;
-                    Logger.LogWarning($"MakeStandardStaticLocalizer: Unable process field: {type.Name}.{fieldName}");
+
                 }
 
                 return results;
@@ -284,7 +357,7 @@ namespace IllusionMods
         protected readonly Dictionary<int, Dictionary<string, string>> OtherDataByTag =
             new Dictionary<int, Dictionary<string, string>>();
 
-        protected IEnumerable<ITranslationDumper> GetOtherDataLocalizers()
+        protected virtual IEnumerable<ITranslationDumper> GetOtherDataLocalizers()
         {
             var categories = Enum.GetValues(typeof(Localize.Translate.Manager.SCENE_ID))
                 .Cast<Localize.Translate.Manager.SCENE_ID>();

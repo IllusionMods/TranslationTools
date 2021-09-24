@@ -5,34 +5,36 @@ using System.Linq;
 using BepInEx.Logging;
 #if !HS
 using ADV;
-
 #endif
 
 namespace IllusionMods
 {
     public partial class TextResourceHelper : BaseHelperFactory<TextResourceHelper>, IHelper
     {
-        public const char OptionSafeComma = '\u201a';
         private static ManualLogSource _logger;
+
+        public const char OptionSafeComma = '\u201a';
         protected static readonly string ChoiceDelimiter = ",";
         protected static readonly string SpecializedKeyDelimiter = ":";
         public readonly char[] WhitespaceCharacters = {' ', '\t'};
 
         private TextAssetTableHelper _tableHelper;
+        private ResourceMappingHelper _resourceMappingHelper;
 
-        protected TextResourceHelper() { }
+        internal new static ManualLogSource Logger => _logger ?? GetLogger<TextResourceHelper>();
 
-        protected ManualLogSource Logger
+        private static readonly IEnumerable<int> EmptyIndexes = new int[0];
+
+        protected TextResourceHelper()
         {
-            get
-            {
-                if (_logger != null) return _logger;
-                return _logger = BepInEx.Logging.Logger.CreateLogSource(GetType().Name);
-            }
+            _logger = base.Logger;
         }
 
         public TextAssetTableHelper TableHelper => _tableHelper ?? (_tableHelper = GetTableHelper());
 
+        public ResourceMappingHelper ResourceMappingHelper =>
+            _resourceMappingHelper ?? (_resourceMappingHelper = GetResourceMappingHelper());
+        
         public virtual void InitializeHelper() { }
 
         public virtual int XUnityLanguageToGameLanguage(string xUnityLanguage)
@@ -51,25 +53,37 @@ namespace IllusionMods
                    !string.Equals(trimmedOrig, trimmedLocal);
         }
 
-        public virtual IEnumerable<int> GetSupportedExcelColumns(string calculatedModificationPath, ExcelData asset)
+        public virtual IEnumerable<int> GetSupportedExcelColumns(string calculatedModificationPath, ExcelData asset, out int firstRow)
         {
+            try
+            {
+                GetExcelHeaderRows(asset, out firstRow);
+            }
+            catch
+            {
+                firstRow = 0;
+            }
             return new int[0];
         }
 
-        public virtual List<string> GetExcelHeaderRow(ExcelData asset, out int firstRow)
+        public virtual List<List<string>> GetExcelHeaderRows(ExcelData asset, out int firstRow)
         {
+            var headerRows = new List<List<string>>();
             firstRow = 0;
             var headerRow = asset.GetRow(firstRow++);
+            headerRows.Add(headerRow);
+
             var numEmpty = headerRow.Count(h => h.IsNullOrWhiteSpace());
+            var hiddenIndex = headerRow.IndexOf("非表示オブジェクト");
             if (headerRow.Count == numEmpty ||
                 headerRow.Count > 1 && headerRow[1].IsNullOrWhiteSpace() && (
                     headerRow[0].StartsWith("Ｈ") ||
                     headerRow[0] == "主人公"))
 
             {
-                headerRow = asset.GetRow(firstRow++);
+                headerRows.Add(asset.GetRow(firstRow++));
             }
-            else if (numEmpty > 3 || numEmpty / (headerRow.Count * 1.0) > 0.49)
+            else if (hiddenIndex == -1 && numEmpty > 3 || numEmpty / (headerRow.Count * 1.0) > 0.49)
             {
                 var testRow = asset.GetRow(firstRow);
                 var testData = asset.GetRow(firstRow + 1);
@@ -78,18 +92,40 @@ namespace IllusionMods
                     if (testRow[0] == "表示順番" || testRow[0] == "管理番号" ||
                         testData.Count > 1 && int.TryParse(testData[0], out _) && !int.TryParse(testRow[0], out _))
                     {
-                        headerRow = testRow;
+                        headerRows.Add(testRow);
                         firstRow++;
                     }
                 }
             }
+            else if (hiddenIndex > 0)
+            {
+                var testRow = asset.GetRow(firstRow);
+                if (testRow.Count > hiddenIndex && testRow[0].IsNullOrEmpty() && !testRow[hiddenIndex].IsNullOrEmpty())
+                {
+                    var dataRow = asset.GetRow(firstRow + 1);
+                    if (dataRow.Count > 0 && !dataRow[0].IsNullOrEmpty())
+                    {
+                        firstRow++;
+                        headerRows.Add(testRow);
+                    }
+                }
+            }
 
-            return headerRow;
+
+            var rowNum = -1;
+            foreach (var row in headerRows)
+            {
+                rowNum++;
+                Logger.DebugLogDebug(
+                    $"{nameof(GetExcelHeaderRows)}: {asset.name}: firstRow={firstRow}, headerRows[{rowNum}]='{string.Join("', '", row.ToArray())}'");
+            }
+
+            return headerRows;
         }
 
-        public List<string> GetExcelHeaderRow(ExcelData asset)
+        public List<List<string>> GetExcelHeaderRows(ExcelData asset)
         {
-            return GetExcelHeaderRow(asset, out _);
+            return GetExcelHeaderRows(asset, out _);
         }
 
         public virtual IEnumerable<string> GetExcelRowTranslationKeys(string assetName, List<string> row, int i)
@@ -139,6 +175,11 @@ namespace IllusionMods
             return new TextAssetTableHelper(new[] {"\r\n", "\r", "\n"}, new[] {"\t"});
         }
 
+        protected virtual ResourceMappingHelper GetResourceMappingHelper()
+        {
+            return new ResourceMappingHelper();
+        }
+
         protected virtual bool IsValidExcelRowTranslationKey(string key)
         {
             return key != "0";
@@ -162,6 +203,11 @@ namespace IllusionMods
             Command.Text
         };
 
+        // do NOT put Text in here
+        public HashSet<Command> SpecializedKeyCommands { get; } = new HashSet<Command>();
+
+        public HashSet<Command> RawKeyDisabledCommands { get; } = new HashSet<Command>();
+
         internal virtual Dictionary<string, IEnumerable<string>> GetSettingsStrings()
         {
             return new Dictionary<string, IEnumerable<string>>
@@ -170,6 +216,7 @@ namespace IllusionMods
                 {nameof(CalcKeys), CalcKeys},
                 {nameof(FormatKeys), FormatKeys},
                 {nameof(SupportedCommands), SupportedCommands.Select(c => c.ToString())},
+                {nameof(SpecializedKeyCommands), SpecializedKeyCommands.Select(c=>c.ToString())},
                 {nameof(GetRandomNameDirs), GetRandomNameDirs().ToList()},
                 {nameof(GetScenarioDirs), GetScenarioDirs().ToList()}
             };
@@ -180,11 +227,14 @@ namespace IllusionMods
             return SupportedCommands.Contains(command);
         }
 
+        protected virtual string GetSpecializedKeyPrefix(ScenarioData.Param param)
+        {
+            return param.Command.ToString().ToUpperInvariant();
+        }
 
         public virtual string BuildSpecializedKey(ScenarioData.Param param, string toTranslate)
         {
-            return Helpers.JoinStrings(SpecializedKeyDelimiter, param.Command.ToString().ToUpperInvariant(),
-                toTranslate);
+            return Helpers.JoinStrings(SpecializedKeyDelimiter, GetSpecializedKeyPrefix(param), toTranslate);
         }
 
         // Certain commands encode multiple pieces of data into their strings
@@ -192,8 +242,9 @@ namespace IllusionMods
         // use prefixing to signal to resource replacement when this is needed
         public virtual string GetSpecializedKey(ScenarioData.Param param, int i, out string toTranslate)
         {
+
             var key = toTranslate = param.Args[i];
-            if (key.IsNullOrEmpty() || param.Command == Command.Text)
+            if (key.IsNullOrEmpty() || !SpecializedKeyCommands.Contains(param.Command))
             {
                 return key;
             }
@@ -208,12 +259,6 @@ namespace IllusionMods
 
                 toTranslate = key.Split(ChoiceDelimiter.ToCharArray())[0];
             }
-            else
-            {
-                // does not used specialized key
-                return key;
-            }
-
             return BuildSpecializedKey(param, toTranslate);
         }
 
@@ -225,6 +270,27 @@ namespace IllusionMods
         public string GetSpecializedKey(ScenarioData.Param param, int i)
         {
             return GetSpecializedKey(param, i, out _);
+        }
+
+        public virtual IEnumerable<string> GetTranslationKeys(object obj, string defaultValue)
+        {
+            var key = GetSpecializedKey(obj, defaultValue);
+            yield return key;
+            if (IsRawKeyDisabled(obj) || key == defaultValue) yield break;
+            yield return defaultValue;
+        }
+
+        protected virtual bool IsRawKeyDisabled(object obj)
+        {
+            return false;
+        }
+
+        public IEnumerable<string> GetTranslationKeys(ScenarioData.Param param, int i)
+        {
+            var key = GetSpecializedKey(param, i, out var rawKey);
+            yield return key;
+            if (RawKeyDisabledCommands.Contains(param.Command) || key == rawKey) yield break;
+            yield return rawKey;
         }
 
         // For commands that encode multiple pieces of data into their strings
@@ -349,9 +415,38 @@ namespace IllusionMods
             return new KeyValuePair<string, string>(key, val);
         }
 
+        public virtual IEnumerable<int> GetScenarioCommandTranslationIndexes(Command command)
+        {
+            switch (command)
+            {
+                case Command.Text:
+                {
+                    yield return 0;
+                    yield return 1;
+                    break;
+                }
+
+                case Command.Calc:
+                {
+                    yield return 2;
+                    break;
+                }
+
+                case Command.Format:
+                {
+                    yield return 1;
+                    break;
+                }
+
+            }
+            yield break;
+        }
+
 #else // HS
         internal virtual Dictionary<string, IEnumerable<string>> GetSettingsStrings() =>
             new Dictionary<string, IEnumerable<string>>();
+
+        public virtual string GetSpecializedKey(object obj, string defaultValue) => defaultValue;
 #endif
     }
 }

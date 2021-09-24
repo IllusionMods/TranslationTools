@@ -6,15 +6,22 @@ if ($topdir -eq "") {
 
 
 function Zip-Plugin {
-    param([string]$dll_name)
-
-
+    param([string]$plugin_name)
 
     $plugin_dir = $topdir + "\bin"
-    
-    $dll = (Get-ChildItem -Path ($plugin_dir) -Filter $dll_name -Recurse -Force)[0]
-    $version = $dll.VersionInfo.FileVersion.ToString() 
 
+    $dlls = (Get-ChildItem -Path ($plugin_dir) -Filter ($plugin_name + ".dll") -Recurse -Force)
+    if (!$dlls) {
+        #echo "$plugin_dir : no dlls"
+        return
+    }
+    
+    $dll = $dlls[0]
+    $version = $dll.VersionInfo.FileVersion.ToString() 
+    if (!$version) {
+        # echo "$plugin_dir : no version"
+        return
+    }
     $srcpath = "src\" + $dll.BaseName
     
     if (-Not (Test-Path $srcpath)) {
@@ -47,8 +54,7 @@ function Zip-Plugin {
     $dummy = New-Item -ItemType Directory -Force -Path ($topdir + "\dist")
 
     pushd $workdir
-    #Compress-Archive -Path "BepInEx" -Force -CompressionLevel "Optimal" -DestinationPath $zipfile
-    & 7z.exe a -mx9 -tzip $zipfile BepInEx
+    Compress-Archive -Path "BepInEx" -Force -CompressionLevel "Optimal" -DestinationPath $zipfile
     popd
 
     echo $zipfile
@@ -60,7 +66,7 @@ function Zip-Plugin {
 $plugin_files = Get-ChildItem -Path ($topdir + "\bin") -Filter "*.dll" -Depth 1 -Recurse -File
 
 foreach ($plugin in $plugin_files) {
-    Zip-Plugin $plugin
+    Zip-Plugin $plugin.BaseName
 }
 
 

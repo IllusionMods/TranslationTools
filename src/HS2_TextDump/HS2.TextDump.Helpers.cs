@@ -1,5 +1,5 @@
 ﻿using Manager;
-using UnityEngine;
+using UnityObject = UnityEngine.Object;
 
 namespace IllusionMods
 {
@@ -7,7 +7,7 @@ namespace IllusionMods
     {
         internal static partial class Helpers
         {
-            public static T ManualLoadAsset<T>(AssetBundleInfo assetBundleInfo) where T : Object
+            public static T ManualLoadAsset<T>(AssetBundleInfo assetBundleInfo) where T : UnityObject
             {
                 return AssetLoader.ManualLoadAsset<T>(assetBundleInfo);
             }

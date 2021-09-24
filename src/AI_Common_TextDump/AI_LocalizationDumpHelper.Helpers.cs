@@ -222,10 +222,17 @@ namespace IllusionMods
 
         protected bool IsAssetTable(ExcelData excelData, out int startIdx)
         {
+            startIdx = -1;
             if (excelData.MaxCell > 1)
             {
-                var headers = ResourceHelper.GetExcelHeaderRow(excelData, out var firstRow);
-                startIdx = headers.IndexOf("AssetBundleName");
+                var firstRow = 0;
+                foreach (var headers in ResourceHelper.GetExcelHeaderRows(excelData, out firstRow))
+                {
+                    startIdx = headers.IndexOf("AssetBundleName");
+                    if (startIdx != -1) break;
+                }
+               
+                
                 //Logger.LogFatal($"IsAssetTable: {startIdx}");
                 if (startIdx != -1)
                 {
@@ -237,8 +244,6 @@ namespace IllusionMods
                     }
                 }
             }
-
-            startIdx = -1;
             return false;
         }
 

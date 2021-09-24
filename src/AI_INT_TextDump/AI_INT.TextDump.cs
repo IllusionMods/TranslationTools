@@ -185,7 +185,7 @@ namespace IllusionMods
 
         private void SceneManager_sceneLoaded(Scene arg0, LoadSceneMode arg1)
         {
-            Logger?.DebugLogDebug($"Loaded: {arg0.name}");
+            Logger?.DebugLogDebug("Loaded: {0}", arg0.name);
 
             if (!string.IsNullOrEmpty(arg0.name) && arg0.name.StartsWith("map_") && arg0.name.EndsWith("_data"))
             {

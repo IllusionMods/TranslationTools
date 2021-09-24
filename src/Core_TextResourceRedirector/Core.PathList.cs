@@ -1,4 +1,6 @@
-﻿using System;
+﻿
+#if false
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,12 +18,21 @@ namespace IllusionMods
 
         public void Add(string item)
         {
+            var pre = _paths.Count;
             _paths.Add(Normalize(item));
+            if (pre != _paths.Count) OnValueChanged(EventArgs.Empty);
         }
 
         public void Clear()
         {
             _paths.Clear();
+        }
+
+        public event EventHandler ValueChanged;
+
+        private void OnValueChanged(EventArgs args)
+        {
+            ValueChanged?.Invoke(this, args);
         }
 
         public bool Contains(string item)
@@ -41,7 +52,9 @@ namespace IllusionMods
 
         public bool Remove(string item)
         {
-            return _paths.Remove(Normalize(item));
+            var changed = _paths.Remove(Normalize(item));
+            if (changed) OnValueChanged(EventArgs.Empty);
+            return changed;
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -72,3 +85,4 @@ namespace IllusionMods
         }
     }
 }
+#endif

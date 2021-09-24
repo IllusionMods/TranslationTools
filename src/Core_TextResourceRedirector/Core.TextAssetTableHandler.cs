@@ -1,10 +1,7 @@
 ﻿#if !HS
-
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
 using IllusionMods.Shared;
 using UnityEngine;
 using XUnity.AutoTranslator.Plugin.Core;
@@ -45,65 +42,76 @@ namespace IllusionMods
         public override TextAndEncoding TranslateTextAsset(string calculatedModificationPath, TextAsset asset,
             IAssetOrResourceLoadedContext context)
         {
-            Logger.DebugLogDebug($"{GetType()} attempt to handle {calculatedModificationPath}");
-            if (!Enabled || !TextAssetTableHelper.IsTable(asset))
+            var handled = false;
+            var start = Time.realtimeSinceStartup;
+            try
             {
-                Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath}");
-                return null;
-            }
-
-            var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-            var redirectedResources = RedirectedDirectory.GetFilesInDirectory(calculatedModificationPath, ".txt");
-            var streams = redirectedResources.Select(x => x.OpenStream());
-            var cache = new SimpleTextTranslationCache(
-                defaultTranslationFile,
-                streams,
-                false,
-                true);
-
-            if (cache.IsEmpty)
-            {
-                Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath} (no cache)");
-                return null;
-            }
-
-            GetTableRules(calculatedModificationPath, asset, context, out var rowAllowed, out var colAllowed);
-
-
-            bool DoTranslation(int rowIndex, int colIndex, string cellText, out string newCellText)
-            {
-                newCellText = null;
-                if (rowAllowed != null && !rowAllowed(rowIndex) || colAllowed != null && !colAllowed(colIndex))
+                Logger.DebugLogDebug("{0}.{1} attempt to handle {2}", GetType(), nameof(ReplaceOrUpdateAsset),
+                    calculatedModificationPath);
+                if (!Enabled || !TextAssetTableHelper.IsTable(asset))
                 {
+                    Logger.DebugLogDebug("{0}.{1} unable to handle {2}", GetType(),
+                        nameof(ReplaceOrUpdateAsset), calculatedModificationPath);
+                    return null;
+                }
+
+                var cache = GetTranslationCache(calculatedModificationPath, asset, context);
+
+
+                if (cache.IsEmpty)
+                {
+                    Logger.DebugLogDebug("{0}.{1} unable to handle {2} (no cache)", GetType(),
+                        nameof(ReplaceOrUpdateAsset), calculatedModificationPath);
+                    return null;
+                }
+
+                GetTableRules(calculatedModificationPath, asset, context, out var rowAllowed, out var colAllowed);
+
+
+                bool DoTranslation(int rowIndex, int colIndex, string cellText, out string newCellText)
+                {
+                    newCellText = null;
+                    if (rowAllowed != null && !rowAllowed(rowIndex) || colAllowed != null && !colAllowed(colIndex))
+                    {
+                        return false;
+                    }
+
+                    if (cache.TryGetTranslation(cellText, false, out newCellText))
+                    {
+                        TranslationHelper.RegisterRedirectedResourceTextToPath(newCellText, calculatedModificationPath);
+                        return true;
+                    }
+
+
+                    if (string.IsNullOrEmpty(cellText) || !LanguageHelper.IsTranslatable(cellText)) return false;
+
+                    TranslationHelper.RegisterRedirectedResourceTextToPath(cellText, calculatedModificationPath);
+                    if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled)
+                    {
+                        cache.AddTranslationToCache(cellText, cellText);
+                    }
+
                     return false;
                 }
 
-                if (cache.TryGetTranslation(cellText, false, out newCellText))
+                if (TextAssetTableHelper.TryTranslateTextAsset(ref asset, DoTranslation, out var result))
                 {
-                    TranslationHelper.RegisterRedirectedResourceTextToPath(newCellText, calculatedModificationPath);
-                    return true;
+                    Logger.DebugLogDebug("{0}.{1} handled {2}", GetType(), nameof(ReplaceOrUpdateAsset),
+                        calculatedModificationPath);
+                    Logger.DebugLogDebug($"{GetType()} handled {calculatedModificationPath}");
+                    handled = true;
+                    return new TextAndEncoding(result, TextAssetTableHelper.TextAssetEncoding);
                 }
 
-
-                if (string.IsNullOrEmpty(cellText) || !LanguageHelper.IsTranslatable(cellText)) return false;
-
-                TranslationHelper.RegisterRedirectedResourceTextToPath(cellText, calculatedModificationPath);
-                if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled)
-                {
-                    cache.AddTranslationToCache(cellText, cellText);
-                }
-
-                return false;
+                Logger.DebugLogDebug("{0}.{1} unable to handle {2}", GetType(), nameof(ReplaceOrUpdateAsset),
+                    calculatedModificationPath);
+                return null;
             }
-
-            if (TextAssetTableHelper.TryTranslateTextAsset(ref asset, DoTranslation, out var result))
+            finally
             {
-                Logger.DebugLogDebug($"{GetType()} handled {calculatedModificationPath}");
-                return new TextAndEncoding(result, TextAssetTableHelper.TextAssetEncoding);
+                Logger.DebugLogDebug("{0}.{1}: {2} => {3} ({4} seconds)", GetType(), nameof(ReplaceOrUpdateAsset),
+                    calculatedModificationPath, handled, Time.realtimeSinceStartup - start);
             }
-
-            Logger.DebugLogDebug($"{GetType()} unable to handle {calculatedModificationPath}");
-            return null;
         }
 
 
@@ -115,9 +123,9 @@ namespace IllusionMods
         }
         protected override bool ShouldHandleAsset(TextAsset asset, IAssetOrResourceLoadedContext context)
         {
-            Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}])?");
+            Logger.DebugLogDebug($"{GetType()}.{nameof(ShouldHandleAsset)}({asset.name}[{asset.GetType()}])?");
             var result = base.ShouldHandleAsset(asset, context) && TextAssetTableHelper.IsTable(asset);
-            Logger.DebugLogDebug($"{GetType()}.ShouldHandleAsset({asset.name}[{asset.GetType()}]) => {result}");
+            Logger.DebugLogDebug($"{GetType()}.{nameof(ShouldHandleAsset)}({asset.name}[{asset.GetType()}]) => {result}");
             return result;
         }
 
@@ -167,12 +175,12 @@ namespace IllusionMods
             colAllowed = null;
         }
 
-        #region IPathListBoundHandler
+#region IPathListBoundHandler
 
         public PathList WhiteListPaths { get; } = new PathList();
         public PathList BlackListPaths { get; } = new PathList();
 
-        #endregion IPathListBoundHandler
+#endregion IPathListBoundHandler
     }
 }
 
@@ -181,7 +189,9 @@ namespace IllusionMods
 {
     public class TextAssetTableHandler
     {
+#pragma warning disable IDE0060 // Remove unused parameter
         public TextAssetTableHandler(TextResourceRedirector plugin) { }
+#pragma warning restore IDE0060 // Remove unused parameter
     }
 }
 #endif

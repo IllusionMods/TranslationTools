@@ -79,11 +79,11 @@ namespace IllusionMods
                 Loader<T>.AddObjectAssistLoader,
 #endif
                 Loader<T>.CommonLibLoader,
-#if AI || HS2
+#if AI || HS2 || KKS
                 Loader<T>.AssetBundleManagerLoadAssetLoader,
 #endif
                 Loader<T>.AssetBundleManagerLoader,
-#if HS2
+#if HS2 || KKS
                 Loader<T>.AssetBundleDataLoader,
 #endif
                 Loader<T>.DefaultLoader
@@ -113,9 +113,10 @@ namespace IllusionMods
             }
             var loaders = new Loader<T>.AssetBundleAddressLoader[]
             {
-#if AI || HS2
+#if AI || HS2 || KKS
                 Loader<T>.AddressAsInfoLoader,
-#else
+#endif
+#if !AI && !HS2
                 Loader<T>.DefaultLoader
 #endif
             };
@@ -160,14 +161,14 @@ namespace IllusionMods
             internal static T AssetBundleManagerLoader(string assetBundleName, string assetName, string manifest)
             {
                 var bundleLoader =
-#if HS2
+#if HS2 || KKS
                     AssetBundleManager.LoadAssetBundle(assetBundleName, manifest);
 #else
                     AssetBundleManager.LoadAssetBundle(assetBundleName, false, manifest);
 #endif
                 if (bundleLoader == null) return null;
                 var bundle =
-#if HS2
+#if HS2 || KKS
                     bundleLoader.Bundle;
 #else
                     bundleLoader.m_AssetBundle;

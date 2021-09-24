@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using ActionGame;
 using IllusionMods.Shared;
+using IllusionMods.Shared.TextDumpBase;
 using UnityEngine;
 using static IllusionMods.TextResourceHelper.Helpers;
 
@@ -25,7 +26,7 @@ namespace IllusionMods
             AssetDumpGenerators.Add(GetScenarioTextMergers);
             AssetDumpGenerators.Add(GetCommunicationTextMergers);
 
-            TextDump.TranslationPostProcessors.Add(OptionDisplayItemsPostProcessor);
+            BaseTextDumpPlugin.TranslationPostProcessors.Add(OptionDisplayItemsPostProcessor);
         }
 
         protected override string GetMapInfoPath() => "map/list/mapinfo/";
@@ -405,8 +406,11 @@ namespace IllusionMods
                     }
                     else
                     {
-                        var header = ResourceHelper.GetExcelHeaderRow(asset, out firstRow);
-                        colToDump = header.IndexOf("デフォルト");
+                        foreach (var header in ResourceHelper.GetExcelHeaderRows(asset, out firstRow))
+                        {
+                            colToDump = header.IndexOf("デフォルト");
+                            if (colToDump > -1) break;
+                        }
                     }
 
                     if (colToDump == -1) return results;
@@ -608,7 +612,7 @@ namespace IllusionMods
         {
             if (!TextDump.IsReadyForFinalDump()) yield break;
             var needle = CombinePaths("", "abdata", "communication", "");
-            var paths = TextDump.GetTranslationPaths().Where(k => k.Contains(needle)).ToList();
+            var paths = BaseTextDumpPlugin.GetTranslationPaths().Where(k => k.Contains(needle)).ToList();
             paths.Sort();
             paths.Reverse();
 
@@ -621,19 +625,13 @@ namespace IllusionMods
             {
                 var parent = Path.GetFileName(Path.GetDirectoryName(path));
                 if (parent is null) continue;
-                if (!mappings.TryGetValue(parent, out var personalityMap))
-                {
-                    mappings[parent] = personalityMap = new Dictionary<string, string>(new TrimmedStringComparer());
-                }
-
-                if (!fileMaps.TryGetValue(parent, out var personalityFiles))
-                {
-                    fileMaps[parent] = personalityFiles = new List<string>();
-                }
+                var personalityMap = mappings.GetOrInit(parent,
+                    () => new Dictionary<string, string>(new TrimmedStringComparer()));
+                var personalityFiles = fileMaps.GetOrInit(parent);
 
                 personalityFiles.Add(path);
 
-                foreach (var entry in TextDump.GetTranslationsForPath(path)
+                foreach (var entry in BaseTextDumpPlugin.GetTranslationsForPath(path)
                     .Where(entry => !entry.Value.IsNullOrEmpty()))
                 {
                     AddLocalizationToResults(personalityMap, entry);
@@ -648,7 +646,7 @@ namespace IllusionMods
         {
             if (!TextDump.IsReadyForFinalDump()) yield break;
             var needle = CombinePaths("", "abdata", "adv", "scenario", "");
-            var paths = TextDump.GetTranslationPaths().Where(k => k.Contains(needle)).ToList();
+            var paths = BaseTextDumpPlugin.GetTranslationPaths().Where(k => k.Contains(needle)).ToList();
             paths.Sort();
             paths.Reverse();
             var personalityCheckChars = "01234567890-".ToCharArray();
@@ -666,20 +664,14 @@ namespace IllusionMods
                                         personalityCheckChars.Contains(personality[1]);
                 if (!isPersonalityFile) continue;
 
-                if (!mappings.TryGetValue(personality, out var personalityMap))
-                {
-                    mappings[personality] =
-                        personalityMap = new Dictionary<string, string>(new TrimmedStringComparer());
-                }
+                var personalityMap = mappings.GetOrInit(personality,
+                    () => new Dictionary<string, string>(new TrimmedStringComparer()));
 
-                if (!fileMaps.TryGetValue(personality, out var personalityFiles))
-                {
-                    fileMaps[personality] = personalityFiles = new List<string>();
-                }
+                var personalityFiles = fileMaps.GetOrInit(personality);
 
                 personalityFiles.Add(path);
 
-                foreach (var entry in TextDump.GetTranslationsForPath(path)
+                foreach (var entry in BaseTextDumpPlugin.GetTranslationsForPath(path)
                     .Where(entry => !entry.Value.IsNullOrEmpty()))
                 {
                     AddLocalizationToResults(personalityMap, entry);
@@ -704,7 +696,7 @@ namespace IllusionMods
                     var mapPath = path.Substring(TextDump.AssetsRoot.Length).TrimStart(PathSplitter);
                     mapPath = CombinePaths(Path.GetDirectoryName(mapPath), Path.GetFileNameWithoutExtension(mapPath));
 
-                    var toUpdate = new HashSet<string>(TextDump.GetTranslationsForPath(path)
+                    var toUpdate = new HashSet<string>(BaseTextDumpPlugin.GetTranslationsForPath(path)
                         .Where(e => e.Value.IsNullOrWhiteSpace()).Select(e => e.Key));
 
                     if (toUpdate.Count == 0) continue;

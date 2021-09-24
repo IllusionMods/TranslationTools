@@ -4,8 +4,9 @@ using BepInEx.Logging;
 using IllusionMods.Shared;
 using UnityEngine;
 using static IllusionMods.TextResourceHelper.Helpers;
+using UnityObject = UnityEngine.Object;
 
-#if AI || HS2
+#if AI || HS2 || KKS
 using Illusion.Extensions;
 #endif
 
@@ -23,21 +24,10 @@ namespace IllusionMods
             new Regex(Regex.Escape("\n"),
                 Constants.DefaultRegexOptions);
 
-        private ManualLogSource _logger;
-
+        
         protected BaseDumpHelper(TextDump plugin)
         {
             Plugin = plugin;
-        }
-
-
-        protected ManualLogSource Logger
-        {
-            get
-            {
-                if (_logger != null) return _logger;
-                return _logger = BepInEx.Logging.Logger.CreateLogSource(GetType().Name);
-            }
         }
 
         protected TextDump Plugin { get; set; }
@@ -98,12 +88,12 @@ namespace IllusionMods
             return TextDump.Helpers.GetAssetNamesFromBundle(assetBundleName);
         }
 
-        public static T ManualLoadAsset<T>(string bundle, string asset, string manifest) where T : Object
+        public static T ManualLoadAsset<T>(string bundle, string asset, string manifest) where T : UnityObject
         {
             return TextDump.Helpers.ManualLoadAsset<T>(bundle, asset, manifest);
         }
 
-        public static T ManualLoadAsset<T>(AssetBundleAddress assetBundleAddress) where T : Object
+        public static T ManualLoadAsset<T>(AssetBundleAddress assetBundleAddress) where T : UnityObject
         {
             return TextDump.Helpers.ManualLoadAsset<T>(assetBundleAddress);
         }
@@ -125,8 +115,13 @@ namespace IllusionMods
 
         public virtual void PrepareLineForDump(ref string key, ref string value)
         {
-            key = NewlineReplaceRegex.Replace(key, NewlineReplaceValue);
-            value = NewlineReplaceRegex.Replace(value, NewlineReplaceValue);
+            string Encode(string str)
+            {
+                return NewlineReplaceRegex.Replace(str, NewlineReplaceValue).Replace("=", "%3D");
+            }
+
+            key = Encode(key);
+            value = Encode(value);
         }
 
         protected static string BuildSeenKey(int topLevel, string tag)
@@ -145,7 +140,7 @@ namespace IllusionMods
 
         protected static List<GameObject> GetChildrenFromGameObject(GameObject parent)
         {
-#if AI || HS2
+#if AI || HS2 || KKS
             return parent.Children();
 #else
             var gameObjects = new List<GameObject>();

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using BepInEx.Configuration;
 using HarmonyLib;
 using JetBrains.Annotations;
@@ -40,12 +41,26 @@ namespace IllusionMods
             where TAsset : UnityEngine.Object
             where THandler : IRedirectorHandler<TAsset>
         {
-            if (!handler.Enabled || context.HasReferenceBeenRedirectedBefore(asset)) return false;
-            if (handler is IPathListBoundHandler pathListBoundHandler)
+            var logger = handler.GetLogger();
+
+            logger?.DebugLogDebug("{0}({1}, {2}[{3}])?", nameof(DefaultShouldHandleAsset), handler.GetType(),
+                asset.name, asset.GetType());
+            var result = false;
+            try
             {
-                return pathListBoundHandler.IsPathAllowed(asset, context);
+                if (!handler.Enabled || !handler.ShouldHandleAssetForContext(asset, context)) return false;
+                if (handler is IPathListBoundHandler pathListBoundHandler)
+                {
+                    return (result = pathListBoundHandler.IsPathAllowed(asset, context));
+                }
+
+                return (result = true);
             }
-            return true;
+            finally
+            {
+                logger?.DebugLogDebug("{0}({1}, {2}[{3}]) => {4}", nameof(DefaultShouldHandleAsset), handler.GetType(),
+                    asset.name, asset.GetType(), result);
+            }
         }
 
         public static ConfigEntry<TConf> ConfigEntryBind<TConf>(this IRedirectorHandler handler, string key, TConf defaultValue, string description)

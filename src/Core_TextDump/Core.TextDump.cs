@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using BepInEx;
+using IllusionMods.Shared;
 using IllusionMods.Shared.TextDumpBase;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -27,7 +28,7 @@ namespace IllusionMods
     {
         public const string GUID = "com.deathweasel.bepinex.textdump";
         public const string PluginName = "Text Dump";
-        public const string Version = "1.4.4.3";
+        public const string Version = "1.4.5.2";
 
         private const string FormatStringPlaceholder = "_P_L_A_C_E_H_O_L_D_E_R_";
 
@@ -71,7 +72,7 @@ namespace IllusionMods
 
         protected override void InitPluginSettings()
         {
-            base.InitPluginSettings(PluginName, Version);
+            base.InitPluginSettings(PluginName, Version, PluginNameInternal);
             AssetsRoot = CombinePaths(DumpRoot, "RedirectedResources", "assets", "abdata");
             LocalizationRoot = CombinePaths(DumpRoot, "Text", "Localizations");
         }
@@ -200,7 +201,16 @@ namespace IllusionMods
 
         protected T CreatePluginHelper<T>() where T : BaseDumpHelper
         {
-            return BaseHelperFactory<T>.Create<T>(this);
+            try
+            {
+                return BaseHelperFactory<T>.Create<T>(this);
+            }
+            catch (Exception err)
+            {
+                Logger.LogError($"Disabling {PluginName}: error in {nameof(CreatePluginHelper)}<{typeof(T).Name}>(): {err.Message}");
+                Enabled.Value = false;
+                throw;
+            }
         }
 
         private void DumpText(string from)
@@ -431,10 +441,7 @@ namespace IllusionMods
 
         public static ResizerCollection GetResizersForPath(string filePath)
         {
-            if (!ResizerDict.TryGetValue(filePath, out var translations))
-            {
-                ResizerDict[filePath] = translations = new ResizerCollection();
-            }
+            var translations = ResizerDict.GetOrInit(filePath);
 
             Assert.IsTrue(ResizerDict.ContainsKey(filePath));
             return translations;

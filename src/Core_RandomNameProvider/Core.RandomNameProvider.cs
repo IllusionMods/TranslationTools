@@ -15,7 +15,7 @@ namespace IllusionMods
     {
         public const string GUID = "com.illusionmods.translationtools.random_name_provider";
         public const string PluginName = "Random Name Provider";
-        public const string Version = "2.0.1.3";
+        public const string Version = "2.0.1.4";
 
         internal new static ManualLogSource Logger;
 
@@ -68,7 +68,7 @@ namespace IllusionMods
         internal static IEnumerable<ExcelData.Param> LoadData()
         {
             var nameFiles = Directory.GetFiles(NameDirectory, "*.txt")
-                .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).Select((path) =>
+                .OrderBy(Shared.Extensions.Identity, StringComparer.OrdinalIgnoreCase).Select((path) =>
                 {
                     var fName = Path.GetFileNameWithoutExtension(path);
                     var numStr = fName.Substring(fName.LastIndexOf('.') + 1);

@@ -9,6 +9,8 @@
     <Import_RootNamespace>IllusionMods</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Core.IPathListBoundHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.PathList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.RawTranslationDumper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.AssetDumpColumnInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.TextResourceHelper.cs" />
@@ -21,7 +23,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core.StringTranslationDumper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.BaseHelperFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core.XuaHelper.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)HelperFactory.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)IHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.HelperFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.IHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.ResourceMappingHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.RecourceMappingCache.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.ResourceMappingModeCache.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core.ResourceMappingPath.cs" />
   </ItemGroup>
 </Project>

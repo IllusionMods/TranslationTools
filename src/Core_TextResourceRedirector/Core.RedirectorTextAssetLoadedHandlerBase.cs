@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using IllusionMods.Shared;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
 using XUnity.ResourceRedirector;
 using XUAPluginData = XUnity.AutoTranslator.Plugin.Core.Constants.PluginData;
@@ -21,10 +23,11 @@ namespace IllusionMods
             new Dictionary<int, Dictionary<string, string>>();
 
         protected RedirectorTextAssetLoadedHandlerBase(TextResourceRedirector plugin, string extraEnableHelp = null,
-            bool allowTranslationRegistration = false)
+            bool allowTranslationRegistration = false, bool allowFallbackMapping = false)
         {
             CheckDirectory = true;
             AllowTranslationRegistration = allowTranslationRegistration;
+            AllowFallbackMapping = allowFallbackMapping;
             Plugin = plugin;
             ConfigSectionName = GetType().Name;
 
@@ -45,17 +48,31 @@ namespace IllusionMods
                 plugin.TranslatorTranslationsLoaded += TranslatorTranslationsLoadedRegisterAsTranslations;
             }
 
+            if (allowFallbackMapping)
+            {
+                EnableFallbackMappingConfig = this.ConfigEntryBind("Allow fallback mapping",
+                    TextResourceRedirector.EnableFallbackMappingConfigDefault, new ConfigDescription(
+                        $@"
+Allow searching related assets for otherwise unhandled {ConfigSectionName} translations.
+May slow down load times at cost of improved translations
+(especially useful when game has new content).".ToSingleLineString(), null, "Advanced"));
+            }
+
             Logger.LogInfo($"{GetType()} {(Enabled ? "enabled" : "disabled")}");
         }
 
         public ConfigEntry<bool> EnableHandler { get; }
 
         protected ConfigEntry<bool> EnableRegisterAsTranslationsHandler { get; }
+        protected ConfigEntry<bool> EnableFallbackMappingConfig { get;  }
 
         protected static ManualLogSource Logger => TextResourceRedirector.Logger;
 
         public bool EnableRegisterAsTranslations =>
             AllowTranslationRegistration && Enabled && (EnableRegisterAsTranslationsHandler?.Value ?? false);
+        public bool EnableFallbackMapping =>
+            AllowFallbackMapping && Enabled && (EnableFallbackMappingConfig?.Value ?? false) &&
+            TextResourceRedirector.Instance.TextResourceHelper.ResourceMappingHelper.HasReplacementMappingsForCurrentGameMode;
 
         protected TextResourceHelper TextResourceHelper => Plugin.TextResourceHelper;
 
@@ -63,8 +80,10 @@ namespace IllusionMods
         public TextResourceRedirector Plugin { get; }
 
         public string ConfigSectionName { get; }
-
         public bool AllowTranslationRegistration { get; }
+        public bool AllowFallbackMapping { get; }
+
+        public ManualLogSource GetLogger() => Logger;
 
         public void ExcludePathFromTranslationRegistration(string path)
         {
@@ -77,8 +96,6 @@ namespace IllusionMods
         }
 
 
-            
-
         protected virtual void TrackReplacement(string calculatedModificationPath, string orig, string translated,
             HashSet<int> scopes)
         {
@@ -90,12 +107,7 @@ namespace IllusionMods
             var enableRegisterAsTranslations = EnableRegisterAsTranslations;
             foreach (var scope in scopes)
             {
-                if (!_loadedReplacements.TryGetValue(scope, out var scopedReplacements))
-                {
-                    scopedReplacements = _loadedReplacements[scope] = new Dictionary<string, string>();
-                }
-
-                scopedReplacements[orig] = translated;
+                _loadedReplacements.GetOrInit(scope)[orig] = translated;
                 if (enableRegisterAsTranslations) Plugin.AddTranslationToTextCache(orig, translated, scope);
             }
         }
@@ -134,7 +146,7 @@ namespace IllusionMods
 
             return path;
         }
-
+        
         protected override bool ShouldHandleAsset(TextAsset asset, IAssetOrResourceLoadedContext context)
         {
             return this.DefaultShouldHandleAsset(asset, context);
@@ -150,5 +162,24 @@ namespace IllusionMods
         {
             RegisterAsTranslations();
         }
+
+        public virtual bool ShouldHandleAssetForContext(TextAsset asset, IAssetOrResourceLoadedContext context)
+        {
+            return !context.HasReferenceBeenRedirectedBefore(asset);
+        }
+
+
+        protected SimpleTextTranslationCache GetTranslationCache(string calculatedModificationPath, TextAsset asset,
+            IAssetOrResourceLoadedContext context)
+        {
+            return this.GetTranslationCache<TextAsset>(calculatedModificationPath, asset, context);
+        }
+
+        protected SimpleTextTranslationCache GetDumpCache(string calculatedModificationPath, TextAsset asset,
+            IAssetOrResourceLoadedContext context)
+        {
+            return this.GetDumpCache<TextAsset>(calculatedModificationPath, asset, context);
+        }
+
     }
 }

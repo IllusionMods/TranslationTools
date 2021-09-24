@@ -40,20 +40,16 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="0Harmony, Version=2.3.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\IllusionLibs.BepInEx.Harmony.2.3.2\lib\net35\0Harmony.dll</HintPath>
+    <Reference Include="0Harmony, Version=2.5.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\IllusionLibs.BepInEx.Harmony.2.5.4\lib\net35\0Harmony.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\IllusionLibs.AIShoujo.Assembly-CSharp.2019.12.20.4\lib\net46\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="BepInEx, Version=5.4.8.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\IllusionLibs.BepInEx.5.4.8\lib\net35\BepInEx.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="BepInEx.Harmony, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\IllusionLibs.BepInEx.Harmony.2.3.2\lib\net35\BepInEx.Harmony.dll</HintPath>
+    <Reference Include="BepInEx, Version=5.4.15.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\IllusionLibs.BepInEx.5.4.15\lib\net35\BepInEx.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="MessagePack, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -90,8 +86,8 @@
       <HintPath>..\..\packages\IllusionLibs.AIGirl.UnityExtensions.2018.2.21.4\lib\net46\UnityExtensions.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="XUnity.AutoTranslator.Plugin.Core, Version=4.16.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.16.0\lib\net46\XUnity.AutoTranslator.Plugin.Core.dll</HintPath>
+    <Reference Include="XUnity.AutoTranslator.Plugin.Core, Version=4.18.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.18.0\lib\net46\XUnity.AutoTranslator.Plugin.Core.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
@@ -133,8 +129,6 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\IllusionLibs.BepInEx.Harmony.2.3.2\build\IllusionLibs.BepInEx.Harmony.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\IllusionLibs.BepInEx.Harmony.2.3.2\build\IllusionLibs.BepInEx.Harmony.targets'))" />
-    <Error Condition="!Exists('..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.16.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.16.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets'))" />
     <Error Condition="!Exists('..\..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.2\build\Microsoft.CodeAnalysis.Analyzers.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.2\build\Microsoft.CodeAnalysis.Analyzers.props'))" />
     <Error Condition="!Exists('..\..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.2\build\Microsoft.CodeAnalysis.Analyzers.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.2\build\Microsoft.CodeAnalysis.Analyzers.targets'))" />
     <Error Condition="!Exists('..\..\packages\IllusionLibs.AIGirl.MessagePack.2020.5.29.4\build\IllusionLibs.AIGirl.MessagePack.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\IllusionLibs.AIGirl.MessagePack.2020.5.29.4\build\IllusionLibs.AIGirl.MessagePack.targets'))" />
@@ -144,9 +138,9 @@
     <Error Condition="!Exists('..\..\packages\IllusionLibs.AIGirl.UnityEngine.UIModule.2018.2.21.4\build\IllusionLibs.AIGirl.UnityEngine.UIModule.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\IllusionLibs.AIGirl.UnityEngine.UIModule.2018.2.21.4\build\IllusionLibs.AIGirl.UnityEngine.UIModule.targets'))" />
     <Error Condition="!Exists('..\..\packages\IllusionLibs.AIGirl.UnityExtensions.2018.2.21.4\build\IllusionLibs.AIGirl.UnityExtensions.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\IllusionLibs.AIGirl.UnityExtensions.2018.2.21.4\build\IllusionLibs.AIGirl.UnityExtensions.targets'))" />
     <Error Condition="!Exists('..\..\packages\IllusionLibs.AIShoujo.Assembly-CSharp.2019.12.20.4\build\IllusionLibs.AIShoujo.Assembly-CSharp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\IllusionLibs.AIShoujo.Assembly-CSharp.2019.12.20.4\build\IllusionLibs.AIShoujo.Assembly-CSharp.targets'))" />
+    <Error Condition="!Exists('..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.18.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.18.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets'))" />
+    <Error Condition="!Exists('..\..\packages\IllusionLibs.BepInEx.Harmony.2.5.4\build\IllusionLibs.BepInEx.Harmony.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\IllusionLibs.BepInEx.Harmony.2.5.4\build\IllusionLibs.BepInEx.Harmony.targets'))" />
   </Target>
-  <Import Project="..\..\packages\IllusionLibs.BepInEx.Harmony.2.3.2\build\IllusionLibs.BepInEx.Harmony.targets" Condition="Exists('..\..\packages\IllusionLibs.BepInEx.Harmony.2.3.2\build\IllusionLibs.BepInEx.Harmony.targets')" />
-  <Import Project="..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.16.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets" Condition="Exists('..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.16.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets')" />
   <Import Project="..\..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.2\build\Microsoft.CodeAnalysis.Analyzers.targets" Condition="Exists('..\..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.2\build\Microsoft.CodeAnalysis.Analyzers.targets')" />
   <Import Project="..\..\packages\IllusionLibs.AIGirl.MessagePack.2020.5.29.4\build\IllusionLibs.AIGirl.MessagePack.targets" Condition="Exists('..\..\packages\IllusionLibs.AIGirl.MessagePack.2020.5.29.4\build\IllusionLibs.AIGirl.MessagePack.targets')" />
   <Import Project="..\..\packages\IllusionLibs.AIGirl.UnityEngine.AssetBundleModule.2018.2.21.4\build\IllusionLibs.AIGirl.UnityEngine.AssetBundleModule.targets" Condition="Exists('..\..\packages\IllusionLibs.AIGirl.UnityEngine.AssetBundleModule.2018.2.21.4\build\IllusionLibs.AIGirl.UnityEngine.AssetBundleModule.targets')" />
@@ -155,4 +149,6 @@
   <Import Project="..\..\packages\IllusionLibs.AIGirl.UnityEngine.UIModule.2018.2.21.4\build\IllusionLibs.AIGirl.UnityEngine.UIModule.targets" Condition="Exists('..\..\packages\IllusionLibs.AIGirl.UnityEngine.UIModule.2018.2.21.4\build\IllusionLibs.AIGirl.UnityEngine.UIModule.targets')" />
   <Import Project="..\..\packages\IllusionLibs.AIGirl.UnityExtensions.2018.2.21.4\build\IllusionLibs.AIGirl.UnityExtensions.targets" Condition="Exists('..\..\packages\IllusionLibs.AIGirl.UnityExtensions.2018.2.21.4\build\IllusionLibs.AIGirl.UnityExtensions.targets')" />
   <Import Project="..\..\packages\IllusionLibs.AIShoujo.Assembly-CSharp.2019.12.20.4\build\IllusionLibs.AIShoujo.Assembly-CSharp.targets" Condition="Exists('..\..\packages\IllusionLibs.AIShoujo.Assembly-CSharp.2019.12.20.4\build\IllusionLibs.AIShoujo.Assembly-CSharp.targets')" />
+  <Import Project="..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.18.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets" Condition="Exists('..\..\packages\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.4.18.0\build\IllusionLibs.XUnity.AutoTranslator.Plugin.Core.targets')" />
+  <Import Project="..\..\packages\IllusionLibs.BepInEx.Harmony.2.5.4\build\IllusionLibs.BepInEx.Harmony.targets" Condition="Exists('..\..\packages\IllusionLibs.BepInEx.Harmony.2.5.4\build\IllusionLibs.BepInEx.Harmony.targets')" />
 </Project>

@@ -19,6 +19,7 @@ namespace IllusionMods.Shared.TextDumpBase
 
         public TranslationDictionary(int capacity, IEqualityComparer<TKey> comparer)
         {
+
             _comparer = comparer ?? EqualityComparer<TKey>.Default;
             _scopedDictionaries = new Dictionary<int, OrderedDictionary<TKey, TValue>>()
             {
@@ -145,15 +146,7 @@ namespace IllusionMods.Shared.TextDumpBase
 
         public ICollection<TValue> Values => _scopedDictionaries[-1].Values;
 
-        public IEnumerable<int> Scopes
-        {
-            get
-            {
-                var scopes = _scopedDictionaries.Keys.ToList();
-                scopes.Sort();
-                return scopes;
-            }
-        }
+        public IEnumerable<int> Scopes => _scopedDictionaries.Keys.Ordered().ToList();
 
         private OrderedDictionary<TKey, TValue> CreateInternalScopedDictionary(IDictionary<TKey, TValue> source)
         {
@@ -168,19 +161,16 @@ namespace IllusionMods.Shared.TextDumpBase
             }
             return result;
         }
-        private OrderedDictionary<TKey, TValue> CreateInternalScopedDictionary(int size=0)
+
+        private OrderedDictionary<TKey, TValue> CreateInternalScopedDictionary(int size = 0)
         {
             return new OrderedDictionary<TKey, TValue>(size, _comparer);
         }
+
         //private List<int> _scopes = null;
         public IDictionary<TKey, TValue> GetScope(int scope)
         {
-            if (!_scopedDictionaries.TryGetValue(scope, out var result))
-            {
-                _scopedDictionaries[scope] = result = CreateInternalScopedDictionary();
-            }
-
-            return result;
+            return _scopedDictionaries.GetOrInit(scope, () => CreateInternalScopedDictionary());
         }
     }
 

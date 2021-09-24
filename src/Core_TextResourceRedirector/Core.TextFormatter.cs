@@ -13,8 +13,8 @@ namespace IllusionMods
     {
         internal static readonly string[] ParagraphBreak = {"\n\n"};
         internal static bool Initialized;
-        [UsedImplicitly]
-        internal static ConfigEntry<bool> EnableTextReflow { get; private set; }
+
+        [UsedImplicitly] internal static ConfigEntry<bool> EnableTextReflow { get; private set; }
 
         internal static void Init(TextResourceRedirector plugin)
         {
@@ -49,7 +49,7 @@ namespace IllusionMods
 
         internal static partial class Hooks
         {
-#if KK||AI||HS2
+#if KK||AI||HS2 ||KKS
 
             [HarmonyPrefix]
             [HarmonyPatch(typeof(HyphenationJpn), "GetFormatedText")]
@@ -62,7 +62,6 @@ namespace IllusionMods
                     __result = ReflowText(msg);
                     return false;
                 }
-#pragma warning disable CA1031
                 catch (Exception err)
                 {
                     TextResourceRedirector.Logger.LogWarning(
@@ -70,7 +69,6 @@ namespace IllusionMods
                     TextResourceRedirector.Logger.LogDebug(err);
                     return true;
                 }
-#pragma warning restore CA1031
             }
 
 #endif

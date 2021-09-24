@@ -9,6 +9,7 @@
     <Import_RootNamespace>IllusionMods</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)KK_ResourceMappingHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)KK_TextResourceHelper.cs" />
   </ItemGroup>
 </Project>

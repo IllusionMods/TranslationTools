@@ -10,5 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)HS2_TextResourceHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)HS2_ResourceMappingHelper.cs" />
   </ItemGroup>
 </Project>

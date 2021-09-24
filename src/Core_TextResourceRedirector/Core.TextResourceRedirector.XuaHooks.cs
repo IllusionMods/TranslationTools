@@ -55,14 +55,12 @@ namespace IllusionMods
                     _addTranslationDelegate = (AddTranslationDelegate) Delegate.CreateDelegate(
                         typeof(AddTranslationDelegate), defaultCache, method);
                 }
-#pragma warning disable CA1031 // non-issue in this case
                 catch (ArgumentException)
                 {
                     //  mono versions fallback to this
                     _addTranslationDelegate = (key, value, scope) =>
                         method.Invoke(defaultCache, new object[] {key, value, scope});
                 }
-#pragma warning restore CA1031
             }
 
             [HarmonyPostfix]

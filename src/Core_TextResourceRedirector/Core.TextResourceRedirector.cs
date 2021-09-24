@@ -4,6 +4,7 @@ using System.Text;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using IllusionMods.Shared;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using XUnity.AutoTranslator.Plugin.Core;
@@ -29,10 +30,17 @@ namespace IllusionMods
 
         public const string PluginName = "Text Resource Redirector";
         public const string GUID = "com.deathweasel.bepinex.textresourceredirector";
-        public const string Version = "1.4.4.3";
+        public const string Version = "1.4.5.2";
         internal new static ManualLogSource Logger;
 #if !HS
         internal ChaListDataHandler ChaListDataHandler;
+#endif
+
+        internal const bool EnableFallbackMappingConfigDefault =
+#if KKS
+            true;
+#else
+            false;
 #endif
 
         internal ExcelDataHandler ExcelDataHandler;
@@ -69,6 +77,8 @@ namespace IllusionMods
 
             TextResourceHelper = GetTextResourceHelper();
 
+            TranslatorTranslationsLoaded += ResetMappingHelperCaches;
+
             TextFormatter.Init(this);
 
             ExcelDataHandler = new ExcelDataHandler(this);
@@ -90,6 +100,19 @@ namespace IllusionMods
             LogTextResourceHelperSettings();
         }
 
+        private void ResetMappingHelperCaches(TextResourceRedirector sender,
+            EventArgs eventArgs)
+        {
+            try
+            {
+                TextResourceHelper.SafeProc(trh => trh.ResourceMappingHelper.SafeProc(rmh => rmh.ResetCaches()));
+            }
+            catch (Exception err)
+            {
+                Logger.LogError($"Error resetting ${nameof(ResourceMappingHelper)} caches: {err.Message}");
+            }
+        }
+
         private void EnableTracing_SettingChanged(object sender, EventArgs e)
         {
             TextResourceExtensions.EnableTraces = EnableTracing.Value;
@@ -106,7 +129,7 @@ namespace IllusionMods
             foreach (var setting in settings.OrderBy(s => s.Key))
             {
                 message.Append(" - ").Append(setting.Key).Append(":\n");
-                foreach (var val in setting.Value.OrderBy(v => v))
+                foreach (var val in setting.Value.Ordered())
                 {
                     message.Append("    - ").Append(val).Append("\n");
                 }

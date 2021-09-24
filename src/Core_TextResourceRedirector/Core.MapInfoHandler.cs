@@ -1,9 +1,10 @@
-﻿#if KK||HS2
+﻿#if KK||HS2||KKS
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using HarmonyLib;
 using Manager;
+using UnityEngine;
 using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.AssetRedirection;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
@@ -42,55 +43,67 @@ namespace IllusionMods
         protected override bool ReplaceOrUpdateAsset(string calculatedModificationPath, ref MapInfo asset,
             IAssetOrResourceLoadedContext context)
         {
-            // updating the MapInfo assets directly breaks places that are doing lookups by mapName
-            // instead of id, so we just register this as a place to lookup MapInfo translations and 
-            // return true so it appears handled
-            Hooks.Init();
-
-            // register new translations with helper without replacing
-            var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-            var redirectedResources = RedirectedDirectory.GetFilesInDirectory(calculatedModificationPath, ".txt");
-            var streams = redirectedResources.Select(x => x.OpenStream());
-            var cache = new SimpleTextTranslationCache(
-                defaultTranslationFile,
-                streams,
-                false,
-                true);
-
-            if (cache.IsEmpty) return true;
-
-            var shouldTrack = IsTranslationRegistrationAllowed(calculatedModificationPath);
-
-            // register with helper or dump without translating here
-            foreach (var key in asset.param
-                .Select(entry => TextResourceHelper.GetSpecializedKey(entry, GetMapName(entry)))
-                .Where(k => !string.IsNullOrEmpty(k)))
+            var result = false;
+            var start = Time.realtimeSinceStartup;
+            try
             {
-                if (cache.TryGetTranslation(key, true, out var translated))
+                // updating the MapInfo assets directly breaks places that are doing lookups by mapName
+                // instead of id, so we just register this as a place to lookup MapInfo translations and 
+                // return true so it appears handled
+                Hooks.Init();
+
+                // register new translations with helper without replacing
+                var cache = GetTranslationCache(calculatedModificationPath, asset, context);
+
+                if (cache.IsEmpty) return (result = true);
+
+                var shouldTrack = IsTranslationRegistrationAllowed(calculatedModificationPath);
+
+                // register with helper or dump without translating here
+                foreach (var key in asset.param
+                    .Select(entry => TextResourceHelper.GetSpecializedKey(entry, GetMapName(entry)))
+                    .Where(k => !string.IsNullOrEmpty(k)))
                 {
-                    if (string.IsNullOrEmpty(translated)) continue;
-                    _mapLookup[key] = translated;
-                    _reverseMapLookup[translated] = key;
-                    if (shouldTrack) TrackReplacement(calculatedModificationPath, key, translated);
-                    TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
+                    if (cache.TryGetTranslation(key, true, out var translated))
+                    {
+                        if (string.IsNullOrEmpty(translated)) continue;
+                        _mapLookup[key] = translated;
+                        _reverseMapLookup[translated] = key;
+                        if (shouldTrack) TrackReplacement(calculatedModificationPath, key, translated);
+                        TranslationHelper.RegisterRedirectedResourceTextToPath(translated, calculatedModificationPath);
+                    }
+                    else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
+                             !string.IsNullOrEmpty(key) && LanguageHelper.IsTranslatable(key))
+                    {
+                        cache.AddTranslationToCache(key, key);
+                    }
                 }
-                else if (AutoTranslatorSettings.IsDumpingRedirectedResourcesEnabled &&
-                         !string.IsNullOrEmpty(key) && LanguageHelper.IsTranslatable(key))
-                {
-                    cache.AddTranslationToCache(key, key);
-                }
+
+                GameSpecificReplaceOrUpdateAsset(calculatedModificationPath, ref asset, context, cache, shouldTrack);
+
+                return (result = true);
+            }
+            finally
+            {
+                Logger.DebugLogDebug("{0}.{1}: {2} => {3} ({4} seconds)", GetType(), nameof(ReplaceOrUpdateAsset),
+                    calculatedModificationPath, result, Time.realtimeSinceStartup - start);
             }
 
-            return true;
         }
+
+#if KK||HS2
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter")]
+        private void GameSpecificReplaceOrUpdateAsset(string calculatedModificationPath, ref MapInfo asset, IAssetOrResourceLoadedContext context, SimpleTextTranslationCache cache, bool shouldTrack)
+        {
+            
+        }
+
+#endif
 
         protected override bool DumpAsset(string calculatedModificationPath, MapInfo asset,
             IAssetOrResourceLoadedContext context)
         {
-            var defaultTranslationFile = Path.Combine(calculatedModificationPath, "translation.txt");
-            var cache = new SimpleTextTranslationCache(
-                defaultTranslationFile,
-                false);
+            var cache = GetDumpCache(calculatedModificationPath, asset, context);
 
             var result = false;
             foreach (var entry in asset.param)
