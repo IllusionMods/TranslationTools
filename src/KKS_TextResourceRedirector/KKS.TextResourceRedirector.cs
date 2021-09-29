@@ -140,7 +140,7 @@ namespace IllusionMods
 
             if (sender.EstheticVoiceInfoHandler is IPathListBoundHandler estheticVoiceInfoHandler)
             {
-                estheticVoiceInfoHandler.WhiteListPaths.Add("esthetic/list/voice");
+                estheticVoiceInfoHandler.WhiteListPaths.Add("abdata/esthetic/list/voice");
             }
 
             Harmony.CreateAndPatchAll(typeof(Hooks));

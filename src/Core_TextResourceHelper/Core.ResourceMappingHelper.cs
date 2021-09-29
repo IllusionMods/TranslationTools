@@ -109,14 +109,14 @@ namespace IllusionMods
 
             if (IsPathUnmapped(path, mode))
             {
-                Logger.LogFatal($"{nameof(GetMappingForPath)}: {path}: unmapped");
+                Logger.DebugLogDebug($"{nameof(GetMappingForPath)}: {path}: unmapped");
                 yield break;
             }
 
             if (TryGetCachedMappingPaths(path, mode, out var cachedMappedPaths))
             {
                 foreach (var mappedPath in cachedMappedPaths) yield return mappedPath;
-                Logger.LogFatal($"{nameof(GetMappingForPath)}: {path}: used cached");
+                Logger.DebugLogDebug($"{nameof(GetMappingForPath)}: {path}: used cached");
                 yield break;
             }
 

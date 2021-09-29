@@ -528,7 +528,7 @@ namespace IllusionMods
 
 
                     // CUSTOM_LIST2 = 3
-                    Logger.LogFatal($"{nameof(GetCustomListDumpers)}: {assetBundleName} {asset.name}: ");
+                    //Logger.LogFatal($"{nameof(GetCustomListDumpers)}: {assetBundleName} {asset.name}: ");
                     var processors = colsToDump.Select(col => GetTranslateManagerRowProcessor(3, mapIdx, col)).ToList();
                     var items = GetExcelEntries(asset, assetName).ToList();
                     for (var i = firstRow; i < items.Count; i++)

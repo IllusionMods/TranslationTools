@@ -37,7 +37,7 @@ namespace IllusionMods.Shared
         internal const RegexOptions DefaultRegexOptions = RegexOptions.Compiled;
 #elif KKS
         internal const string GameName = "Koikatsu Sunshine";
-        internal const string StudioProcessName = "CharaStudioV2";
+        internal const string StudioProcessName = "CharaStudio";
         internal const string MainGameProcessName = "Koikatsu Sunshine";
         internal const RegexOptions DefaultRegexOptions = RegexOptions.Compiled;
 #else

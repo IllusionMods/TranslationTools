@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using BepInEx;
@@ -22,6 +20,7 @@ using XUnity.AutoTranslator.Plugin.Core;
 using XUnity.AutoTranslator.Plugin.Core.Constants;
 using XUnity.AutoTranslator.Plugin.Core.Utilities;
 using static IllusionMods.TextResourceHelper.Helpers;
+using static Studio.Info;
 using UnityDebug = UnityEngine.Debug;
 
 #if AI||HS2
@@ -37,7 +36,7 @@ namespace IllusionMods
     {
         public const string GUID = "com.illusionmods.translationtools.mod_text_dump";
         public const string PluginName = "Mod Text Dump";
-        public const string Version = "0.6.1";
+        public const string Version = "0.7.0.1";
 
         private const string FilePattern = "_-_-_-_-_-_";
 
@@ -47,8 +46,7 @@ namespace IllusionMods
             ChaListDefine.KeyType.ThumbAB
         };
 
-        [UsedImplicitly]
-        private static readonly List<int> TranslationScopes = new List<int>();
+        [UsedImplicitly] private static readonly List<int> TranslationScopes = new List<int>();
 
         private static readonly HashSet<int> HandledScopes = new HashSet<int>();
 
@@ -78,10 +76,31 @@ namespace IllusionMods
             //if (!IsStudio) MakerAPI.MakerFinishedLoading += MakerAPI_MakerFinishedLoading;
         }
 
+
+        internal void Update()
+        {
+            if (DumpCompleted || !Enabled.Value) return;
+            if (!DumpStarted)
+            {
+                if (_checkReadyCoroutine == null)
+                {
+                    _checkReadyCoroutine = StartCoroutine(CheckReadyToDump());
+                }
+
+                if (_readyToDump)
+                {
+                    DumpText();
+                }
+            }
+
+            HandleNotification();
+        }
+
         public void DumpText()
         {
             if (DumpCompleted || !Enabled.Value) return;
             DumpStarted = true;
+            NotificationMessage = $"{PluginName} in progress";
             StartCoroutine(IsStudio ? ExecuteDump(StudioDump()) : ExecuteDump(MakerDump()));
         }
 
@@ -92,6 +111,20 @@ namespace IllusionMods
                 "Determines which strings to include in dump");
             StudioRoot = StudioRoot ?? CombinePaths(DumpRoot, "Text", "Mods", "Studio");
             MakerRoot = MakerRoot ?? CombinePaths(DumpRoot, "Text", "Mods", "Maker");
+            Enabled.SettingChanged += ModTextDump_Enabled_SettingChanged;
+        }
+
+        private void ModTextDump_Enabled_SettingChanged(object sender, EventArgs e)
+        {
+            _readyToDump = false;
+            if (_checkReadyCoroutine != null)
+            {
+                StopCoroutine(_checkReadyCoroutine);
+                _checkReadyCoroutine = null;
+            }
+
+            // if toggling on and if this will trigger a new dump if one isn't in progress
+            if (Enabled.Value && DumpStarted && DumpCompleted) DumpStarted = DumpCompleted = false;
         }
 
         protected override void DumpToFile(string filePath, IEnumerable<string> lines)
@@ -152,6 +185,7 @@ namespace IllusionMods
                     {
                         key = $"//{key}";
                     }
+
                     scopeLines.Add(JoinStrings("=", Encode(key), Encode(value)));
                 }
 
@@ -170,28 +204,9 @@ namespace IllusionMods
             return str.Replace("=", "%3D");
         }
 
-
-        internal void Update()
+        private static bool IsMod(LightLoadInfo lightLoadInfo)
         {
-            if (DumpCompleted || !Enabled.Value) return;
-            if (DumpStarted)
-            {
-                if (WriteInProgress) HandleNotification();
-                return;
-            }
-
-            if (_checkReadyCoroutine == null)
-            {
-                _checkReadyCoroutine = StartCoroutine(CheckReadyToDump());
-            }
-
-            if (_readyToDump)
-            {
-                DumpText();
-            }
-
-
-            HandleNotification();
+            return IsMod(lightLoadInfo.no);
         }
 
         private static bool IsMod(ListInfoBase listInfo)
@@ -329,12 +344,17 @@ namespace IllusionMods
             return fallback;
         }
 
-        private string GetStudioCategoryName(int groupId, int categoryId)
+        private GroupInfo GetStudioGroupInfo(Dictionary<int, GroupInfo> groupInfoDict, int groupId)
         {
-            return GetStudioCategoryName(GetStudioGroupInfo(groupId), categoryId);
+            return groupInfoDict.TryGetValue(groupId, out var result) ? result : null;
         }
 
-        private string GetStudioCategoryName(Info.GroupInfo groupInfo, int categoryId)
+        private string GetStudioItemCategoryName(int groupId, int categoryId)
+        {
+            return GetStudioGroupCategoryName(GetStudioItemGroupInfo(groupId), categoryId);
+        }
+
+        private string GetStudioGroupCategoryName(GroupInfo groupInfo, int categoryId)
         {
             var result = string.Empty;
             groupInfo.SafeProc(info =>
@@ -354,26 +374,124 @@ namespace IllusionMods
             return result;
         }
 
-        private string GetStudioGroupName(int groupId)
+        private string GetStudioItemGroupName(int groupId)
         {
             var result = string.Empty;
-            GetStudioGroupInfo(groupId).SafeProc(info => result = info.name);
+            GetStudioItemGroupInfo(groupId).SafeProc(info => result = info.name);
             return result;
         }
 
-        private Info.GroupInfo GetStudioGroupInfo(int groupId)
+
+        private GroupInfo GetStudioItemGroupInfo(int groupId)
         {
-            Info.GroupInfo result = null;
-            Studio.Info.Instance.SafeProc(inst => inst.dicItemGroupCategory.SafeProc(dic =>
-            {
-                if (dic.TryGetValue(groupId, out var group))
-                {
-                    result = group;
-                }
-            }));
+            GroupInfo result = null;
+            Studio.Info.Instance.SafeProc(inst =>
+                inst.dicItemGroupCategory.SafeProc(dic => result = GetStudioGroupInfo(dic, groupId)));
+
             return result;
         }
 
+        private string GetStudioAnimeGroupName(int groupId)
+        {
+            var result = string.Empty;
+            GetStudioAnimeGroupInfo(groupId).SafeProc(info => result = info.name);
+            return result;
+        }
+
+        private GroupInfo GetStudioAnimeGroupInfo(int groupId)
+        {
+            GroupInfo result = null;
+            Studio.Info.Instance.SafeProc(inst =>
+                inst.dicAGroupCategory.SafeProc(dic => result = GetStudioGroupInfo(dic, groupId)));
+            return result;
+        }
+
+        private IEnumerator StudioDump<T>(string currentRoot, string topLevelFileName, Dictionary<int, T> infoList)
+            where T : LoadCommonInfo
+        {
+            yield return new WaitUntilStable(infoList, infoList.Count > 0 ? 1 : 3);
+            var groupResults = GetTranslationsForPath(CombinePaths(currentRoot, topLevelFileName));
+            foreach (var grouping in infoList.Where(e => IsMod(e.Key)).Select(e => e.Value)
+                .GroupBy(GetStudioGrouping).OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
+            {
+                var names = grouping.Select(i => i.name).Where(n => !groupResults.ContainsKey(n)).Select(
+                        origName =>
+                        {
+                            var shouldInclude = ShouldIncludeEntry(origName, out var translatedName);
+                            var result = new {origName, translatedName};
+                            return new {shouldInclude, result};
+                        }).Where(r => r.shouldInclude && r.result.origName != r.result.translatedName)
+                    .Select(r => r.result)
+                    .OrderBy(n => n.origName, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                if (names.Count < 1) continue;
+                TextResourceHelper.AddLocalizationToResults(groupResults, $"{FilePattern}{grouping.Key}",
+                    FilePattern);
+
+                foreach (var entry in names)
+                {
+                    TextResourceHelper.AddLocalizationToResults(groupResults, entry.origName, entry.translatedName);
+                }
+            }
+        }
+
+        private IEnumerator WaitForStableDictionary(IDictionary dict)
+        {
+            yield return new WaitUntilStable(dict, dict.Count > 0 ? 1 : 3);
+        }
+
+        private IEnumerator StudioDump<T>(string currentRoot, string topLevelFileName,
+            Dictionary<int, Dictionary<int, Dictionary<int, T>>> nestedInfoList,
+            Dictionary<int, GroupInfo> groupInfoList)
+            where T : LoadCommonInfo
+        {
+            var jobs = new List<Coroutine>
+            {
+                StartCoroutine(WaitForStableDictionary(nestedInfoList)),
+                StartCoroutine(WaitForStableDictionary(groupInfoList))
+            };
+
+            foreach (var job in jobs) yield return job;
+
+            jobs.Clear();
+
+            var groupResults = GetTranslationsForPath(CombinePaths(currentRoot, topLevelFileName));
+            foreach (var group in nestedInfoList.Select(group =>
+            {
+                var groupRoot = CombinePaths(currentRoot, $"group_{group.Key:D10}");
+                var groupInfo = GetStudioGroupInfo(groupInfoList, group.Key);
+                var groupName = groupInfo?.name ?? string.Empty;
+                return new {group, groupRoot, groupInfo, groupName};
+            }).OrderBy(g => g.groupRoot, StringComparer.OrdinalIgnoreCase))
+            {
+                var categoryResults = GetTranslationsForPath(CombinePaths(group.groupRoot, "category_names.txt"));
+
+                if (ShouldIncludeEntry(group.groupName, out var groupNameTrans))
+                {
+                    TextResourceHelper.AddLocalizationToResults(groupResults, group.groupName, groupNameTrans);
+                }
+
+
+                foreach (var category in group.group.Value.Select(category =>
+                {
+                    var categoryName = GetStudioGroupCategoryName(group.groupInfo, category.Key);
+                    var categoryFileName = $"category_{category.Key:D10}.txt";
+                    return new {category, categoryName, categoryFileName};
+                }).OrderBy(c => c.categoryFileName, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (ShouldIncludeEntry(category.categoryName, out var categoryNameTrans))
+                    {
+                        TextResourceHelper.AddLocalizationToResults(categoryResults, category.categoryName,
+                            categoryNameTrans);
+                    }
+
+                    jobs.Add(StartCoroutine(StudioDump(group.groupRoot, category.categoryFileName,
+                        category.category.Value)));
+                }
+            }
+
+            foreach (var job in jobs) yield return job;
+        }
 
         private IEnumerator StudioDump()
         {
@@ -384,62 +502,66 @@ namespace IllusionMods
                 Studio.Info.Instance.SafeProc(i => studioInfo = i);
             }
 
-            var groupResults = GetTranslationsForPath(CombinePaths(StudioRoot, "group_names.txt"));
-
-            foreach (var group in studioInfo.dicItemLoadInfo)
+            var jobs = new List<Coroutine>
             {
-                var groupRoot = CombinePaths(StudioRoot, $"group_{group.Key:D10}");
-                var categoryResults = GetTranslationsForPath(CombinePaths(groupRoot, "category_names.txt"));
-                var groupInfo = GetStudioGroupInfo(group.Key);
-                var groupName = groupInfo?.name ?? string.Empty;
-
-                if (ShouldIncludeEntry(groupName, out var groupNameTrans))
-                {
-                    TextResourceHelper.AddLocalizationToResults(groupResults, groupName, groupNameTrans);
-                }
+                StartCoroutine(StudioDumpItems(studioInfo)),
+                StartCoroutine(StudioDumpAnimations(studioInfo)),
+                StartCoroutine(StudioDumpLights(studioInfo)),
+                StartCoroutine(StudioDumpFilters(studioInfo)),
+                StartCoroutine(StudioDumpMaps(studioInfo))
+            };
 
 
-                foreach (var category in group.Value)
-                {
-                    var results = GetTranslationsForPath(CombinePaths(groupRoot, $"category_{category.Key:D10}.txt"));
-                    var categoryName = groupInfo != null
-                        ? GetStudioCategoryName(groupInfo, category.Key)
-                        : GetStudioCategoryName(group.Key, category.Key);
-
-                    if (ShouldIncludeEntry(categoryName, out var categoryNameTrans))
-                    {
-                        TextResourceHelper.AddLocalizationToResults(categoryResults, categoryName, categoryNameTrans);
-                    }
-
-                    foreach (var grouping in category.Value.Where(entry => IsMod(entry.Key))
-                        .Select(entry => entry.Value).GroupBy(GetStudioGrouping))
-                    {
-                        var names = grouping.Select(i => i.name).Where(n => !results.ContainsKey(n)).Select(
-                                origName =>
-                                {
-                                    var shouldInclude = ShouldIncludeEntry(origName, out var translatedName);
-                                    var result = new {origName, translatedName};
-                                    return new {shouldInclude, result};
-                                }).Where(r => r.shouldInclude && r.result.origName != r.result.translatedName)
-                            .Select(r => r.result)
-                            .ToList();
-
-                        if (names.Count < 1) continue;
-                        TextResourceHelper.AddLocalizationToResults(results, $"{FilePattern}{grouping.Key}",
-                            FilePattern);
-
-                        foreach (var entry in names)
-                        {
-                            TextResourceHelper.AddLocalizationToResults(results, entry.origName, entry.translatedName);
-                        }
-                    }
-                }
-            }
+            foreach (var job in jobs) yield return job;
         }
 
-        private string GetStudioGrouping(Info.ItemLoadInfo itemLoadInfo)
+        private IEnumerator StudioDumpFilters(Info studioInfo)
         {
-            return itemLoadInfo.bundlePath;
+#if KK||KKS
+            // Filters
+            while (studioInfo.dicFilterLoadInfo == null) yield return null;
+            yield return StartCoroutine(StudioDump(CombinePaths(StudioRoot, "filters"), "filter_names.txt",
+                studioInfo.dicFilterLoadInfo));
+#else
+            yield break;
+#endif
+        }
+
+        private IEnumerator StudioDumpMaps(Info studioInfo)
+        {
+            // Maps
+            while (studioInfo.dicMapLoadInfo == null) yield return null;
+            yield return StartCoroutine(StudioDump(CombinePaths(StudioRoot, "maps"), "map_names.txt",
+                studioInfo.dicMapLoadInfo));
+        }
+
+        private IEnumerator StudioDumpLights(Info studioInfo)
+        {
+            // Lights
+            while (studioInfo.dicLightLoadInfo == null) yield return null;
+            yield return StartCoroutine(StudioDump(CombinePaths(StudioRoot, "lights"), "light_names.txt",
+                studioInfo.dicLightLoadInfo));
+        }
+
+        private IEnumerator StudioDumpAnimations(Info studioInfo)
+        {
+            // Animations
+            while (studioInfo.dicAnimeLoadInfo == null || studioInfo.dicAGroupCategory == null) yield return null;
+            yield return StartCoroutine(StudioDump(CombinePaths(StudioRoot, "animations"), "group_names.txt",
+                studioInfo.dicAnimeLoadInfo, studioInfo.dicAGroupCategory));
+        }
+
+        private IEnumerator StudioDumpItems(Info studioInfo)
+        {
+            // items 
+            while (studioInfo.dicItemLoadInfo == null || studioInfo.dicItemGroupCategory == null) yield return null;
+            yield return StartCoroutine(StudioDump(CombinePaths(StudioRoot, "items"), "group_names.txt",
+                studioInfo.dicItemLoadInfo, studioInfo.dicItemGroupCategory));
+        }
+
+        private string GetStudioGrouping(LoadCommonInfo loadCommonInfo)
+        {
+            return loadCommonInfo.bundlePath;
         }
 
         private IEnumerable<int> GetSearchScopes()
@@ -534,7 +656,8 @@ namespace IllusionMods
                 {
                     var results = GetTranslationsForPath(CombinePaths(MakerRoot, $"{category}.txt"));
                     var categoryInfo = chaListCtrl.GetCategoryInfo(category);
-                    foreach (var grouping in categoryInfo.Values.Where(IsMod).GroupBy(GetMakerGrouping))
+                    foreach (var grouping in categoryInfo.Values.Where(IsMod).GroupBy(GetMakerGrouping)
+                        .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
                     {
                         try
                         {
@@ -546,6 +669,7 @@ namespace IllusionMods
                                         return new {shouldInclude, result};
                                     }).Where(r => r.shouldInclude && r.result.origName != r.result.translatedName)
                                 .Select(r => r.result)
+                                .OrderBy(n => n.origName, StringComparer.OrdinalIgnoreCase)
                                 .ToList();
 
                             if (names.Count < 1) continue;

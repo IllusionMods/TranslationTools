@@ -41,7 +41,7 @@ namespace IllusionMods
             if (_calculatedModificationPath != null && _calculatedModificationPath[1] == ':' &&
                 _calculatedModificationPath[2] != '\\')
             {
-                TextResourceHelper.Logger.LogFatal($"_calculatedModificationPath is corrupted {_calculatedModificationPath}");
+                TextResourceHelper.Logger.LogWarning($"{this}.{nameof(_calculatedModificationPath)} is corrupted {_calculatedModificationPath}");
             }
         }
 
@@ -87,7 +87,7 @@ namespace IllusionMods
                     if (_baseModificationPath != null && _baseModificationPath[1] == ':' &&
                         _baseModificationPath[2] != '\\')
                     {
-                        TextResourceHelper.Logger.LogFatal($"_baseModificationPath is corrupted {_baseModificationPath}");
+                        TextResourceHelper.Logger.LogFatal($"{this}.{nameof(_baseModificationPath)} is corrupted {_baseModificationPath}");
                     }
 
                 }

@@ -14,6 +14,7 @@ namespace IllusionMods
     public static partial class PathListBoundHandlerExtensions
     {
         private static ManualLogSource Logger => TextResourceHelper.Logger;
+
         public static bool IsPathWhitelisted(this IPathListBoundHandler handler, string path,
             bool isPathNormalized = false)
         {
@@ -29,14 +30,23 @@ namespace IllusionMods
         public static bool IsPathAllowed(this IPathListBoundHandler handler, string path, bool isPathNormalized = false)
         {
             var search = isPathNormalized ? path : PathList.Normalize(path);
-            Logger.DebugLogDebug($"IsPathAllowed: {search}");
-            // run shorter test first
-            if (handler.WhiteListPaths.Count < handler.BlackListPaths.Count)
+            var result = true;
+            try
             {
-                return IsPathWhitelisted(handler, search, true) && !IsPathBlacklisted(handler, search, true);
-            }
+                // run shorter test first
+                if (handler.WhiteListPaths.Count < handler.BlackListPaths.Count)
+                {
+                    return result = IsPathWhitelisted(handler, search, true) &&
+                                    !IsPathBlacklisted(handler, search, true);
+                }
 
-            return !IsPathBlacklisted(handler, search, true) && IsPathWhitelisted(handler, search, true);
+                return result = !IsPathBlacklisted(handler, search, true) &&
+                                IsPathWhitelisted(handler, search, true);
+            }
+            finally
+            {
+                Logger.DebugLogDebug("{0}.{1}: {2} => {3}", handler.GetType(), nameof(IsPathAllowed), search, result);
+            }
         }
 
         public static bool IsPathBlocked(this IPathListBoundHandler handler, string path, bool isPathNormalized = false)

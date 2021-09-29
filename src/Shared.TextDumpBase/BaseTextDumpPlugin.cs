@@ -222,8 +222,24 @@ namespace IllusionMods.Shared.TextDumpBase
 
             if (moveSuccess)
             {
-                LogWithMessage(BepInExLogLevel.Info,
-                    $"Dump can be found in {DumpDestination}");
+                LogWithMessage(BepInExLogLevel.Info, $"Dump can be found in {DumpDestination}");
+                if (_dumpRoot != null)
+                {
+                    var oldDumpRoot = _dumpRoot;
+                    _dumpRoot = null;
+                    if (Directory.Exists(oldDumpRoot))
+
+                    {
+                        try
+                        {
+                            Directory.Delete(DumpRoot);
+                        }
+                        catch
+                        {
+                            // leave it
+                        }
+                    }
+                }
             }
             else
             {

@@ -4,6 +4,7 @@ using System.Linq;
 using ADV.Commands.Base;
 using BepInEx.Logging;
 using UnityEngine;
+using static IllusionMods.AssetLoader;
 using Logger = UnityEngine.Logger;
 using Object = UnityEngine.Object;
 
@@ -184,7 +185,8 @@ namespace IllusionMods
                     }
                     catch (Exception err)
                     {
-                        Logger.LogFatal(err);
+                        Logger.LogWarning($"{nameof(AssetBundleManagerLoader)}: {err.Message}");
+                        UnityEngine.Debug.LogException(err);
                     }
                 }
                 return bundle.LoadAsset<T>(assetName);
