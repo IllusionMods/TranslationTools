@@ -34,7 +34,7 @@ Marked incompatible with [XUnity.AutoTranslator and XUnity.ResourceRedirector](h
 
 - **[KK_TranslationSync]** - For Koikatsu
 
-A plugin for correctly formatting translation files. Corrects formatting and copies translations from one file to another for the same personality in case of duplicate entries. Used by translators working on the [Koikatsu Story Translation](https://github.com/IllusionMods/KoikatsuStoryTranslation) project. No need to download unless you're working on translations.
+A plugin for correctly formatting translation files. Corrects formatting and copies translations from one file to another for the same personality in case of duplicate entries. Used by translators working on the [Koikatsu Story Translation](https://gitgoon.dev/IllusionMods/KoikatsuStoryTranslation) project. No need to download unless you're working on translations.
 
 To use, open the plugin settings and set a personality, press the hotkey (default 0) to sync translations. Read your bepinex console or output_log.txt to see the changes made or any warnings and errors. Press alt+hotkey to force sync translation files in case of differing translations (warning: make backups first. It may not be obvious which translations are treated as the primary source). Press ctrl+hotkey to sync translations for all personalities (warning: very slow).
 
@@ -68,21 +68,21 @@ Command line utility to any lines found in a dump to a set of asset translation 
 
 [//]: # (## Latest Links)
 
-[AI_TextResourceRedirector]: https://github.com/IllusionMods/TranslationTools/releases/download/r23/AI_TextResourceRedirector.v1.4.4.3.zip "v1.4.4.3"
-[HS_TextResourceRedirector]: https://github.com/IllusionMods/TranslationTools/releases/download/r10/HS_TextResourceRedirector.v1.4.1.1.zip "v1.4.1.1"
-[HS2_TextResourceRedirector]: https://github.com/IllusionMods/TranslationTools/releases/download/r23/HS2_TextResourceRedirector.v1.4.4.3.zip "v1.4.4.3"
-[KK_TextResourceRedirector]: https://github.com/IllusionMods/TranslationTools/releases/download/r23/KK_TextResourceRedirector.v1.4.4.3.zip "v1.4.4.3"
-[KKS_TextResourceRedirector]: https://github.com/IllusionMods/TranslationTools/releases/download/r25/KKS_TextResourceRedirector.v1.4.5.5.zip "v1.4.5.5"
-[AI_TextDump]: https://github.com/IllusionMods/TranslationTools/releases/download/r21/AI_TextDump.v1.4.4.3.zip "v1.4.4.3"
-[AI_INT_TextDump]: https://github.com/IllusionMods/TranslationTools/releases/download/r21/AI_INT_TextDump.v1.4.4.3.zip "v1.4.4.3"
-[HS_TextDump]: https://github.com/IllusionMods/TranslationTools/releases/download/r2/HS_TextDump.v1.1.zip "v1.1"
-[HS2_TextDump]: https://github.com/IllusionMods/TranslationTools/releases/download/r21/HS2_TextDump.v1.4.4.3.zip "v1.4.4.3"
-[KK_TextDump]: https://github.com/IllusionMods/TranslationTools/releases/download/r21/KK_TextDump.v1.4.4.3.zip "v1.4.4.3"
-[KKS_TextDump]: https://github.com/IllusionMods/TranslationTools/releases/download/r24/KKS_TextDump.v1.4.5.2.zip "v1.4.5.2"
-[KKP_TextDump]: https://github.com/IllusionMods/TranslationTools/releases/download/r15/KKP_TextDump.v1.4.3.zip "v1.4.3"
-[KK_TranslationSync]: https://github.com/IllusionMods/TranslationTools/releases/download/r21/KK_TranslationSync.v1.3.3.3.zip "v1.3.3.3"
-[AI_ModTextDump]: https://github.com/IllusionMods/TranslationTools/releases/download/r26/AI_ModTextDump.v0.7.0.1.zip "v0.7.0.1"
-[HS2_ModTextDump]: https://github.com/IllusionMods/TranslationTools/releases/download/r26/HS2_ModTextDump.v0.7.0.1.zip "v0.7.0.1"
-[KK_ModTextDump]: https://github.com/IllusionMods/TranslationTools/releases/download/r26/KK_ModTextDump.v0.7.0.1.zip "v0.7.0.1"
-[KKS_ModTextDump]: https://github.com/IllusionMods/TranslationTools/releases/download/r26/KKS_ModTextDump.v0.7.0.1.zip "v0.7.0.1"
+[AI_TextResourceRedirector]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r23/AI_TextResourceRedirector.v1.4.4.3.zip "v1.4.4.3"
+[HS_TextResourceRedirector]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r10/HS_TextResourceRedirector.v1.4.1.1.zip "v1.4.1.1"
+[HS2_TextResourceRedirector]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r23/HS2_TextResourceRedirector.v1.4.4.3.zip "v1.4.4.3"
+[KK_TextResourceRedirector]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r23/KK_TextResourceRedirector.v1.4.4.3.zip "v1.4.4.3"
+[KKS_TextResourceRedirector]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r25/KKS_TextResourceRedirector.v1.4.5.5.zip "v1.4.5.5"
+[AI_TextDump]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r21/AI_TextDump.v1.4.4.3.zip "v1.4.4.3"
+[AI_INT_TextDump]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r21/AI_INT_TextDump.v1.4.4.3.zip "v1.4.4.3"
+[HS_TextDump]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r2/HS_TextDump.v1.1.zip "v1.1"
+[HS2_TextDump]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r21/HS2_TextDump.v1.4.4.3.zip "v1.4.4.3"
+[KK_TextDump]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r21/KK_TextDump.v1.4.4.3.zip "v1.4.4.3"
+[KKS_TextDump]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r24/KKS_TextDump.v1.4.5.2.zip "v1.4.5.2"
+[KKP_TextDump]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r15/KKP_TextDump.v1.4.3.zip "v1.4.3"
+[KK_TranslationSync]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r21/KK_TranslationSync.v1.3.3.3.zip "v1.3.3.3"
+[AI_ModTextDump]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r26/AI_ModTextDump.v0.7.0.1.zip "v0.7.0.1"
+[HS2_ModTextDump]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r26/HS2_ModTextDump.v0.7.0.1.zip "v0.7.0.1"
+[KK_ModTextDump]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r26/KK_ModTextDump.v0.7.0.1.zip "v0.7.0.1"
+[KKS_ModTextDump]: https://gitgoon.dev/IllusionMods/TranslationTools/releases/download/r26/KKS_ModTextDump.v0.7.0.1.zip "v0.7.0.1"
 
