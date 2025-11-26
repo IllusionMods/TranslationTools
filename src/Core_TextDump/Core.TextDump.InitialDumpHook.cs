@@ -38,7 +38,7 @@ namespace IllusionMods
                     var tmp = _harmony;
                     if (tmp == null) return;
                     _harmony = null;
-                    tmp.UnpatchAll(HarmonyId);
+                    tmp.UnpatchSelf();
                     if (sender is TextDump textDump) textDump.TextDumpUpdate -= Unpatch;
                 }
             }

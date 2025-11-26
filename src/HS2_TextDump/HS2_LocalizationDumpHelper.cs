@@ -57,8 +57,8 @@ namespace IllusionMods
             try
             {
                 // STRMainMenu1 doesn't exist in HS2 steam release and breaks this whole method unless it's referenced indirectly
-                new System.Action(() => dumper = MakeStandardInstanceLocalizer<STRMainMenu1>(
-                    "strHScene", "strLobby", "strHome", "strCustom")).Invoke();
+                // TODO FIX: new System.Action(() => dumper = MakeStandardInstanceLocalizer<STRMainMenu1>(
+                //    "strHScene", "strLobby", "strHome", "strCustom")).Invoke();
             }
             catch
             {
